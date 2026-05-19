@@ -765,7 +765,7 @@
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_CFBundleDisplayName = JustDew;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.georgebabichev.JustDew;
@@ -801,7 +801,7 @@
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_CFBundleDisplayName = JustDew;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.georgebabichev.JustDew;
@@ -838,7 +838,7 @@
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustDewWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_CFBundleDisplayName = JustDew;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -873,7 +873,7 @@
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustDewWatch/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_CFBundleDisplayName = JustDew;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

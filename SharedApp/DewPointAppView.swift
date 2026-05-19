@@ -17,7 +17,9 @@ struct DewPointAppView: View {
                 locationSection
             }
             .formStyle(.grouped)
+            #if os(macOS)
             .navigationTitle("JustDew")
+            #endif
         }
         .task {
             viewModel.loadInitialReading()
@@ -74,7 +76,7 @@ struct DewPointAppView: View {
                 }
                 .padding(.vertical, 4)
             } else {
-                ContentUnavailableView("No Dew Point", systemImage: "drop.degreesign")
+                noDewPointContent
             }
 
             if viewModel.isLoading {
@@ -86,6 +88,23 @@ struct DewPointAppView: View {
                     .foregroundStyle(.orange)
             }
         }
+    }
+
+    @ViewBuilder
+    private var noDewPointContent: some View {
+        #if os(watchOS)
+        VStack(spacing: 6) {
+            Image(systemName: "drop.degreesign")
+                .font(.title3)
+            Text("No Dew Point")
+                .font(.headline)
+        }
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, alignment: .center)
+        #else
+        ContentUnavailableView("No Dew Point", systemImage: "drop.degreesign")
+        #endif
     }
 
     private var locationSection: some View {
@@ -212,7 +231,6 @@ struct DewPointAppView: View {
                 dewPointSection
                 locationSection
             }
-            .navigationTitle("JustDew")
         }
     }
     #endif

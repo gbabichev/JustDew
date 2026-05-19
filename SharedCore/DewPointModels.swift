@@ -112,7 +112,7 @@ enum DewPointError: LocalizedError {
         case .locationSearchUnavailable:
             "Location search is temporarily unavailable. Check your connection and try again."
         case .missingConfiguredLocation:
-            "Choose a location in JustDew."
+            "Choose a location."
         case .networkUnavailable:
             "Network connection appears to be offline."
         case .weatherUnavailable:
