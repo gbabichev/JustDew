@@ -29,12 +29,18 @@ struct DewPointAppView: View {
         Section("Dew Point") {
             if let reading = viewModel.reading {
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Image(systemName: reading.symbolName)
-                            .foregroundStyle(.cyan)
+                    HStack(alignment: .top) {
                         Text(DewPointFormatters.temperature(reading.dewPoint))
                             .font(.system(size: displayTemperatureSize, weight: .semibold, design: .rounded))
                             .monospacedDigit()
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: reading.symbolName)
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.cyan)
+                            .padding(.top, 6)
                     }
 
                     Label(reading.location.compactDisplayName, systemImage: "mappin.and.ellipse")
@@ -48,9 +54,23 @@ struct DewPointAppView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                    Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    HStack(alignment: .center) {
+                        Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+
+                        Spacer(minLength: 12)
+
+                        Button {
+                            viewModel.refresh()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.plain)
+                        .controlSize(.small)
+                        .disabled(viewModel.configuredLocation == nil || viewModel.isLoading)
+                        .accessibilityLabel("Refresh")
+                    }
                 }
                 .padding(.vertical, 4)
             } else {
@@ -94,13 +114,6 @@ struct DewPointAppView: View {
                 .disabled(viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityLabel("Set Manual Location")
             }
-
-            Button {
-                viewModel.refresh()
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .disabled(viewModel.configuredLocation == nil)
         }
     }
 

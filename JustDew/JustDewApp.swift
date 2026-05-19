@@ -26,6 +26,14 @@ struct JustDewApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                #if os(macOS)
+                .frame(width: 400, height: 440)
+                #endif
         }
+        #if os(macOS)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 400, height: 440)
+        .windowResizability(.contentSize)
+        #endif
     }
 }
