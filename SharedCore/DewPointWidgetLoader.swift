@@ -5,12 +5,22 @@ enum DewPointWidgetLoader {
     static var sampleReading: DewPointReading {
         let location = DewPointLocation(
             mode: .manual,
-            name: "Cupertino, CA",
-            shortName: "Cupertino, CA",
-            latitude: 37.3349,
-            longitude: -122.0090,
+            name: "Charlotte, NC",
+            shortName: "Charlotte, NC",
+            latitude: 34.9246,
+            longitude: 80.7434,
             savedAt: Date()
         )
+
+        // cupertino
+//        let location = DewPointLocation(
+//            mode: .manual,
+//            name: "Cupertino, CA",
+//            shortName: "Cupertino, CA",
+//            latitude: 37.3349,
+//            longitude: -122.0090,
+//            savedAt: Date()
+//        )
 
         return DewPointReading(
             location: location,

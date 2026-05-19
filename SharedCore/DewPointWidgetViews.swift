@@ -20,6 +20,7 @@ extension DewPointWidgetEntry {
 
 struct JustDewWidgetEntryView: View {
     @Environment(\.widgetFamily) private var environmentFamily
+    @Environment(\.widgetRenderingMode) private var renderingMode
 
     let entry: DewPointWidgetEntry
     private let familyOverride: WidgetFamily?
@@ -68,6 +69,7 @@ struct JustDewWidgetEntryView: View {
         #if os(iOS)
         case .accessoryInline:
             Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+                .foregroundStyle(primaryTextColor)
         case .accessoryCircular:
             VStack(spacing: 2) {
                 Image(systemName: "drop.degreesign.fill")
@@ -75,37 +77,47 @@ struct JustDewWidgetEntryView: View {
                     .font(.caption.bold())
                     .minimumScaleFactor(0.7)
             }
+            .foregroundStyle(primaryTextColor)
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 2) {
                 Text("Dew Point")
                     .font(.caption2)
+                    .foregroundStyle(secondaryTextColor)
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.headline.monospacedDigit())
+                    .foregroundStyle(primaryTextColor)
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryTextColor)
                     .lineLimit(1)
                 Text(DewPointFormatters.updatedTime(reading.fetchedAt))
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryTextColor)
             }
         #endif
         case .systemMedium, .systemLarge, .systemExtraLarge:
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("Dew Point", systemImage: "drop.degreesign.fill")
+                    HStack(spacing: 6) {
+                        Image(systemName: "drop.degreesign.fill")
+                            .foregroundStyle(comfortAccentColor(for: reading))
+                        Text("Dew Point")
+                            .foregroundStyle(secondaryTextColor)
+                    }
                     Spacer()
                     Image(systemName: reading.symbolName)
+                        .foregroundStyle(secondaryTextColor)
                 }
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
 
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.system(size: 44, weight: .semibold, design: .rounded))
                     .monospacedDigit()
+                    .foregroundStyle(dewPointValueColor(for: reading))
 
                 Text(reading.location.widgetDisplayName)
                     .font(.subheadline)
+                    .foregroundStyle(secondaryTextColor)
                     .lineLimit(1)
 
                 HStack {
@@ -115,25 +127,30 @@ struct JustDewWidgetEntryView: View {
                     Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(secondaryTextColor)
 
                 Spacer(minLength: 0)
             }
         default:
             VStack(alignment: .leading, spacing: 6) {
-                Label("Dew Point", systemImage: "drop.degreesign.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 5) {
+                    Image(systemName: "drop.degreesign.fill")
+                        .foregroundStyle(comfortAccentColor(for: reading))
+                    Text("Dew Point")
+                        .foregroundStyle(secondaryTextColor)
+                }
+                .font(.caption)
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.system(size: 32, weight: .semibold, design: .rounded))
                     .monospacedDigit()
+                    .foregroundStyle(dewPointValueColor(for: reading))
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryTextColor)
                     .lineLimit(2)
                 Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(tertiaryTextColor)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
@@ -148,6 +165,60 @@ struct JustDewWidgetEntryView: View {
                 .font(.caption)
                 .lineLimit(3)
         }
+        .foregroundStyle(secondaryTextColor)
+    }
+
+    private var primaryTextColor: Color {
+        #if os(macOS)
+        macTextColor(opacity: renderingMode == .vibrant ? 0.96 : 0.88)
+        #else
+        Color.primary
+        #endif
+    }
+
+    private var secondaryTextColor: Color {
+        #if os(macOS)
+        macTextColor(opacity: renderingMode == .vibrant ? 0.78 : 0.62)
+        #else
+        Color.secondary
+        #endif
+    }
+
+    private var tertiaryTextColor: Color {
+        #if os(macOS)
+        macTextColor(opacity: renderingMode == .vibrant ? 0.68 : 0.44)
+        #else
+        Color.secondary
+        #endif
+    }
+
+    private func macTextColor(opacity: Double) -> Color {
+        Color.black.opacity(opacity)
+    }
+
+    private func dewPointValueColor(for reading: DewPointReading) -> Color {
+        showsComfortColor ? comfortColor(for: reading) : primaryTextColor
+    }
+
+    private func comfortAccentColor(for reading: DewPointReading) -> Color {
+        showsComfortColor ? comfortColor(for: reading) : secondaryTextColor
+    }
+
+    private var showsComfortColor: Bool {
+        #if os(macOS)
+        renderingMode == .fullColor
+        #else
+        true
+        #endif
+    }
+
+    private func comfortColor(for reading: DewPointReading) -> Color {
+        let progress = ((reading.dewPointCelsius - 10) / 14).clamped(to: 0...1)
+        return Color(
+            red: 0.16 + (0.88 - 0.16) * progress,
+            green: 0.46 + (0.16 - 0.46) * progress,
+            blue: 0.86 + (0.14 - 0.86) * progress
+        )
     }
 }
 #endif
@@ -239,3 +310,9 @@ struct JustDewWatchEntryView: View {
     }
 }
 #endif
+
+private extension Double {
+    func clamped(to range: ClosedRange<Double>) -> Double {
+        min(max(self, range.lowerBound), range.upperBound)
+    }
+}
