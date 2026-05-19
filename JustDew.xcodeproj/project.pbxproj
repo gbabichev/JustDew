@@ -129,6 +129,21 @@
 			path = JustDewWatch;
 			sourceTree = "<group>";
 		};
+		FF3EAAA02FBC0000000CF230 /* SharedCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedCore;
+			sourceTree = "<group>";
+		};
+		FF3EAAA12FBC0000000CF230 /* SharedApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharedApp;
+			sourceTree = "<group>";
+		};
+		FF3EAAA22FBC0000000CF230 /* Config */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Config;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +189,9 @@
 				FF3EA9652FBB5B24000CF230 /* JustDewWidget */,
 				FF3EA97C2FBB5B4E000CF230 /* JustDewWatch Watch App */,
 				FF3EA9912FBB5B60000CF230 /* JustDewWatch */,
+				FF3EAAA02FBC0000000CF230 /* SharedCore */,
+				FF3EAAA12FBC0000000CF230 /* SharedApp */,
+				FF3EAAA22FBC0000000CF230 /* Config */,
 				FF3EA9602FBB5B24000CF230 /* Frameworks */,
 				FF3EA94E2FBB5992000CF230 /* Products */,
 			);
@@ -220,6 +238,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FF3EA94F2FBB5992000CF230 /* JustDew */,
+				FF3EAAA02FBC0000000CF230 /* SharedCore */,
+				FF3EAAA12FBC0000000CF230 /* SharedApp */,
 			);
 			name = JustDew;
 			packageProductDependencies = (
@@ -242,6 +262,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FF3EA9652FBB5B24000CF230 /* JustDewWidget */,
+				FF3EAAA02FBC0000000CF230 /* SharedCore */,
 			);
 			name = JustDewWidgetExtension;
 			packageProductDependencies = (
@@ -266,6 +287,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FF3EA97C2FBB5B4E000CF230 /* JustDewWatch Watch App */,
+				FF3EAAA02FBC0000000CF230 /* SharedCore */,
+				FF3EAAA12FBC0000000CF230 /* SharedApp */,
 			);
 			name = "JustDewWatch Watch App";
 			packageProductDependencies = (
@@ -288,6 +311,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FF3EA9912FBB5B60000CF230 /* JustDewWatch */,
+				FF3EAAA02FBC0000000CF230 /* SharedCore */,
 			);
 			name = JustDewWatchExtension;
 			packageProductDependencies = (
@@ -545,6 +569,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDew.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Config/JustDew-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -553,6 +579,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationUsageDescription = "JustDew uses your location to show the local dew point.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -590,6 +618,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDew.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Config/JustDew-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -598,6 +628,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationUsageDescription = "JustDew uses your location to show the local dew point.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -635,6 +667,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWidget.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Config/JustDewWidget-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -659,6 +693,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.JustDewWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -678,6 +713,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWidget.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Config/JustDewWidget-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -702,6 +739,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.JustDewWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -721,12 +759,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWatchApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.georgebabichev.JustDew;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -736,6 +776,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -754,12 +795,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWatchApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = JustDewWatch;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "JustDew uses your location to show the local dew point.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.georgebabichev.JustDew;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -769,6 +812,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -788,6 +832,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWatchWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -804,6 +849,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.watchkitapp.JustDewWatch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -821,6 +867,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Config/JustDewWatchWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7GK58M2353;
@@ -837,6 +884,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.georgebabichev.JustDew.watchkitapp.JustDewWatch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

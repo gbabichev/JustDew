@@ -8,88 +8,48 @@
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+struct WatchDewPointProvider: TimelineProvider {
+    func placeholder(in context: Context) -> WatchDewPointEntry {
+        WatchDewPointEntry(date: Date(), reading: DewPointWidgetLoader.sampleReading, message: nil)
     }
 
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
-    }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
+    func getSnapshot(in context: Context, completion: @escaping (WatchDewPointEntry) -> Void) {
+        if context.isPreview {
+            completion(WatchDewPointEntry(date: Date(), reading: DewPointWidgetLoader.sampleReading, message: nil))
+            return
         }
 
-        return Timeline(entries: entries, policy: .atEnd)
+        Task {
+            completion(await makeEntry())
+        }
     }
 
-    func recommendations() -> [AppIntentRecommendation<ConfigurationAppIntent>] {
-        // Create an array with all the preconfigured widgets to show.
-        [AppIntentRecommendation(intent: ConfigurationAppIntent(), description: "Example Widget")]
+    func getTimeline(in context: Context, completion: @escaping (Timeline<WatchDewPointEntry>) -> Void) {
+        Task {
+            let entry = await makeEntry()
+            let nextUpdate = Date().addingTimeInterval(DewPointConfiguration.refreshInterval)
+            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        }
     }
 
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
-}
-
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let configuration: ConfigurationAppIntent
-}
-
-struct JustDewWatchEntryView : View {
-    var entry: Provider.Entry
-
-    var body: some View {
-        VStack {
-            HStack {
-                Text("Time:")
-                Text(entry.date, style: .time)
-            }
-        
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+    private func makeEntry() async -> WatchDewPointEntry {
+        do {
+            let reading = try await DewPointWidgetLoader.loadReading()
+            return WatchDewPointEntry(date: Date(), reading: reading, message: nil)
+        } catch {
+            let cachedReading = DewPointStore().loadReading()
+            return WatchDewPointEntry(date: Date(), reading: cachedReading, message: error.localizedDescription)
         }
     }
 }
 
 struct JustDewWatch: Widget {
-    let kind: String = "JustDewWatch"
-
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
+        StaticConfiguration(kind: DewPointConfiguration.watchWidgetKind, provider: WatchDewPointProvider()) { entry in
             JustDewWatchEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
         }
+        .configurationDisplayName("Dew Point")
+        .description("Shows the current dew point.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
     }
 }
-
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
-    }
-}
-
-#Preview(as: .accessoryRectangular) {
-    JustDewWatch()
-} timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
-}    
