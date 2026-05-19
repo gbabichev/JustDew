@@ -37,7 +37,7 @@ struct DewPointAppView: View {
                             .monospacedDigit()
                     }
 
-                    Label(reading.location.name, systemImage: "mappin.and.ellipse")
+                    Label(reading.location.compactDisplayName, systemImage: "mappin.and.ellipse")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

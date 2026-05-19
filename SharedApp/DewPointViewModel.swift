@@ -16,8 +16,12 @@ final class DewPointViewModel: ObservableObject {
     private let locationProvider = OneShotLocationProvider()
 
     init() {
+        let savedLocation = store.loadLocation()
         reading = store.loadReading()
-        configuredLocation = store.loadLocation()
+        configuredLocation = savedLocation
+        if savedLocation?.mode == .manual {
+            manualQuery = savedLocation?.compactDisplayName ?? ""
+        }
         authorizationStatus = locationProvider.authorizationStatus
     }
 
@@ -84,7 +88,7 @@ final class DewPointViewModel: ObservableObject {
             let configuredLocation = try await LocationSearchService.resolve(manualQuery)
             store.saveLocation(configuredLocation)
             self.configuredLocation = configuredLocation
-            manualQuery = configuredLocation.name
+            manualQuery = configuredLocation.compactDisplayName
             try await fetchReadingValue(for: configuredLocation)
             reloadWidgets()
         }

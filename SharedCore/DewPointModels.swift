@@ -27,24 +27,45 @@ struct DewPointLocation: Codable, Equatable, Sendable {
         CLLocation(latitude: latitude, longitude: longitude)
     }
 
-    var widgetDisplayName: String {
+    var compactDisplayName: String {
+        if let compactName = cityStateName(from: shortName) ?? cityStateName(from: name) {
+            return compactName
+        }
+
         if let shortName = shortName?.trimmingCharacters(in: .whitespacesAndNewlines),
            !shortName.isEmpty {
             return shortName
         }
 
-        let components = name
+        let components = locationNameComponents(from: name)
+        return components.first ?? name
+    }
+
+    var widgetDisplayName: String {
+        compactDisplayName
+    }
+
+    private func cityStateName(from value: String?) -> String? {
+        let components = locationNameComponents(from: value)
+        if let stateIndex = components.firstIndex(where: { component in
+            component.range(of: #"^[A-Z]{2}(?:\s+\d{5})?$"#, options: .regularExpression) != nil
+        }), stateIndex > components.startIndex {
+            let city = components[components.index(before: stateIndex)]
+            let state = components[stateIndex]
+                .split(separator: " ")
+                .first
+                .map(String.init) ?? components[stateIndex]
+            return "\(city), \(state)"
+        }
+
+        return nil
+    }
+
+    private func locationNameComponents(from value: String?) -> [String] {
+        (value ?? "")
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-
-        if let stateIndex = components.firstIndex(where: { component in
-            component.range(of: #"^[A-Z]{2}$"#, options: .regularExpression) != nil
-        }), stateIndex > components.startIndex {
-            return "\(components[components.index(before: stateIndex)]), \(components[stateIndex])"
-        }
-
-        return components.first ?? name
     }
 }
 

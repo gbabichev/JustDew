@@ -44,9 +44,12 @@ enum LocationSearchService {
 
     private static func displayNames(for mapItem: MKMapItem, fallback: String) -> (name: String, shortName: String?) {
         let shortName = preferredShortName(for: mapItem)
+        if let shortName {
+            return (shortName, shortName)
+        }
+
         let parts = [
             mapItem.name,
-            shortName,
             mapItem.addressRepresentations?.regionName,
             mapItem.address?.shortAddress,
             mapItem.address?.fullAddress
@@ -64,11 +67,9 @@ enum LocationSearchService {
 
     private static func preferredShortName(for mapItem: MKMapItem) -> String? {
         firstNonEmpty([
-            mapItem.addressRepresentations?.cityWithContext(.short),
-            mapItem.addressRepresentations?.cityWithContext,
-            mapItem.addressRepresentations?.cityName,
             cityState(from: mapItem.address?.shortAddress),
-            cityState(from: mapItem.address?.fullAddress)
+            cityState(from: mapItem.address?.fullAddress),
+            cityState(from: mapItem.addressRepresentations?.regionName)
         ])
     }
 
