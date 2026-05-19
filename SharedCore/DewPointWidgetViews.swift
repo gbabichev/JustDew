@@ -144,6 +144,14 @@ struct JustDewWidgetEntryView: View {
                     .font(.system(size: 32, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dewPointValueColor(for: reading))
+                HStack(spacing: 8) {
+                    Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
+                    Label(DewPointFormatters.percent(reading.humidity), systemImage: "humidity.fill")
+                }
+                .font(.caption2)
+                .foregroundStyle(secondaryTextColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
                     .foregroundStyle(secondaryTextColor)
