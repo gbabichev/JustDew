@@ -38,7 +38,7 @@ struct WatchDewPointProvider: TimelineProvider {
             return WatchDewPointEntry(date: Date(), reading: reading, message: nil)
         } catch {
             let cachedReading = DewPointStore().loadReading()
-            return WatchDewPointEntry(date: Date(), reading: cachedReading, message: error.localizedDescription)
+            return WatchDewPointEntry(date: Date(), reading: cachedReading, message: error.dewPointDisplayMessage)
         }
     }
 }

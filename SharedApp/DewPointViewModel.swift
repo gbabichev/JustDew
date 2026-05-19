@@ -127,7 +127,7 @@ final class DewPointViewModel: ObservableObject {
         do {
             try await operation()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.dewPointDisplayMessage
         }
     }
 

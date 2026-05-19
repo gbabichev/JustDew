@@ -11,7 +11,14 @@ enum LocationSearchService {
             throw DewPointError.geocodingNoResults
         }
 
-        guard let mapItem = try await request.mapItems.first else {
+        let mapItems: [MKMapItem]
+        do {
+            mapItems = try await request.mapItems
+        } catch {
+            throw normalizedGeocodingError(error)
+        }
+
+        guard let mapItem = mapItems.first else {
             throw DewPointError.geocodingNoResults
         }
 
@@ -71,6 +78,25 @@ enum LocationSearchService {
             cityState(from: mapItem.address?.fullAddress),
             cityState(from: mapItem.addressRepresentations?.regionName)
         ])
+    }
+
+    private static func normalizedGeocodingError(_ error: Error) -> DewPointError {
+        let nsError = error as NSError
+
+        if nsError.domain == "MKErrorDomain" {
+            switch nsError.code {
+            case 4:
+                return .geocodingNoResults
+            default:
+                return .locationSearchUnavailable
+            }
+        }
+
+        if nsError.domain == NSURLErrorDomain {
+            return .networkUnavailable
+        }
+
+        return .locationSearchUnavailable
     }
 
     private static func cityState(from address: String?) -> String? {

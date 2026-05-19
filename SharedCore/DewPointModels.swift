@@ -93,7 +93,10 @@ enum DewPointError: LocalizedError {
     case permissionDenied
     case widgetLocationUnavailable
     case geocodingNoResults
+    case locationSearchUnavailable
     case missingConfiguredLocation
+    case networkUnavailable
+    case weatherUnavailable
     case weatherKitAuthentication
 
     var errorDescription: String? {
@@ -105,11 +108,56 @@ enum DewPointError: LocalizedError {
         case .widgetLocationUnavailable:
             "Widget location is not enabled."
         case .geocodingNoResults:
-            "No matching location was found."
+            "No matching location was found. Try a city and state."
+        case .locationSearchUnavailable:
+            "Location search is temporarily unavailable. Check your connection and try again."
         case .missingConfiguredLocation:
             "Choose a location in JustDew."
+        case .networkUnavailable:
+            "Network connection appears to be offline."
+        case .weatherUnavailable:
+            "Weather data is temporarily unavailable. Try again in a moment."
         case .weatherKitAuthentication:
             "WeatherKit setup is incomplete for this bundle ID. In Apple Developer Identifiers, enable WeatherKit in App Services and App Capabilities, then clean and rebuild."
         }
+    }
+}
+
+extension Error {
+    var dewPointDisplayMessage: String {
+        if let dewPointError = self as? DewPointError,
+           let message = dewPointError.errorDescription {
+            return message
+        }
+
+        let nsError = self as NSError
+
+        switch nsError.domain {
+        case "MKErrorDomain":
+            if nsError.code == 4 {
+                return DewPointError.geocodingNoResults.localizedDescription
+            }
+            return DewPointError.locationSearchUnavailable.localizedDescription
+        case NSURLErrorDomain:
+            return DewPointError.networkUnavailable.localizedDescription
+        default:
+            break
+        }
+
+        if nsError.domain.localizedCaseInsensitiveContains("weather")
+            || nsError.domain.localizedCaseInsensitiveContains("WeatherDaemon") {
+            return DewPointError.weatherUnavailable.localizedDescription
+        }
+
+        if let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? Error {
+            return underlyingError.dewPointDisplayMessage
+        }
+
+        let rawMessage = nsError.localizedDescription
+        if rawMessage.hasPrefix("The operation couldn") {
+            return "Something went wrong. Try again."
+        }
+
+        return rawMessage
     }
 }
