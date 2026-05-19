@@ -31,6 +31,11 @@ struct DewPointStore {
         encode(reading.location, forKey: Key.location)
     }
 
+    func clearLocationAndReading() {
+        defaults.removeObject(forKey: Key.location)
+        defaults.removeObject(forKey: Key.reading)
+    }
+
     private func decode<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? decoder.decode(type, from: data)

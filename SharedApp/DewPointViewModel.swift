@@ -48,6 +48,15 @@ final class DewPointViewModel: ObservableObject {
         }
     }
 
+    func clearLocation() {
+        store.clearLocationAndReading()
+        configuredLocation = nil
+        reading = nil
+        manualQuery = ""
+        errorMessage = nil
+        reloadWidgets()
+    }
+
     private func refreshConfiguredLocation() async {
         guard let configuredLocation else {
             errorMessage = DewPointError.missingConfiguredLocation.localizedDescription
