@@ -245,6 +245,7 @@ extension WatchDewPointEntry {
 
 struct JustDewWatchEntryView: View {
     @Environment(\.widgetFamily) private var environmentFamily
+    @Environment(\.showsWidgetLabel) private var showsWidgetLabel
 
     let entry: WatchDewPointEntry
     private let familyOverride: WidgetFamily?
@@ -274,21 +275,13 @@ struct JustDewWatchEntryView: View {
         switch family {
         case .accessoryInline:
             Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
-        case .accessoryCircular, .accessoryCorner:
-            ZStack {
-                AccessoryWidgetBackground()
-                DewPointComfortRing(dewPointCelsius: reading.dewPointCelsius)
-                Text(DewPointFormatters.temperatureValue(reading.dewPoint))
-                    .font(.system(size: 19, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.5)
-                VStack {
-                    Spacer()
-                    Image(systemName: "drop.degreesign.fill")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
-                        .padding(.bottom, 2)
-                }
+        case .accessoryCircular:
+            circularGaugeContent(for: reading)
+        case .accessoryCorner:
+            if showsWidgetLabel {
+                cornerGaugeContent(for: reading)
+            } else {
+                circularGaugeContent(for: reading)
             }
         default:
             VStack(alignment: .leading, spacing: 2) {
@@ -304,6 +297,41 @@ struct JustDewWatchEntryView: View {
                 Text(DewPointFormatters.updatedTime(reading.fetchedAt))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func cornerGaugeContent(for reading: DewPointReading) -> some View {
+        Text("\(DewPointFormatters.temperatureValue(reading.dewPoint))\u{00B0}")
+            .widgetCurvesContent()
+            .widgetLabel {
+                Gauge(value: DewPointComfortScale.progress(for: reading.dewPointCelsius), in: 0...1) {
+                    Text("Dew Point")
+                } currentValueLabel: {
+                    Text("")
+                } minimumValueLabel: {
+                    Text("")
+                } maximumValueLabel: {
+                    Text("")
+                }
+                .tint(Gradient(colors: DewPointComfortScale.gradientColors))
+            }
+    }
+
+    private func circularGaugeContent(for reading: DewPointReading) -> some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            DewPointComfortRing(dewPointCelsius: reading.dewPointCelsius)
+            Text(DewPointFormatters.temperatureValue(reading.dewPoint))
+                .font(.system(size: 19, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .minimumScaleFactor(0.5)
+            VStack {
+                Spacer()
+                Image(systemName: "drop.degreesign.fill")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                    .padding(.bottom, 2)
             }
         }
     }
