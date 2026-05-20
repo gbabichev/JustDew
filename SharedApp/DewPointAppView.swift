@@ -74,20 +74,36 @@ struct DewPointAppView: View {
                         .disabled(viewModel.configuredLocation == nil || viewModel.isLoading)
                         .accessibilityLabel("Refresh")
                     }
+
+                    dewPointStatusContent
                 }
                 .padding(.vertical, 4)
             } else {
-                noDewPointContent
+                VStack(spacing: 12) {
+                    noDewPointContent
+                    dewPointStatusContent
+                }
+                .frame(maxWidth: .infinity)
             }
+        }
+    }
 
-            if viewModel.isLoading {
+    @ViewBuilder
+    private var dewPointStatusContent: some View {
+        if viewModel.isLoading {
+            HStack(spacing: 8) {
                 ProgressView()
+                    .controlSize(.small)
+                Text("Updating")
             }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
 
-            if let errorMessage = viewModel.errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-            }
+        if let errorMessage = viewModel.errorMessage {
+            Label(errorMessage, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
         }
     }
 
@@ -111,92 +127,32 @@ struct DewPointAppView: View {
     private var locationSection: some View {
         #if os(watchOS)
         Section("Location") {
-            Button {
-                viewModel.useCurrentLocation()
-            } label: {
-                Label("Current Location", systemImage: "location.fill")
+            locationModePicker
+
+            locationModeControls
+
+            if viewModel.configuredLocation != nil {
+                Button(role: .destructive) {
+                    viewModel.clearLocation()
+                } label: {
+                    Label("Clear Location", systemImage: "xmark.circle")
+                }
+                .disabled(viewModel.isLoading)
             }
 
-            TextField("City or Address", text: $viewModel.manualQuery)
-                .onSubmit {
-                    viewModel.useManualLocation()
-                }
-                .lineLimit(1)
-                .disabled(viewModel.isLoading)
+            #if DEBUG
+            debugResetLocationButton
+            #endif
         }
         #else
         Section {
-            VStack(alignment: .leading, spacing: 12) {
-                Button {
-                    viewModel.useCurrentLocation()
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "location.fill")
-                            .font(.headline)
-                            .foregroundStyle(.tint)
-                            .frame(width: 24)
+            VStack(alignment: .leading, spacing: 14) {
+                locationModePicker
+                locationModeControls
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Current Location")
-                                .font(.body.weight(.medium))
-
-                            if viewModel.configuredLocation?.mode == .current,
-                               let locationName = viewModel.configuredLocation?.compactDisplayName {
-                                Text(locationName)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                        }
-
-                        Spacer(minLength: 12)
-
-                        if viewModel.configuredLocation?.mode == .current {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.tint)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(viewModel.isLoading)
-
-                Divider()
-
-                HStack(spacing: 12) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24)
-
-                    TextField("City or Address", text: $viewModel.manualQuery)
-                        .textFieldStyle(.plain)
-                        .onSubmit {
-                            viewModel.useManualLocation()
-                        }
-
-                    if viewModel.configuredLocation != nil || !viewModel.manualQuery.isEmpty {
-                        Button {
-                            viewModel.clearLocation()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                        .disabled(viewModel.isLoading)
-                        .accessibilityLabel("Clear Location")
-                    }
-
-                    Button {
-                        viewModel.useManualLocation()
-                    } label: {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title3)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
-                    .accessibilityLabel("Set Manual Location")
-                }
+                #if DEBUG
+                debugResetLocationButton
+                #endif
             }
             .padding(.vertical, 4)
         } header: {
@@ -204,6 +160,149 @@ struct DewPointAppView: View {
         }
         #endif
     }
+
+    private var locationModePicker: some View {
+        #if os(watchOS)
+        Picker("Source", selection: $viewModel.locationInputMode) {
+            Text("Current").tag(DewPointLocationMode.current)
+            Text("Search").tag(DewPointLocationMode.manual)
+        }
+        .onChange(of: viewModel.locationInputMode) { _, mode in
+            startCurrentLocationIfSelected(mode)
+        }
+        #else
+        Picker("Location Source", selection: $viewModel.locationInputMode) {
+            Text("Current").tag(DewPointLocationMode.current)
+            Text("Search").tag(DewPointLocationMode.manual)
+        }
+        .pickerStyle(.segmented)
+        .onChange(of: viewModel.locationInputMode) { _, mode in
+            startCurrentLocationIfSelected(mode)
+        }
+        #endif
+    }
+
+    private func startCurrentLocationIfSelected(_ mode: DewPointLocationMode) {
+        guard mode == .current else { return }
+
+        Task { @MainActor in
+            await Task.yield()
+            viewModel.useCurrentLocation()
+        }
+    }
+
+    @ViewBuilder
+    private var locationModeControls: some View {
+        switch viewModel.locationInputMode {
+        case .current:
+            currentLocationControls
+        case .manual:
+            manualLocationControls
+        }
+    }
+
+    private var currentLocationControls: some View {
+        HStack(spacing: 10) {
+            if viewModel.isLoading {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
+            Label(currentLocationStatusTitle, systemImage: "location.fill")
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .task {
+            await Task.yield()
+            viewModel.useCurrentLocationIfNeeded()
+        }
+    }
+
+    private var manualLocationControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            #if !os(watchOS)
+            Text("Search once, then JustDew will keep using that saved place.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            #endif
+
+            #if os(watchOS)
+            TextField("City or Address", text: $viewModel.manualQuery)
+                .onSubmit {
+                    viewModel.useManualLocation()
+                }
+                .lineLimit(1)
+                .disabled(viewModel.isLoading)
+
+            Button {
+                viewModel.useManualLocation()
+            } label: {
+                Label("Set Location", systemImage: "checkmark")
+            }
+            .disabled(!canSubmitManualLocation)
+            #else
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+
+                TextField("City or Address", text: $viewModel.manualQuery)
+                    .textFieldStyle(.plain)
+                    .onSubmit {
+                        viewModel.useManualLocation()
+                    }
+
+                if !viewModel.manualQuery.isEmpty {
+                    Button {
+                        viewModel.manualQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.body)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .disabled(viewModel.isLoading)
+                    .accessibilityLabel("Clear Search")
+                }
+
+                Button {
+                    viewModel.useManualLocation()
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSubmitManualLocation)
+                .accessibilityLabel("Set Manual Location")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            #endif
+        }
+    }
+
+    private var currentLocationStatusTitle: String {
+        if viewModel.isLoading {
+            return "Finding Current Location"
+        }
+
+        return "Current Location"
+    }
+
+    private var canSubmitManualLocation: Bool {
+        !viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading
+    }
+
+    #if DEBUG
+    private var debugResetLocationButton: some View {
+        Button(role: .destructive) {
+            viewModel.debugResetLocationState()
+        } label: {
+            Label("Debug Reset Location", systemImage: "arrow.counterclockwise")
+        }
+        .disabled(viewModel.isLoading)
+    }
+    #endif
 
     #if os(watchOS)
     private var watchContent: some View {

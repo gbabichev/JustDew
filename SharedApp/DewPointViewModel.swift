@@ -8,17 +8,20 @@ final class DewPointViewModel: ObservableObject {
     @Published var reading: DewPointReading?
     @Published var configuredLocation: DewPointLocation?
     @Published var manualQuery = ""
+    @Published var locationInputMode: DewPointLocationMode
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var authorizationStatus: CLAuthorizationStatus
 
     private let store = DewPointStore()
     private let locationProvider = OneShotLocationProvider()
+    private var isRequestingCurrentLocation = false
 
     init() {
         let savedLocation = store.loadLocation()
         reading = store.loadReading()
         configuredLocation = savedLocation
+        locationInputMode = savedLocation?.mode ?? .current
         if savedLocation?.mode == .manual {
             manualQuery = savedLocation?.compactDisplayName ?? ""
         }
@@ -37,15 +40,36 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func useCurrentLocation() {
+        if locationInputMode != .current {
+            locationInputMode = .current
+        }
+        guard !isLoading, !isRequestingCurrentLocation else { return }
+        isRequestingCurrentLocation = true
         Task {
+            defer {
+                isRequestingCurrentLocation = false
+            }
             await setCurrentLocation()
         }
     }
 
     func useManualLocation() {
+        if locationInputMode != .manual {
+            locationInputMode = .manual
+        }
         Task {
             await setManualLocation()
         }
+    }
+
+    func useCurrentLocationIfNeeded() {
+        guard locationInputMode == .current,
+              configuredLocation?.mode != .current,
+              !isLoading else {
+            return
+        }
+
+        useCurrentLocation()
     }
 
     func clearLocation() {
@@ -56,6 +80,19 @@ final class DewPointViewModel: ObservableObject {
         errorMessage = nil
         reloadWidgets()
     }
+
+    #if DEBUG
+    func debugResetLocationState() {
+        store.clearLocationAndReading()
+        configuredLocation = nil
+        reading = nil
+        manualQuery = ""
+        locationInputMode = .manual
+        errorMessage = nil
+        isRequestingCurrentLocation = false
+        reloadWidgets()
+    }
+    #endif
 
     private func refreshConfiguredLocation() async {
         guard let configuredLocation else {
@@ -88,6 +125,7 @@ final class DewPointViewModel: ObservableObject {
 
             store.saveLocation(configuredLocation)
             self.configuredLocation = configuredLocation
+            locationInputMode = .current
             try await fetchReadingValue(for: configuredLocation)
             reloadWidgets()
         }
@@ -98,6 +136,7 @@ final class DewPointViewModel: ObservableObject {
             let configuredLocation = try await LocationSearchService.resolve(manualQuery)
             store.saveLocation(configuredLocation)
             self.configuredLocation = configuredLocation
+            locationInputMode = .manual
             manualQuery = configuredLocation.compactDisplayName
             try await fetchReadingValue(for: configuredLocation)
             reloadWidgets()
