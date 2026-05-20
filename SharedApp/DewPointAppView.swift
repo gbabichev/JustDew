@@ -131,18 +131,18 @@ struct DewPointAppView: View {
 
             locationModeControls
 
-            if viewModel.configuredLocation != nil {
-                Button(role: .destructive) {
-                    viewModel.clearLocation()
-                } label: {
-                    Label("Clear Location", systemImage: "xmark.circle")
-                }
-                .disabled(viewModel.isLoading)
-            }
+//            if viewModel.configuredLocation != nil {
+//                Button(role: .destructive) {
+//                    viewModel.clearLocation()
+//                } label: {
+//                    Label("Clear Location", systemImage: "xmark.circle")
+//                }
+//                .disabled(viewModel.isLoading)
+//            }
 
-            #if DEBUG
-            debugResetLocationButton
-            #endif
+//            #if DEBUG
+//            debugResetLocationButton
+//            #endif
         }
         #else
         Section {
@@ -150,9 +150,9 @@ struct DewPointAppView: View {
                 locationModePicker
                 locationModeControls
 
-                #if DEBUG
-                debugResetLocationButton
-                #endif
+//                #if DEBUG
+//                debugResetLocationButton
+//                #endif
             }
             .padding(.vertical, 4)
         } header: {
