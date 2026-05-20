@@ -76,10 +76,11 @@ final class DewPointViewModel: ObservableObject {
             authorizationStatus = locationProvider.authorizationStatus
 
             let names = await LocationSearchService.currentLocationNames(for: location)
+            let resolvedNames = currentLocationNames(names)
             let configuredLocation = DewPointLocation(
                 mode: .current,
-                name: names.name,
-                shortName: names.shortName,
+                name: resolvedNames.name,
+                shortName: resolvedNames.shortName,
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
                 savedAt: Date()
@@ -134,6 +135,25 @@ final class DewPointViewModel: ObservableObject {
     private func shouldRefresh(_ reading: DewPointReading?) -> Bool {
         guard let reading else { return true }
         return Date().timeIntervalSince(reading.fetchedAt) > DewPointConfiguration.refreshInterval
+    }
+
+    private func currentLocationNames(_ names: (name: String, shortName: String?)) -> (name: String, shortName: String?) {
+        let resolvedLocation = DewPointLocation(
+            mode: .current,
+            name: names.name,
+            shortName: names.shortName,
+            latitude: configuredLocation?.latitude ?? 0,
+            longitude: configuredLocation?.longitude ?? 0,
+            savedAt: configuredLocation?.savedAt ?? Date()
+        )
+
+        guard !resolvedLocation.hasSpecificDisplayName,
+              let configuredLocation,
+              configuredLocation.hasSpecificDisplayName else {
+            return names
+        }
+
+        return (configuredLocation.name, configuredLocation.shortName)
     }
 
     private func reloadWidgets() {

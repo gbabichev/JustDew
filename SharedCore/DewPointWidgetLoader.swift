@@ -42,10 +42,11 @@ enum DewPointWidgetLoader {
 
         if location.mode == .current, let updatedLocation = try? await currentWidgetLocation() {
             let names = await LocationSearchService.currentLocationNames(for: updatedLocation)
+            let resolvedNames = currentLocationNames(names, fallingBackTo: location)
             location = DewPointLocation(
                 mode: .current,
-                name: names.name,
-                shortName: names.shortName,
+                name: resolvedNames.name,
+                shortName: resolvedNames.shortName,
                 latitude: updatedLocation.coordinate.latitude,
                 longitude: updatedLocation.coordinate.longitude,
                 savedAt: Date()
@@ -65,5 +66,25 @@ enum DewPointWidgetLoader {
             requestPermission: false,
             requireWidgetAuthorization: true
         )
+    }
+
+    private static func currentLocationNames(
+        _ names: (name: String, shortName: String?),
+        fallingBackTo existingLocation: DewPointLocation
+    ) -> (name: String, shortName: String?) {
+        let resolvedLocation = DewPointLocation(
+            mode: .current,
+            name: names.name,
+            shortName: names.shortName,
+            latitude: existingLocation.latitude,
+            longitude: existingLocation.longitude,
+            savedAt: existingLocation.savedAt
+        )
+
+        guard !resolvedLocation.hasSpecificDisplayName, existingLocation.hasSpecificDisplayName else {
+            return names
+        }
+
+        return (existingLocation.name, existingLocation.shortName)
     }
 }

@@ -9,6 +9,14 @@ enum DewPointFormatters {
         return formatter.string(from: measurement.converted(to: preferredTemperatureUnit))
     }
 
+    static func temperatureValue(_ measurement: Measurement<UnitTemperature>) -> String {
+        let formatter = NumberFormatter()
+        formatter.maximumFractionDigits = 0
+        formatter.minimumFractionDigits = 0
+        let value = measurement.converted(to: preferredTemperatureUnit).value
+        return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value.rounded()))"
+    }
+
     static func percent(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .percent

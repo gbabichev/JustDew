@@ -45,6 +45,10 @@ struct DewPointLocation: Codable, Equatable, Sendable {
         compactDisplayName
     }
 
+    var hasSpecificDisplayName: Bool {
+        compactDisplayName != "Current Location"
+    }
+
     private func cityStateName(from value: String?) -> String? {
         let components = locationNameComponents(from: value)
         if let stateIndex = components.firstIndex(where: { component in

@@ -35,6 +35,7 @@ struct DewPointAppView: View {
                         Text(DewPointFormatters.temperature(reading.dewPoint))
                             .font(.system(size: displayTemperatureSize, weight: .semibold, design: .rounded))
                             .monospacedDigit()
+                            .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
 
                         Spacer(minLength: 12)
 
@@ -116,32 +117,12 @@ struct DewPointAppView: View {
                 Label("Current Location", systemImage: "location.fill")
             }
 
-            HStack {
-                TextField("City or Address", text: $viewModel.manualQuery)
-                    #if !os(watchOS)
-                    .textFieldStyle(.roundedBorder)
-                    #endif
-                    .onSubmit {
-                        viewModel.useManualLocation()
-                    }
-
-                Button {
+            TextField("City or Address", text: $viewModel.manualQuery)
+                .onSubmit {
                     viewModel.useManualLocation()
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
                 }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityLabel("Set Manual Location")
-            }
-
-            if viewModel.configuredLocation != nil || !viewModel.manualQuery.isEmpty {
-                Button {
-                    viewModel.clearLocation()
-                } label: {
-                    Label("Clear Location", systemImage: "xmark.circle.fill")
-                }
-            }
+                .lineLimit(1)
+                .disabled(viewModel.isLoading)
         }
         #else
         Section {

@@ -221,12 +221,7 @@ struct JustDewWidgetEntryView: View {
     }
 
     private func comfortColor(for reading: DewPointReading) -> Color {
-        let progress = ((reading.dewPointCelsius - 10) / 14).clamped(to: 0...1)
-        return Color(
-            red: 0.16 + (0.88 - 0.16) * progress,
-            green: 0.46 + (0.16 - 0.46) * progress,
-            blue: 0.86 + (0.14 - 0.86) * progress
-        )
+        DewPointComfortScale.color(for: reading.dewPointCelsius)
     }
 }
 #endif
@@ -282,11 +277,17 @@ struct JustDewWatchEntryView: View {
         case .accessoryCircular, .accessoryCorner:
             ZStack {
                 AccessoryWidgetBackground()
-                VStack(spacing: 1) {
+                DewPointComfortRing(dewPointCelsius: reading.dewPointCelsius)
+                Text(DewPointFormatters.temperatureValue(reading.dewPoint))
+                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.5)
+                VStack {
+                    Spacer()
                     Image(systemName: "drop.degreesign.fill")
-                    Text(DewPointFormatters.temperature(reading.dewPoint))
-                        .font(.caption2.bold())
-                        .minimumScaleFactor(0.7)
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                        .padding(.bottom, 2)
                 }
             }
         default:
@@ -318,6 +319,95 @@ struct JustDewWatchEntryView: View {
     }
 }
 #endif
+
+private struct DewPointComfortRing: View {
+    let dewPointCelsius: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                DewPointComfortArcShape(progress: 1)
+                    .stroke(.secondary.opacity(0.18), style: strokeStyle)
+
+                DewPointComfortArcShape(progress: 1)
+                    .stroke(
+                        dewPointComfortGaugeGradient,
+                        style: strokeStyle
+                    )
+
+                Circle()
+                    .fill(DewPointComfortScale.color(for: dewPointCelsius))
+                    .frame(width: markerSize, height: markerSize)
+                    .overlay {
+                        Circle()
+                            .stroke(.white.opacity(0.8), lineWidth: 1)
+                    }
+                    .position(markerPosition(in: proxy.size))
+            }
+        }
+        .padding(2)
+    }
+
+    private var strokeStyle: StrokeStyle {
+        StrokeStyle(lineWidth: 5, lineCap: .round)
+    }
+
+    private var markerSize: CGFloat {
+        6
+    }
+
+    private func markerPosition(in size: CGSize) -> CGPoint {
+        let inset: CGFloat = 4
+        let diameter = max(min(size.width, size.height) - inset * 2, 0)
+        let radius = diameter / 2
+        let progress = DewPointComfortScale.progress(for: dewPointCelsius)
+        let angle = (135 + 270 * progress) * .pi / 180
+
+        return CGPoint(
+            x: size.width / 2 + cos(angle) * radius,
+            y: size.height / 2 + sin(angle) * radius
+        )
+    }
+}
+
+private struct DewPointComfortArcShape: Shape {
+    var progress: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let inset: CGFloat = 4
+        let diameter = max(min(rect.width, rect.height) - inset * 2, 0)
+        let arcRect = CGRect(
+            x: rect.midX - diameter / 2,
+            y: rect.midY - diameter / 2,
+            width: diameter,
+            height: diameter
+        )
+        let clampedProgress = progress.clamped(to: 0...1)
+        var path = Path()
+        path.addArc(
+            center: CGPoint(x: arcRect.midX, y: arcRect.midY),
+            radius: diameter / 2,
+            startAngle: .degrees(135),
+            endAngle: .degrees(135 + 270 * clampedProgress),
+            clockwise: false
+        )
+        return path
+    }
+}
+
+private var dewPointComfortGaugeGradient: AngularGradient {
+    AngularGradient(
+        colors: DewPointComfortScale.gradientColors,
+        center: .center,
+        startAngle: .degrees(135),
+        endAngle: .degrees(405)
+    )
+}
 
 private extension Double {
     func clamped(to range: ClosedRange<Double>) -> Double {
