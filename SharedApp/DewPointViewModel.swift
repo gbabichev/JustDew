@@ -35,8 +35,13 @@ final class DewPointViewModel: ObservableObject {
 
     func refresh() {
         Task {
-            await refreshConfiguredLocation()
+            await refreshNow()
         }
+    }
+
+    func refreshNow() async {
+        guard !isLoading else { return }
+        await refreshConfiguredLocation()
     }
 
     func useCurrentLocation() {

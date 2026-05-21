@@ -17,6 +17,12 @@ struct DewPointAppView: View {
                 locationSection
             }
             .formStyle(.grouped)
+            #if os(iOS)
+            .refreshable {
+                await viewModel.refreshNow()
+            }
+            .scrollDismissesKeyboard(.interactively)
+            #endif
             #if os(macOS)
             .navigationTitle("JustDew")
             #endif
