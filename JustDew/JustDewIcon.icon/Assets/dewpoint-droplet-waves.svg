@@ -1,0 +1,57 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Dew Point Droplet with Waves Icon</title>
+  <desc id="desc">A minimal vector droplet icon with soft blue-to-teal gradients and stylized water waves, on a transparent background.</desc>
+  <defs>
+    <linearGradient id="dropGradient" x1="285" y1="245" x2="756" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#57C9FF"/>
+      <stop offset="0.46" stop-color="#25D4DF"/>
+      <stop offset="1" stop-color="#18C894"/>
+    </linearGradient>
+
+    <linearGradient id="leftFacetGradient" x1="285" y1="370" x2="520" y2="725" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2A8FFF"/>
+      <stop offset="0.72" stop-color="#23C8E4"/>
+      <stop offset="1" stop-color="#17BFA6"/>
+    </linearGradient>
+
+    <linearGradient id="innerHighlightGradient" x1="405" y1="340" x2="660" y2="735" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A8EEFF" stop-opacity="0.48"/>
+      <stop offset="0.56" stop-color="#B4F9F2" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <linearGradient id="waveLight" x1="306" y1="595" x2="722" y2="686" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D5FCFF" stop-opacity="0.92"/>
+      <stop offset="0.55" stop-color="#B8FFF5" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#98FFD5" stop-opacity="0.78"/>
+    </linearGradient>
+
+    <linearGradient id="waveMid" x1="313" y1="628" x2="721" y2="742" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#83DFFF" stop-opacity="0.9"/>
+      <stop offset="0.52" stop-color="#79F3EC" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#61E8B3" stop-opacity="0.72"/>
+    </linearGradient>
+
+    <clipPath id="dropClip">
+      <path d="M512 163C461 246 393 336 341 418C296 489 269 558 279 634C295 752 389 833 512 833C635 833 729 752 745 634C755 558 728 489 683 418C631 336 563 246 512 163Z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#dropClip)">
+    <path d="M512 163C461 246 393 336 341 418C296 489 269 558 279 634C295 752 389 833 512 833C635 833 729 752 745 634C755 558 728 489 683 418C631 336 563 246 512 163Z" fill="url(#dropGradient)"/>
+
+    <path d="M512 163C461 247 394 335 342 418C299 487 273 554 282 631C291 713 341 783 414 815C370 752 351 689 364 621C379 546 432 472 477 396C501 356 519 321 528 285C535 252 530 215 512 163Z" fill="url(#leftFacetGradient)" opacity="0.66"/>
+
+    <path d="M527 258C501 333 438 437 398 511C360 581 351 660 398 715C439 763 510 771 580 749C632 733 677 697 713 644C682 720 606 786 513 786C420 786 342 728 329 636C319 562 350 499 391 435C434 367 488 295 512 163C525 196 538 224 527 258Z" fill="url(#innerHighlightGradient)"/>
+
+    <path d="M279 618C343 580 406 584 476 607C559 635 630 654 745 590L745 634C660 691 579 687 482 648C402 616 342 606 279 657Z" fill="url(#waveLight)"/>
+
+    <path d="M279 655C349 612 418 621 492 650C571 681 646 697 745 636L745 682C654 742 569 730 477 690C397 655 341 646 279 694Z" fill="url(#waveMid)" opacity="0.95"/>
+
+    <path d="M279 695C350 650 420 660 499 690C579 720 653 732 745 681L745 733C660 783 571 773 478 733C397 698 342 690 279 736Z" fill="url(#waveLight)" opacity="0.78"/>
+
+    <path d="M365 684C428 661 489 684 555 711C619 737 675 743 745 704L745 833H279V728C303 708 331 696 365 684Z" fill="#12BBA0" opacity="0.24"/>
+  </g>
+
+  <path d="M512 163C461 246 393 336 341 418C296 489 269 558 279 634C295 752 389 833 512 833C635 833 729 752 745 634C755 558 728 489 683 418C631 336 563 246 512 163Z" fill="none" stroke="#138FC8" stroke-opacity="0.38" stroke-width="2"/>
+</svg>
