@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JustDew Support</title>
+  <meta
+    name="description"
+    content="Support information for JustDew, including contact details, common questions, troubleshooting steps, and compatibility notes."
+  >
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f8f9">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101417">
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="info-page">
+  <div class="info-shell">
+    <nav class="topbar" aria-label="Primary">
+      <a class="brand" href="index.html" aria-label="JustDew home">
+        <img src="./icon.png" alt="" width="52" height="52">
+        <span>JustDew</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html#screenshots">Screenshots</a>
+        <a href="index.html#features">Features</a>
+        <a href="PrivacyPolicy.html">Privacy</a>
+      </div>
+    </nav>
+
+    <header class="info-header">
+      <a class="back-link" href="index.html">&larr; Back to JustDew</a>
+      <p class="eyebrow">Support</p>
+      <h1>Help for JustDew.</h1>
+      <p>
+        JustDew is a small weather utility for iPhone, Mac, and Apple Watch. Most support issues
+        involve location permission, WeatherKit availability, or widget refresh timing.
+      </p>
+    </header>
+
+    <main class="info-grid">
+      <section class="info-card">
+        <h2>Contact</h2>
+        <p>Support for JustDew is handled through GitHub Issues.</p>
+
+        <div class="stack-list">
+          <div class="stack-item">
+            <strong>Support, bugs, and requests</strong>
+            <p><a href="https://github.com/gbabichev/JustDew/issues" target="_blank" rel="noreferrer">Open a GitHub issue</a></p>
+          </div>
+        </div>
+
+        <div class="callout">
+          Response target: usually within 24 to 48 hours.
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2>What to Include</h2>
+        <p>If you are reporting a problem, include enough detail to reproduce it quickly.</p>
+        <ul>
+          <li>Your device type: iPhone, Mac, or Apple Watch.</li>
+          <li>Your iOS, macOS, or watchOS version.</li>
+          <li>The JustDew version you are using.</li>
+          <li>Whether the issue affects the app, widget, or watch complication.</li>
+          <li>What you expected to happen and what actually happened.</li>
+        </ul>
+      </section>
+
+      <section class="info-card">
+        <h2>Common Questions</h2>
+
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Does JustDew collect my location?</h3>
+            <p>No. Location is used to retrieve dew point weather for the selected place. The developer does not collect, log, sell, or share your location data.</p>
+          </article>
+
+          <article class="faq-item">
+            <h3>Why does the widget not update immediately?</h3>
+            <p>Widgets are refreshed by the system. JustDew requests regular updates, but iOS, macOS, and watchOS decide the exact timing based on system conditions.</p>
+          </article>
+
+          <article class="faq-item">
+            <h3>Can I use a saved city instead of current location?</h3>
+            <p>Yes. Choose Search in the Location section, enter a city or address, and JustDew will keep using that saved place.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2>Troubleshooting</h2>
+
+        <div class="faq-list">
+          <article class="faq-item">
+            <h3>Current location is unavailable</h3>
+            <p>Check the system Location Services setting and confirm JustDew has location permission. Then reopen the app and try again.</p>
+          </article>
+
+          <article class="faq-item">
+            <h3>Weather data is unavailable</h3>
+            <p>Confirm the device has a network connection. Weather comes from Apple's WeatherKit service, so temporary service or network issues can prevent updates.</p>
+          </article>
+
+          <article class="faq-item">
+            <h3>The widget shows an older value</h3>
+            <p>Open JustDew and use refresh, or wait for the system to reload the widget timeline. On Mac, removing and re-adding the widget can also clear stale desktop widget state.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2>Compatibility</h2>
+        <p>JustDew is built for iPhone, Mac, and Apple Watch.</p>
+        <ul>
+          <li>Minimum iOS: iOS 26.0 or later.</li>
+          <li>Minimum macOS: macOS 26.0 or later.</li>
+          <li>Minimum watchOS: watchOS 26.0 or later.</li>
+        </ul>
+      </section>
+
+      <section class="info-card">
+        <h2>More Links</h2>
+        <div class="card-actions">
+          <a class="button button-primary" href="index.html">App Website</a>
+          <a class="button button-secondary" href="PrivacyPolicy.html">Privacy Policy</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; 2026 George Babichev.</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -8,127 +8,152 @@
     name="description"
     content="JustDew is a focused weather app for iPhone, Mac, and Apple Watch that shows the local dew point in widgets and watch complications."
   >
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f8f9">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101417">
+  <link rel="icon" type="image/png" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
-  <main class="page">
-    <section class="hero">
-      <div class="hero-brand">
-        <div class="app-logo-frame" aria-label="JustDew app icon placeholder">
-          <span class="app-logo-placeholder">JD</span>
-        </div>
-        <div>
-          <p class="eyebrow">Dew Point Weather Widgets</p>
-          <h1>JustDew</h1>
+<body class="product-page">
+  <div class="site-shell">
+    <nav class="topbar" aria-label="Primary">
+      <a class="brand" href="index.html" aria-label="JustDew home">
+        <img src="./icon.png" alt="" width="52" height="52">
+        <span>JustDew</span>
+      </a>
+      <div class="nav-links">
+        <a href="#screenshots">Screenshots</a>
+        <a href="#features">Features</a>
+        <a href="Support.html">Support</a>
+        <a href="PrivacyPolicy.html">Privacy</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <img class="hero-image" src="./ios-2.jpg" alt="" width="1284" height="2778" loading="eager">
+      <div class="hero-copy">
+        <p class="eyebrow">Dew Point Weather Widgets</p>
+        <h1>JustDew</h1>
+        <p class="lede">
+          A tiny weather app for the number that actually tells you how sticky it feels.
+        </p>
+        <p class="summary">
+          Choose your current location or save a city, then keep the latest dew point visible
+          on iPhone, Mac, and Apple Watch.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://apps.apple.com/us/app/justdew/id0000000000">App Store</a>
+          <a class="button button-secondary" href="https://github.com/gbabichev/JustDew" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="button button-secondary" href="https://github.com/gbabichev/JustDew/issues" target="_blank" rel="noreferrer">Issues</a>
         </div>
       </div>
+    </header>
 
-      <p class="lede">
-        A tiny weather app for the number that actually tells you how sticky it feels.
-      </p>
-
-      <p class="summary">
-        JustDew keeps dew point visible on iPhone, Mac, and Apple Watch. Choose your current
-        location or save a city, then keep the latest dew point on your Home Screen, Mac desktop,
-        Lock Screen, and watch face.
-      </p>
-    </section>
-
-    <section class="showcase" aria-label="App screenshots">
-      <figure class="shot shot-large placeholder-shot">
-        <div class="device device-phone">
-          <div class="screen-card">
-            <div class="screen-header">
-              <span>Dew Point</span>
-              <span class="weather-dot"></span>
-            </div>
-            <strong>63&deg;F</strong>
-            <span>Waxhaw, NC</span>
-            <small>Updated 12:49 PM</small>
-          </div>
-        </div>
-        <figcaption>Screenshot placeholder: iPhone app and widgets</figcaption>
-      </figure>
-
-      <figure class="shot placeholder-shot">
-        <div class="device device-watch">
-          <div class="watch-face">
-            <div class="corner-gauge">
-              <span class="gauge-arc"></span>
-              <strong>53&deg;</strong>
-            </div>
-          </div>
-        </div>
-        <figcaption>Screenshot placeholder: Apple Watch complication</figcaption>
-      </figure>
-    </section>
-
-    <section class="feature-band">
-      <h2>Designed around one useful number</h2>
-      <div class="feature-list">
-        <div>
-          <h3>Dew Point at a Glance</h3>
-          <p>Open the app for the current dew point, air temperature, humidity, location, and last update time.</p>
-        </div>
-        <div>
-          <h3>Home Screen Widgets</h3>
-          <p>Small and medium widgets show dew point clearly, with compact air and humidity context.</p>
-        </div>
-        <div>
-          <h3>Mac Desktop Widgets</h3>
-          <p>Keep dew point visible on macOS with native widget styling that respects the desktop appearance.</p>
-        </div>
-        <div>
-          <h3>Watch Complications</h3>
-          <p>Apple Watch complications include circular and corner layouts for fast face-level checks.</p>
-        </div>
-        <div>
-          <h3>Grossness Scale</h3>
-          <p>A blue to yellow to red scale makes mild, muggy, and Miami-style dew points easy to scan.</p>
-        </div>
-        <div>
-          <h3>Current or Saved Location</h3>
-          <p>Follow your current location automatically, or save a city and keep widgets pinned to that place.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="split">
-      <article class="panel">
-        <h2>Why dew point?</h2>
+    <main>
+      <section class="section intro-band">
         <p>
-          Humidity alone can be misleading. Dew point is a steadier way to understand how much
-          moisture is actually in the air, which makes it a better quick read for comfort.
+          JustDew is built around one focused job: keep dew point easy to check without opening a full weather app.
         </p>
-      </article>
+      </section>
 
-      <article class="panel muted">
-        <h2>Built for widgets first</h2>
-        <p>
-          The app exists to configure location and refresh weather. The main experience is the
-          widget or watch complication you see throughout the day.
-        </p>
-      </article>
-    </section>
+      <section class="section split-section">
+        <article>
+          <p class="eyebrow">Why Dew Point?</p>
+          <h2>Humidity alone can be misleading.</h2>
+          <p>
+            Dew point is a steadier way to understand how much moisture is actually in the air,
+            which makes it a better quick read for comfort.
+          </p>
+        </article>
 
-    <section class="asset-note">
-      <h2>Assets to add</h2>
-      <p>
-        Replace the placeholder frames with the final app icon and screenshots when they are ready.
-      </p>
-      <ul>
-        <li><code>docs/icon.png</code></li>
-        <li><code>docs/screenshot-ios.png</code></li>
-        <li><code>docs/screenshot-watch.png</code></li>
-        <li><code>docs/screenshot-mac.png</code></li>
-      </ul>
-    </section>
+        <article>
+          <p class="eyebrow">Privacy</p>
+          <h2>No analytics, ads, or tracking.</h2>
+          <p>
+            JustDew uses location only to retrieve the dew point for the selected place. I
+            do not collect, log, sell, or share your location or weather data.
+          </p>
+        </article>
+      </section>
 
-    <section class="footer-note">
-      <p class="footer-meta">
-        &copy; 2026 <a href="https://georgebabichev.com" target="_blank" rel="noreferrer">George Babichev</a>
-      </p>
-    </section>
-  </main>
+      <section class="section" id="screenshots" aria-labelledby="screenshots-title">
+        <div class="section-heading">
+          <p class="eyebrow">Screenshots</p>
+          <h2 id="screenshots-title">Dew point at app, widget, desktop, and watch face scale.</h2>
+        </div>
+
+        <div class="screenshot-grid">
+          <figure class="screenshot-card phone-card">
+            <img src="./ios-1.jpg" alt="JustDew iPhone app showing current dew point and location controls" width="1284" height="2778" loading="lazy">
+            <figcaption>iPhone app</figcaption>
+          </figure>
+
+          <figure class="screenshot-card phone-card">
+            <img src="./ios-2.jpg" alt="JustDew iPhone widgets showing dew point on the Home Screen" width="1284" height="2778" loading="lazy">
+            <figcaption>iPhone widgets</figcaption>
+          </figure>
+
+          <figure class="screenshot-card mac-card">
+            <img src="./mac-1.jpg" alt="JustDew Mac desktop widget showing dew point" width="2880" height="1800" loading="lazy">
+            <figcaption>Mac desktop widget</figcaption>
+          </figure>
+
+          <figure class="screenshot-card watch-card">
+            <img src="./watch-1.png" alt="JustDew Apple Watch app showing dew point, location, air temperature, and humidity" width="1344" height="1230" loading="lazy">
+            <figcaption>Apple Watch app</figcaption>
+          </figure>
+
+          <figure class="screenshot-card watch-card">
+            <img src="./watch-2.png" alt="JustDew Apple Watch face complication showing dew point with a color gauge" width="1344" height="1230" loading="lazy">
+            <figcaption>Apple Watch complication</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="features" aria-labelledby="features-title">
+        <div class="section-heading">
+          <p class="eyebrow">Features</p>
+          <h2 id="features-title">Designed around one useful number.</h2>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Dew Point at a Glance</h3>
+            <p>Open the app for dew point, air temperature, humidity, location, and last update time.</p>
+          </article>
+
+          <article class="feature-card">
+            <h3>Home Screen Widgets</h3>
+            <p>Small and medium widgets keep the dew point readable with compact air and humidity context.</p>
+          </article>
+
+          <article class="feature-card">
+            <h3>Mac Desktop Widgets</h3>
+            <p>Use native macOS widget styling so JustDew fits cleanly on the desktop.</p>
+          </article>
+
+          <article class="feature-card">
+            <h3>Watch Complications</h3>
+            <p>Apple Watch complications include circular, rectangular, inline, and corner layouts.</p>
+          </article>
+
+          <article class="feature-card">
+            <h3>Grossness Scale</h3>
+            <p>A blue to yellow to red scale makes mild, muggy, and Miami-style dew points easy to scan.</p>
+          </article>
+
+          <article class="feature-card">
+            <h3>Current or Saved Location</h3>
+            <p>Follow your current location automatically, or save one city and keep widgets pinned there.</p>
+          </article>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; 2026 George Babichev.</p>
+    </footer>
+  </div>
 </body>
 </html>
