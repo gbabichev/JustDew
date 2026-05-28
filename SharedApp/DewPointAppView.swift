@@ -173,7 +173,7 @@ struct DewPointAppView: View {
     private var locationModePicker: some View {
         #if os(watchOS)
         Picker("Source", selection: $viewModel.locationInputMode) {
-            Text("Current").tag(DewPointLocationMode.current)
+            Text("Current Location").tag(DewPointLocationMode.current)
             Text("Search").tag(DewPointLocationMode.manual)
         }
         .onChange(of: viewModel.locationInputMode) { _, mode in
@@ -181,7 +181,7 @@ struct DewPointAppView: View {
         }
         #else
         Picker("Location Source", selection: $viewModel.locationInputMode) {
-            Text("Current").tag(DewPointLocationMode.current)
+            Text("Current Location").tag(DewPointLocationMode.current)
             Text("Search").tag(DewPointLocationMode.manual)
         }
         .pickerStyle(.segmented)
@@ -210,16 +210,20 @@ struct DewPointAppView: View {
         }
     }
 
+    @ViewBuilder
     private var currentLocationControls: some View {
-        HStack(spacing: 10) {
+        Group {
             if viewModel.isLoading {
-                ProgressView()
-                    .controlSize(.small)
-            }
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
 
-            Label(currentLocationStatusTitle, systemImage: "location.fill")
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Finding location")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
         .task {
             await Task.yield()
@@ -288,14 +292,6 @@ struct DewPointAppView: View {
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             #endif
         }
-    }
-
-    private var currentLocationStatusTitle: String {
-        if viewModel.isLoading {
-            return "Finding Current Location"
-        }
-
-        return "Current Location"
     }
 
     private var canSubmitManualLocation: Bool {
