@@ -70,15 +70,7 @@ struct DewPointAppView: View {
 
                         Spacer(minLength: 12)
 
-                        Button {
-                            viewModel.refresh()
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        .buttonStyle(.plain)
-                        .controlSize(.small)
-                        .disabled(viewModel.configuredLocation == nil || viewModel.isLoading)
-                        .accessibilityLabel("Refresh")
+                        refreshControl
                     }
 
                     dewPointStatusContent
@@ -95,17 +87,28 @@ struct DewPointAppView: View {
     }
 
     @ViewBuilder
-    private var dewPointStatusContent: some View {
+    private var refreshControl: some View {
         if viewModel.isLoading {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Updating")
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 22, height: 22)
+                .accessibilityLabel("Refreshing")
+        } else {
+            Button {
+                viewModel.refresh()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: 22, height: 22)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
+            .controlSize(.small)
+            .disabled(viewModel.configuredLocation == nil)
+            .accessibilityLabel("Refresh")
         }
+    }
 
+    @ViewBuilder
+    private var dewPointStatusContent: some View {
         if let errorMessage = viewModel.errorMessage {
             Label(errorMessage, systemImage: "exclamationmark.triangle")
                 .font(.caption)
