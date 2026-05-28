@@ -30,8 +30,26 @@ enum DewPointWidgetLoader {
             condition: "Clear",
             symbolName: "sun.max.fill",
             observedAt: Date(),
-            fetchedAt: Date()
+            fetchedAt: Date(),
+            dailyForecast: sampleDailyForecast()
         )
+    }
+
+    private static func sampleDailyForecast() -> [DewPointForecastPoint] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        let dewPoints = [8.0, 8.5, 9.5, 11.0, 13.0, 15.0, 16.5, 16.0, 14.0, 12.0, 10.5, 9.5]
+
+        return dewPoints.enumerated().compactMap { index, dewPointCelsius in
+            guard let date = calendar.date(byAdding: .hour, value: index * 2, to: start) else { return nil }
+
+            return DewPointForecastPoint(
+                date: date,
+                dewPointCelsius: dewPointCelsius,
+                temperatureCelsius: 19.0 + Double(index),
+                humidity: 0.48 + Double(index) * 0.02
+            )
+        }
     }
 
     static func loadReading() async throws -> DewPointReading {

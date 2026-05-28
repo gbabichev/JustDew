@@ -82,6 +82,30 @@ struct DewPointReading: Codable, Equatable, Sendable {
     var symbolName: String
     var observedAt: Date
     var fetchedAt: Date
+    var dailyForecast: [DewPointForecastPoint]? = nil
+
+    var dewPoint: Measurement<UnitTemperature> {
+        Measurement(value: dewPointCelsius, unit: .celsius)
+    }
+
+    var temperature: Measurement<UnitTemperature> {
+        Measurement(value: temperatureCelsius, unit: .celsius)
+    }
+
+    var dailyForecastPoints: [DewPointForecastPoint] {
+        dailyForecast ?? []
+    }
+}
+
+struct DewPointForecastPoint: Codable, Equatable, Sendable, Identifiable {
+    var date: Date
+    var dewPointCelsius: Double
+    var temperatureCelsius: Double
+    var humidity: Double
+
+    var id: Date {
+        date
+    }
 
     var dewPoint: Measurement<UnitTemperature> {
         Measurement(value: dewPointCelsius, unit: .celsius)

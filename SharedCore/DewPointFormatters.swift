@@ -31,6 +31,17 @@ enum DewPointFormatters {
         return formatter.string(from: date)
     }
 
+    static func hourLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.dateFormat = DateFormatter.dateFormat(
+            fromTemplate: "ha",
+            options: 0,
+            locale: .current
+        )
+        return formatter.string(from: date)
+    }
+
     private static var preferredTemperatureUnit: UnitTemperature {
         let regionCode: String?
         if #available(iOS 16, macOS 13, watchOS 9, *) {

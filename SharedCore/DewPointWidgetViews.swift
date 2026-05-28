@@ -86,6 +86,14 @@ struct JustDewWidgetEntryView: View {
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(primaryTextColor)
+                DewPointDayTimelineView(
+                    reading: reading,
+                    showsLabels: false,
+                    trackHeight: 4,
+                    markerSize: 8,
+                    usesComfortColor: true,
+                    monochromeColor: secondaryTextColor
+                )
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
                     .foregroundStyle(secondaryTextColor)
@@ -114,6 +122,15 @@ struct JustDewWidgetEntryView: View {
                     .font(.system(size: 44, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dewPointValueColor(for: reading))
+
+                DewPointDayTimelineView(
+                    reading: reading,
+                    showsLabels: false,
+                    trackHeight: 7,
+                    markerSize: 14,
+                    usesComfortColor: showsComfortColor,
+                    monochromeColor: secondaryTextColor
+                )
 
                 Text(reading.location.widgetDisplayName)
                     .font(.subheadline)
@@ -152,6 +169,14 @@ struct JustDewWidgetEntryView: View {
                 .foregroundStyle(secondaryTextColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
+                DewPointDayTimelineView(
+                    reading: reading,
+                    showsLabels: false,
+                    trackHeight: 5,
+                    markerSize: 10,
+                    usesComfortColor: showsComfortColor,
+                    monochromeColor: secondaryTextColor
+                )
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
                     .foregroundStyle(secondaryTextColor)
@@ -290,6 +315,12 @@ struct JustDewWatchEntryView: View {
                     .foregroundStyle(.secondary)
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.headline.monospacedDigit())
+                DewPointDayTimelineView(
+                    reading: reading,
+                    showsLabels: false,
+                    trackHeight: 4,
+                    markerSize: 8
+                )
                 Text(reading.location.widgetDisplayName)
                     .font(.caption2)
                     .foregroundStyle(.secondary)

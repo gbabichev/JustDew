@@ -63,6 +63,14 @@ struct DewPointAppView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                    DewPointDayTimelineView(
+                        reading: reading,
+                        showsLabels: showsTimelineLabels,
+                        trackHeight: timelineTrackHeight,
+                        markerSize: timelineMarkerSize
+                    )
+                    .padding(.top, 2)
+
                     HStack(alignment: .center) {
                         Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                             .font(.caption2)
@@ -329,6 +337,30 @@ struct DewPointAppView: View {
         30
         #else
         46
+        #endif
+    }
+
+    private var showsTimelineLabels: Bool {
+        #if os(watchOS)
+        false
+        #else
+        true
+        #endif
+    }
+
+    private var timelineTrackHeight: CGFloat {
+        #if os(watchOS)
+        5
+        #else
+        7
+        #endif
+    }
+
+    private var timelineMarkerSize: CGFloat {
+        #if os(watchOS)
+        11
+        #else
+        14
         #endif
     }
 }

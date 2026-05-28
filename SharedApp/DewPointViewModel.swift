@@ -29,7 +29,7 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func loadInitialReading() {
-        guard reading == nil || shouldRefresh(reading) else { return }
+        guard reading == nil || shouldRefresh(reading) || reading?.dailyForecastPoints.isEmpty == true else { return }
         refresh()
     }
 
