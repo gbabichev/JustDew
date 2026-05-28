@@ -321,6 +321,7 @@ struct JustDewWatchEntryView: View {
     private func circularGaugeContent(for reading: DewPointReading) -> some View {
         Gauge(value: DewPointComfortScale.progress(for: reading.dewPointCelsius), in: 0...1) {
             Image(systemName: "drop.degreesign.fill")
+                .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
         } currentValueLabel: {
             Text(DewPointFormatters.temperatureValue(reading.dewPoint))
                 .font(.system(size: 23, weight: .semibold, design: .rounded))
