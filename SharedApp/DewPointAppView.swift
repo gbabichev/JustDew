@@ -179,6 +179,23 @@ struct DewPointAppView: View {
         .onChange(of: viewModel.locationInputMode) { _, mode in
             startCurrentLocationIfSelected(mode)
         }
+        #elseif os(macOS)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Location Source")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("Location Source", selection: $viewModel.locationInputMode) {
+                Text("Current Location").tag(DewPointLocationMode.current)
+                Text("Search").tag(DewPointLocationMode.manual)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+            .onChange(of: viewModel.locationInputMode) { _, mode in
+                startCurrentLocationIfSelected(mode)
+            }
+        }
         #else
         Picker("Location Source", selection: $viewModel.locationInputMode) {
             Text("Current Location").tag(DewPointLocationMode.current)
@@ -233,36 +250,28 @@ struct DewPointAppView: View {
 
     private var manualLocationControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            #if !os(watchOS)
-            Text("Search once, then JustDew will keep using that saved place.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            #endif
 
             #if os(watchOS)
             TextField("City or Address", text: $viewModel.manualQuery)
                 .onSubmit {
-                    viewModel.useManualLocation()
+                    submitManualLocationIfPossible()
                 }
+                .submitLabel(.search)
                 .lineLimit(1)
                 .disabled(viewModel.isLoading)
-
-            Button {
-                viewModel.useManualLocation()
-            } label: {
-                Label("Set Location", systemImage: "checkmark")
-            }
-            .disabled(!canSubmitManualLocation)
             #else
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
 
-                TextField("City or Address", text: $viewModel.manualQuery)
+                TextField("City or ZIP Code", text: $viewModel.manualQuery)
                     .textFieldStyle(.plain)
                     .onSubmit {
-                        viewModel.useManualLocation()
+                        submitManualLocationIfPossible()
                     }
+                    .submitLabel(.search)
+                    .lineLimit(1)
+                    .disabled(viewModel.isLoading)
 
                 if !viewModel.manualQuery.isEmpty {
                     Button {
@@ -276,22 +285,17 @@ struct DewPointAppView: View {
                     .disabled(viewModel.isLoading)
                     .accessibilityLabel("Clear Search")
                 }
-
-                Button {
-                    viewModel.useManualLocation()
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title3)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmitManualLocation)
-                .accessibilityLabel("Set Manual Location")
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             #endif
         }
+    }
+
+    private func submitManualLocationIfPossible() {
+        guard canSubmitManualLocation else { return }
+        viewModel.useManualLocation()
     }
 
     private var canSubmitManualLocation: Bool {
