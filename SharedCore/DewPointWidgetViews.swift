@@ -104,7 +104,7 @@ struct JustDewWidgetEntryView: View {
             }
         #endif
         case .systemMedium, .systemLarge, .systemExtraLarge:
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack {
                     HStack(spacing: 6) {
                         Image(systemName: "drop.degreesign.fill")
@@ -116,7 +116,8 @@ struct JustDewWidgetEntryView: View {
                     Image(systemName: reading.symbolName)
                         .foregroundStyle(secondaryTextColor)
                 }
-                .font(.subheadline)
+                .font(.caption)
+                .padding(.top, 3)
 
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.system(size: 44, weight: .semibold, design: .rounded))
