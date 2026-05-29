@@ -55,12 +55,12 @@ struct JustDewApp: App {
         WindowGroup {
             ContentView()
                 #if os(macOS)
-                .frame(width: 400, height: 440)
+                .frame(width: 400, height: 640)
                 #endif
         }
         #if os(macOS)
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 400, height: 440)
+        .defaultSize(width: 400, height: 640)
         .windowResizability(.contentSize)
         #endif
     }

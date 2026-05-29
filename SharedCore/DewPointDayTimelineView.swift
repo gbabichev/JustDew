@@ -14,39 +14,8 @@ struct DewPointDayTimelineView: View {
             .sorted { $0.date < $1.date }
     }
 
-    private var segments: [DewPointTimelineSegment] {
-        let points = forecastPoints
-
-        return points.indices.compactMap { index in
-            let point = points[index]
-            let start: Date
-            let end: Date
-
-            if index == points.startIndex {
-                start = dayStart
-            } else {
-                start = midpoint(points[index - 1].date, point.date)
-            }
-
-            if index == points.index(before: points.endIndex) {
-                end = dayEnd
-            } else {
-                end = midpoint(point.date, points[index + 1].date)
-            }
-
-            guard end > start else { return nil }
-
-            return DewPointTimelineSegment(
-                id: point.date,
-                start: start,
-                end: end,
-                dewPointCelsius: point.dewPointCelsius
-            )
-        }
-    }
-
     var body: some View {
-        if !segments.isEmpty {
+        if !forecastPoints.isEmpty {
             VStack(alignment: .leading, spacing: showsLabels ? 4 : 0) {
                 if showsLabels {
                     Text("Today")
@@ -80,20 +49,19 @@ struct DewPointDayTimelineView: View {
 
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
-                    .fill(monochromeColor.opacity(0.18))
+                    .fill(LinearGradient(
+                        stops: timelineGradientStops(
+                            for: forecastPoints,
+                            start: dayStart,
+                            end: dayEnd,
+                            usesComfortColor: usesComfortColor,
+                            monochromeColor: monochromeColor
+                        ),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
                     .frame(height: trackHeight)
                     .position(x: width / 2, y: centerY)
-
-                ForEach(segments) { segment in
-                    let startX = xPosition(for: segment.start, width: width)
-                    let endX = xPosition(for: segment.end, width: width)
-                    let segmentWidth = max(endX - startX, 2)
-
-                    Capsule(style: .continuous)
-                        .fill(segmentColor(for: segment.dewPointCelsius))
-                        .frame(width: segmentWidth, height: trackHeight)
-                        .position(x: startX + segmentWidth / 2, y: centerY)
-                }
 
                 Circle()
                     .fill(markerColor)
@@ -142,10 +110,6 @@ struct DewPointDayTimelineView: View {
         usesComfortColor ? DewPointComfortScale.color(for: reading.dewPointCelsius) : monochromeColor
     }
 
-    private func segmentColor(for dewPointCelsius: Double) -> Color {
-        usesComfortColor ? DewPointComfortScale.color(for: dewPointCelsius) : monochromeColor.opacity(0.45)
-    }
-
     private func forecastPoint(nearest date: Date) -> DewPointForecastPoint? {
         forecastPoints.min {
             abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
@@ -169,10 +133,6 @@ struct DewPointDayTimelineView: View {
 
         let progress = date.timeIntervalSince(dayStart) / duration
         return width * min(max(progress, 0), 1)
-    }
-
-    private func midpoint(_ start: Date, _ end: Date) -> Date {
-        start.addingTimeInterval(end.timeIntervalSince(start) / 2)
     }
 }
 
@@ -273,31 +233,20 @@ struct DewPointWeekForecastView: View {
 
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
-                    .fill(monochromeColor.opacity(0.18))
+                    .fill(LinearGradient(
+                        stops: timelineGradientStops(
+                            for: day.points,
+                            start: day.dayStart,
+                            end: day.dayEnd
+                        ),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
                     .frame(height: trackHeight)
                     .position(x: width / 2, y: centerY)
-
-                ForEach(day.segments) { segment in
-                    let startX = xPosition(for: segment.start, in: day, width: width)
-                    let endX = xPosition(for: segment.end, in: day, width: width)
-                    let segmentWidth = max(endX - startX, 2)
-
-                    Capsule(style: .continuous)
-                        .fill(DewPointComfortScale.color(for: segment.dewPointCelsius))
-                        .frame(width: segmentWidth, height: trackHeight)
-                        .position(x: startX + segmentWidth / 2, y: centerY)
-                }
             }
         }
         .frame(height: trackHeight)
-    }
-
-    private func xPosition(for date: Date, in day: DewPointForecastDay, width: CGFloat) -> CGFloat {
-        let duration = day.dayEnd.timeIntervalSince(day.dayStart)
-        guard duration > 0 else { return 0 }
-
-        let progress = date.timeIntervalSince(day.dayStart) / duration
-        return width * min(max(progress, 0), 1)
     }
 }
 
@@ -317,44 +266,42 @@ private struct DewPointForecastDay: Identifiable {
     var highDewPointCelsius: Double {
         points.map(\.dewPointCelsius).max() ?? lowDewPointCelsius
     }
-
-    var segments: [DewPointTimelineSegment] {
-        points.indices.compactMap { index in
-            let point = points[index]
-            let start: Date
-            let end: Date
-
-            if index == points.startIndex {
-                start = dayStart
-            } else {
-                start = midpoint(points[index - 1].date, point.date)
-            }
-
-            if index == points.index(before: points.endIndex) {
-                end = dayEnd
-            } else {
-                end = midpoint(point.date, points[index + 1].date)
-            }
-
-            guard end > start else { return nil }
-
-            return DewPointTimelineSegment(
-                id: point.date,
-                start: start,
-                end: end,
-                dewPointCelsius: point.dewPointCelsius
-            )
-        }
-    }
-
-    private func midpoint(_ start: Date, _ end: Date) -> Date {
-        start.addingTimeInterval(end.timeIntervalSince(start) / 2)
-    }
 }
 
-private struct DewPointTimelineSegment: Identifiable {
-    var id: Date
-    var start: Date
-    var end: Date
-    var dewPointCelsius: Double
+private func timelineGradientStops(
+    for points: [DewPointForecastPoint],
+    start: Date,
+    end: Date,
+    usesComfortColor: Bool = true,
+    monochromeColor: Color = .secondary
+) -> [Gradient.Stop] {
+    let sortedPoints = points.sorted { $0.date < $1.date }
+    let inactiveColor = monochromeColor.opacity(0.18)
+
+    guard let firstPoint = sortedPoints.first, let lastPoint = sortedPoints.last else {
+        return [
+            Gradient.Stop(color: inactiveColor, location: 0),
+            Gradient.Stop(color: inactiveColor, location: 1)
+        ]
+    }
+
+    let duration = max(end.timeIntervalSince(start), 1)
+    let color: (DewPointForecastPoint) -> Color = { point in
+        usesComfortColor
+            ? DewPointComfortScale.color(for: point.dewPointCelsius)
+            : monochromeColor.opacity(0.45)
+    }
+    let location: (Date) -> CGFloat = { date in
+        let progress = date.timeIntervalSince(start) / duration
+        return CGFloat(min(max(progress, 0), 1))
+    }
+
+    return (
+        [Gradient.Stop(color: color(firstPoint), location: 0)]
+        + sortedPoints.map { point in
+            Gradient.Stop(color: color(point), location: location(point.date))
+        }
+        + [Gradient.Stop(color: color(lastPoint), location: 1)]
+    )
+    .sorted { $0.location < $1.location }
 }
