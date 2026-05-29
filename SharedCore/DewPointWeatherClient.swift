@@ -5,10 +5,12 @@ import WeatherKit
 enum DewPointWeatherClient {
     static func reading(for location: DewPointLocation) async throws -> DewPointReading {
         do {
+            let requestDate = Date()
+            let forecastRange = forecastDateRange(for: requestDate)
             let (current, hourly) = try await WeatherService.shared.weather(
                 for: location.clLocation,
                 including: .current,
-                .hourly
+                .hourly(startDate: requestDate, endDate: forecastRange.end)
             )
             let currentForecastPoint = DewPointForecastPoint(
                 date: current.date,
@@ -45,13 +47,11 @@ enum DewPointWeatherClient {
         observedAt: Date,
         currentPoint: DewPointForecastPoint
     ) -> [DewPointForecastPoint] {
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: observedAt)
-        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return [] }
-        let dayInterval = dayStart..<dayEnd
+        let forecastRange = forecastDateRange(for: observedAt)
+        let forecastInterval = forecastRange.start..<forecastRange.end
 
         let forecastPoints = hourlyForecast
-            .filter { dayInterval.contains($0.date) }
+            .filter { forecastInterval.contains($0.date) }
             .sorted { $0.date < $1.date }
             .map { hour in
                 DewPointForecastPoint(
@@ -63,9 +63,16 @@ enum DewPointWeatherClient {
             }
 
         return (forecastPoints + [currentPoint])
-            .filter { dayInterval.contains($0.date) }
+            .filter { forecastInterval.contains($0.date) }
             .uniquedByHour()
             .sorted { $0.date < $1.date }
+    }
+
+    private static func forecastDateRange(for date: Date) -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: date)
+        let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start.addingTimeInterval(518_400)
+        return (start, end)
     }
 }
 

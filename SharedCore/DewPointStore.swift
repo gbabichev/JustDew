@@ -49,14 +49,14 @@ struct DewPointStore {
 
     private func mergedReading(existing: DewPointReading?, incoming: DewPointReading) -> DewPointReading {
         guard let existing,
-              isSameForecastDay(existing.observedAt, incoming.observedAt),
               isSameLocation(existing.location, incoming.location) else {
             return incoming
         }
 
         var mergedReading = incoming
+        let forecastInterval = forecastDateInterval(for: incoming.observedAt)
         let forecastPoints = (existing.dailyForecastPoints + incoming.dailyForecastPoints)
-            .filter { isSameForecastDay($0.date, incoming.observedAt) }
+            .filter { forecastInterval.contains($0.date) }
             .uniquedByHour()
             .sorted { $0.date < $1.date }
 
@@ -64,12 +64,15 @@ struct DewPointStore {
         return mergedReading
     }
 
-    private func isSameForecastDay(_ lhs: Date, _ rhs: Date) -> Bool {
-        Calendar.current.isDate(lhs, inSameDayAs: rhs)
-    }
-
     private func isSameLocation(_ lhs: DewPointLocation, _ rhs: DewPointLocation) -> Bool {
         abs(lhs.latitude - rhs.latitude) < 0.05 && abs(lhs.longitude - rhs.longitude) < 0.05
+    }
+
+    private func forecastDateInterval(for date: Date) -> DateInterval {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: date)
+        let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start.addingTimeInterval(518_400)
+        return DateInterval(start: start, end: end)
     }
 }
 

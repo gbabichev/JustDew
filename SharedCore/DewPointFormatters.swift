@@ -17,6 +17,17 @@ enum DewPointFormatters {
         return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value.rounded()))"
     }
 
+    static func temperatureRange(
+        low: Measurement<UnitTemperature>,
+        high: Measurement<UnitTemperature>
+    ) -> String {
+        let lowValue = temperatureValue(low)
+        let highValue = temperatureValue(high)
+        guard lowValue != highValue else { return temperature(high) }
+
+        return "\(lowValue)-\(temperature(high))"
+    }
+
     static func percent(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .percent
@@ -36,6 +47,20 @@ enum DewPointFormatters {
         formatter.dateStyle = .none
         formatter.dateFormat = DateFormatter.dateFormat(
             fromTemplate: "ha",
+            options: 0,
+            locale: .current
+        )
+        return formatter.string(from: date)
+    }
+
+    static func weekdayLabel(_ date: Date) -> String {
+        if Calendar.current.isDateInTomorrow(date) {
+            return "Tomorrow"
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = DateFormatter.dateFormat(
+            fromTemplate: "EEE",
             options: 0,
             locale: .current
         )

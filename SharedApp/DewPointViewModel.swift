@@ -29,7 +29,7 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func loadInitialReading() {
-        guard reading == nil || shouldRefresh(reading) || reading?.dailyForecastPoints.isEmpty == true else { return }
+        guard reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading) else { return }
         refresh()
     }
 
@@ -179,6 +179,17 @@ final class DewPointViewModel: ObservableObject {
     private func shouldRefresh(_ reading: DewPointReading?) -> Bool {
         guard let reading else { return true }
         return Date().timeIntervalSince(reading.fetchedAt) > DewPointConfiguration.refreshInterval
+    }
+
+    private func shouldRefreshForecast(_ reading: DewPointReading?) -> Bool {
+        guard let reading else { return true }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        guard let fifthDayStart = calendar.date(byAdding: .day, value: 5, to: start) else {
+            return reading.dailyForecastPoints.isEmpty
+        }
+
+        return !reading.dailyForecastPoints.contains { $0.date >= fifthDayStart }
     }
 
     private func currentLocationNames(_ names: (name: String, shortName: String?)) -> (name: String, shortName: String?) {

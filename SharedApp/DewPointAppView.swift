@@ -14,6 +14,7 @@ struct DewPointAppView: View {
         NavigationStack {
             Form {
                 dewPointSection
+                forecastSection
                 locationSection
             }
             .formStyle(.grouped)
@@ -90,6 +91,19 @@ struct DewPointAppView: View {
                     dewPointStatusContent
                 }
                 .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var forecastSection: some View {
+        if let reading = viewModel.reading, hasFiveDayForecast(reading) {
+            Section("Forecast") {
+                DewPointWeekForecastView(
+                    reading: reading,
+                    trackHeight: weeklyForecastTrackHeight
+                )
+                .padding(.vertical, 2)
             }
         }
     }
@@ -310,6 +324,14 @@ struct DewPointAppView: View {
         !viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading
     }
 
+    private func hasFiveDayForecast(_ reading: DewPointReading) -> Bool {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: reading.observedAt)
+        guard let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) else { return false }
+
+        return reading.dailyForecastPoints.contains { $0.date >= tomorrowStart }
+    }
+
     #if DEBUG
     private var debugResetLocationButton: some View {
         Button(role: .destructive) {
@@ -326,6 +348,7 @@ struct DewPointAppView: View {
         NavigationStack {
             Form {
                 dewPointSection
+                forecastSection
                 locationSection
             }
         }
@@ -361,6 +384,14 @@ struct DewPointAppView: View {
         11
         #else
         14
+        #endif
+    }
+
+    private var weeklyForecastTrackHeight: CGFloat {
+        #if os(watchOS)
+        5
+        #else
+        7
         #endif
     }
 }

@@ -38,17 +38,29 @@ enum DewPointWidgetLoader {
     private static func sampleDailyForecast() -> [DewPointForecastPoint] {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: Date())
-        let dewPoints = [8.0, 8.5, 9.5, 11.0, 13.0, 15.0, 16.5, 16.0, 14.0, 12.0, 10.5, 9.5]
+        let dailyDewPoints = [
+            [8.0, 8.5, 9.5, 11.0, 13.0, 15.0, 16.5, 16.0, 14.0, 12.0, 10.5, 9.5],
+            [9.0, 10.0, 12.0, 14.5, 17.0, 18.0, 17.0, 15.0],
+            [11.0, 12.5, 15.0, 18.0, 20.0, 20.5, 19.0, 16.0],
+            [13.0, 14.0, 16.0, 19.0, 21.5, 22.0, 20.0, 17.5],
+            [10.0, 11.0, 13.0, 16.0, 18.0, 18.5, 16.0, 13.0],
+            [7.0, 8.0, 10.0, 12.0, 14.0, 14.5, 12.0, 9.0]
+        ]
 
-        return dewPoints.enumerated().compactMap { index, dewPointCelsius in
-            guard let date = calendar.date(byAdding: .hour, value: index * 2, to: start) else { return nil }
+        return dailyDewPoints.enumerated().flatMap { dayIndex, dewPoints in
+            dewPoints.enumerated().compactMap { hourIndex, dewPointCelsius in
+                guard let dayStart = calendar.date(byAdding: .day, value: dayIndex, to: start),
+                      let date = calendar.date(byAdding: .hour, value: hourIndex * 3, to: dayStart) else {
+                    return nil
+                }
 
-            return DewPointForecastPoint(
-                date: date,
-                dewPointCelsius: dewPointCelsius,
-                temperatureCelsius: 19.0 + Double(index),
-                humidity: 0.48 + Double(index) * 0.02
-            )
+                return DewPointForecastPoint(
+                    date: date,
+                    dewPointCelsius: dewPointCelsius,
+                    temperatureCelsius: 19.0 + Double(hourIndex),
+                    humidity: 0.48 + Double(hourIndex) * 0.02
+                )
+            }
         }
     }
 

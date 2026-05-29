@@ -176,6 +176,182 @@ struct DewPointDayTimelineView: View {
     }
 }
 
+struct DewPointWeekForecastView: View {
+    var reading: DewPointReading
+    var trackHeight: CGFloat = 7
+    var monochromeColor: Color = .secondary
+
+    private var forecastDays: [DewPointForecastDay] {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: reading.observedAt)
+
+        return (1...5).compactMap { dayOffset in
+            guard let dayStart = calendar.date(byAdding: .day, value: dayOffset, to: todayStart),
+                  let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                return nil
+            }
+
+            let points = reading.dailyForecastPoints
+                .filter { $0.date >= dayStart && $0.date < dayEnd }
+                .sorted { $0.date < $1.date }
+
+            guard !points.isEmpty else { return nil }
+
+            return DewPointForecastDay(
+                dayStart: dayStart,
+                dayEnd: dayEnd,
+                points: points
+            )
+        }
+    }
+
+    var body: some View {
+        if !forecastDays.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(forecastDays) { day in
+                    dayRow(for: day)
+                }
+            }
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    @ViewBuilder
+    private func dayRow(for day: DewPointForecastDay) -> some View {
+        #if os(watchOS)
+        VStack(alignment: .leading, spacing: 4) {
+            forecastDayHeader(for: day)
+            forecastTrack(for: day)
+        }
+        #else
+        HStack(spacing: 10) {
+            Text(DewPointFormatters.weekdayLabel(day.dayStart))
+                .font(.caption)
+                .foregroundStyle(monochromeColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(width: 72, alignment: .leading)
+
+            forecastTrack(for: day)
+
+            rangeText(for: day)
+                .frame(width: 66, alignment: .trailing)
+        }
+        #endif
+    }
+
+    private func forecastDayHeader(for day: DewPointForecastDay) -> some View {
+        HStack(spacing: 8) {
+            Text(DewPointFormatters.weekdayLabel(day.dayStart))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 6)
+
+            rangeText(for: day)
+        }
+        .font(.caption2)
+        .foregroundStyle(monochromeColor)
+    }
+
+    private func rangeText(for day: DewPointForecastDay) -> some View {
+        Text(DewPointFormatters.temperatureRange(
+            low: Measurement(value: day.lowDewPointCelsius, unit: .celsius),
+            high: Measurement(value: day.highDewPointCelsius, unit: .celsius)
+        ))
+        .font(.caption2.weight(.semibold))
+        .monospacedDigit()
+        .foregroundStyle(monochromeColor)
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
+    }
+
+    private func forecastTrack(for day: DewPointForecastDay) -> some View {
+        GeometryReader { proxy in
+            let width = max(proxy.size.width, 1)
+            let centerY = proxy.size.height / 2
+
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(monochromeColor.opacity(0.18))
+                    .frame(height: trackHeight)
+                    .position(x: width / 2, y: centerY)
+
+                ForEach(day.segments) { segment in
+                    let startX = xPosition(for: segment.start, in: day, width: width)
+                    let endX = xPosition(for: segment.end, in: day, width: width)
+                    let segmentWidth = max(endX - startX, 2)
+
+                    Capsule(style: .continuous)
+                        .fill(DewPointComfortScale.color(for: segment.dewPointCelsius))
+                        .frame(width: segmentWidth, height: trackHeight)
+                        .position(x: startX + segmentWidth / 2, y: centerY)
+                }
+            }
+        }
+        .frame(height: trackHeight)
+    }
+
+    private func xPosition(for date: Date, in day: DewPointForecastDay, width: CGFloat) -> CGFloat {
+        let duration = day.dayEnd.timeIntervalSince(day.dayStart)
+        guard duration > 0 else { return 0 }
+
+        let progress = date.timeIntervalSince(day.dayStart) / duration
+        return width * min(max(progress, 0), 1)
+    }
+}
+
+private struct DewPointForecastDay: Identifiable {
+    var dayStart: Date
+    var dayEnd: Date
+    var points: [DewPointForecastPoint]
+
+    var id: Date {
+        dayStart
+    }
+
+    var lowDewPointCelsius: Double {
+        points.map(\.dewPointCelsius).min() ?? 0
+    }
+
+    var highDewPointCelsius: Double {
+        points.map(\.dewPointCelsius).max() ?? lowDewPointCelsius
+    }
+
+    var segments: [DewPointTimelineSegment] {
+        points.indices.compactMap { index in
+            let point = points[index]
+            let start: Date
+            let end: Date
+
+            if index == points.startIndex {
+                start = dayStart
+            } else {
+                start = midpoint(points[index - 1].date, point.date)
+            }
+
+            if index == points.index(before: points.endIndex) {
+                end = dayEnd
+            } else {
+                end = midpoint(point.date, points[index + 1].date)
+            }
+
+            guard end > start else { return nil }
+
+            return DewPointTimelineSegment(
+                id: point.date,
+                start: start,
+                end: end,
+                dewPointCelsius: point.dewPointCelsius
+            )
+        }
+    }
+
+    private func midpoint(_ start: Date, _ end: Date) -> Date {
+        start.addingTimeInterval(end.timeIntervalSince(start) / 2)
+    }
+}
+
 private struct DewPointTimelineSegment: Identifiable {
     var id: Date
     var start: Date
