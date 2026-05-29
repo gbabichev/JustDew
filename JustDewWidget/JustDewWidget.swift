@@ -55,6 +55,7 @@ struct JustDewWidget: Widget {
         .contentMarginsDisabled()
         #else
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
+        .contentMarginsDisabled()
         #endif
     }
 }

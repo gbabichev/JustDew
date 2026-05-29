@@ -38,10 +38,7 @@ struct JustDewWidgetEntryView: View {
                 unavailableContent
             }
         }
-        #if os(macOS)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        #endif
+        .padding(widgetPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
         .containerBackground(.fill.tertiary, for: .widget)
     }
@@ -60,6 +57,26 @@ struct JustDewWidgetEntryView: View {
             .center
         default:
             .topLeading
+        }
+    }
+
+    private var widgetPadding: EdgeInsets {
+        switch family {
+        #if os(iOS)
+        case .systemSmall:
+            EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
+        case .systemMedium, .systemLarge, .systemExtraLarge:
+            EdgeInsets(top: 25, leading: 20, bottom: 16, trailing: 20)
+        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
+            EdgeInsets()
+        #endif
+        #if os(macOS)
+        default:
+            EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18)
+        #else
+        default:
+            EdgeInsets()
+        #endif
         }
     }
 
@@ -104,7 +121,7 @@ struct JustDewWidgetEntryView: View {
             }
         #endif
         case .systemMedium, .systemLarge, .systemExtraLarge:
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     HStack(spacing: 6) {
                         Image(systemName: "drop.degreesign.fill")
@@ -117,10 +134,9 @@ struct JustDewWidgetEntryView: View {
                         .foregroundStyle(secondaryTextColor)
                 }
                 .font(.caption)
-                .padding(.top, 3)
 
                 Text(DewPointFormatters.temperature(reading.dewPoint))
-                    .font(.system(size: 44, weight: .semibold, design: .rounded))
+                    .font(.system(size: 40, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dewPointValueColor(for: reading))
 
@@ -134,7 +150,7 @@ struct JustDewWidgetEntryView: View {
                 )
 
                 Text(reading.location.widgetDisplayName)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(secondaryTextColor)
                     .lineLimit(1)
 
@@ -144,7 +160,7 @@ struct JustDewWidgetEntryView: View {
                     Spacer()
                     Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                 }
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(secondaryTextColor)
 
                 Spacer(minLength: 0)
