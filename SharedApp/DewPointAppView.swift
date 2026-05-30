@@ -104,6 +104,8 @@ struct DewPointAppView: View {
                     trackHeight: weeklyForecastTrackHeight
                 )
                 .padding(.vertical, 2)
+
+                weatherAttributionContent
             }
         }
     }
@@ -136,6 +138,15 @@ struct DewPointAppView: View {
                 .font(.caption)
                 .foregroundStyle(.orange)
         }
+    }
+
+    private var weatherAttributionContent: some View {
+        Link("Data from \(DewPointConfiguration.appleWeatherTrademark)", destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .accessibilityLabel("Weather data from \(DewPointConfiguration.appleWeatherTrademark). Opens legal attribution.")
     }
 
     @ViewBuilder
