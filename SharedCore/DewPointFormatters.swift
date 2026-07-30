@@ -68,18 +68,6 @@ enum DewPointFormatters {
     }
 
     private static var preferredTemperatureUnit: UnitTemperature {
-        let regionCode: String?
-        if #available(iOS 16, macOS 13, watchOS 9, *) {
-            regionCode = Locale.current.region?.identifier
-        } else {
-            regionCode = Locale.current.regionCode
-        }
-
-        switch regionCode {
-        case "US", "BS", "BZ", "KY", "PW":
-            return .fahrenheit
-        default:
-            return .celsius
-        }
+        UnitTemperature(forLocale: .current, usage: .weather)
     }
 }
