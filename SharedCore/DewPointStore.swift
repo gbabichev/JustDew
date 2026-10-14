@@ -4,14 +4,40 @@ struct DewPointStore {
     private enum Key {
         static let location = "dewPoint.location"
         static let reading = "dewPoint.reading"
+        static let locations = "dewPoint.locations"
     }
 
     private let defaults: UserDefaults
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init() {
-        defaults = UserDefaults(suiteName: DewPointConfiguration.appGroupIdentifier) ?? .standard
+    init(defaults: UserDefaults = UserDefaults(suiteName: DewPointConfiguration.appGroupIdentifier) ?? .standard) {
+        self.defaults = defaults
+    }
+
+    func loadLocations() -> [DewPointLocation] {
+        if let locations = decode([DewPointLocation].self, forKey: Key.locations) {
+            return locations
+        }
+        // Preserve the location configured before multiple locations were supported.
+        return loadLocation().map { [$0] } ?? []
+    }
+
+    func saveLocations(_ locations: [DewPointLocation]) {
+        encode(locations, forKey: Key.locations)
+    }
+
+    func loadReading(for location: DewPointLocation) -> DewPointReading? {
+        if let reading = decode(DewPointReading.self, forKey: "dewPoint.reading.\(location.id)") {
+            return reading
+        }
+        guard let reading = loadReading(), reading.location.id == location.id else { return nil }
+        return reading
+    }
+
+    func saveCachedReading(_ reading: DewPointReading) {
+        let merged = mergedReading(existing: loadReading(for: reading.location), incoming: reading)
+        encode(merged, forKey: "dewPoint.reading.\(reading.location.id)")
     }
 
     func loadLocation() -> DewPointLocation? {
@@ -27,12 +53,17 @@ struct DewPointStore {
     }
 
     func saveReading(_ reading: DewPointReading) {
-        let mergedReading = mergedReading(existing: loadReading(), incoming: reading)
+        saveCachedReading(reading)
+        let mergedReading = mergedReading(existing: loadReading(for: reading.location), incoming: reading)
         encode(mergedReading, forKey: Key.reading)
         encode(mergedReading.location, forKey: Key.location)
     }
 
     func clearLocationAndReading() {
+        for location in loadLocations() {
+            defaults.removeObject(forKey: "dewPoint.reading.\(location.id)")
+        }
+        defaults.removeObject(forKey: Key.locations)
         defaults.removeObject(forKey: Key.location)
         defaults.removeObject(forKey: Key.reading)
     }

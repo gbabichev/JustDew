@@ -5,6 +5,7 @@ import WidgetKit
 
 @MainActor
 final class DewPointViewModel: ObservableObject {
+    @Published var savedLocations: [DewPointLocation] = []
     @Published var reading: DewPointReading?
     @Published var configuredLocation: DewPointLocation?
     @Published var manualQuery = ""
@@ -18,17 +19,63 @@ final class DewPointViewModel: ObservableObject {
     private var isRequestingCurrentLocation = false
 
     init() {
+        savedLocations = store.loadLocations()
         let savedLocation = store.loadLocation()
-        reading = store.loadReading()
+        if let savedLocation {
+            reading = store.loadReading(for: savedLocation)
+        }
         configuredLocation = savedLocation
         locationInputMode = savedLocation?.mode ?? .current
-        if savedLocation?.mode == .manual {
-            manualQuery = savedLocation?.compactDisplayName ?? ""
-        }
         authorizationStatus = locationProvider.authorizationStatus
     }
 
+    func selectLocation(_ location: DewPointLocation) {
+        guard !isLoading else { return }
+        configuredLocation = location
+        locationInputMode = location.mode
+        manualQuery = ""
+        reading = store.loadReading(for: location)
+        errorMessage = nil
+        store.saveLocation(location)
+        if let reading { store.saveReading(reading) }
+        reloadWidgets()
+        loadInitialReading()
+    }
+
+    func removeLocation(id: String) {
+        guard let index = savedLocations.firstIndex(where: { $0.id == id }) else { return }
+        removeLocations(at: IndexSet(integer: index))
+    }
+
+    func removeLocations(at offsets: IndexSet) {
+        guard !isLoading else { return }
+        let removedIDs = offsets.map { savedLocations[$0].id }
+        savedLocations = savedLocations.filter { !removedIDs.contains($0.id) }
+        store.saveLocations(savedLocations)
+        if let configuredLocation, removedIDs.contains(configuredLocation.id) {
+            if let next = savedLocations.first {
+                selectLocation(next)
+            } else {
+                store.clearLocationAndReading()
+                self.configuredLocation = nil
+                reading = nil
+                locationInputMode = .manual
+            }
+        }
+        reloadWidgets()
+    }
+
+    private func remember(_ location: DewPointLocation) {
+        if let index = savedLocations.firstIndex(where: { $0.id == location.id }) {
+            savedLocations[index] = location
+        } else {
+            savedLocations.append(location)
+        }
+        store.saveLocations(savedLocations)
+    }
+
     func loadInitialReading() {
+        guard configuredLocation != nil else { return }
         guard reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading) else { return }
         refresh()
     }
@@ -59,6 +106,7 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func useManualLocation() {
+        guard !isLoading else { return }
         if locationInputMode != .manual {
             locationInputMode = .manual
         }
@@ -79,6 +127,7 @@ final class DewPointViewModel: ObservableObject {
 
     func clearLocation() {
         store.clearLocationAndReading()
+        savedLocations = []
         configuredLocation = nil
         reading = nil
         manualQuery = ""
@@ -89,6 +138,7 @@ final class DewPointViewModel: ObservableObject {
     #if DEBUG
     func debugResetLocationState() {
         store.clearLocationAndReading()
+        savedLocations = []
         configuredLocation = nil
         reading = nil
         manualQuery = ""
@@ -129,6 +179,8 @@ final class DewPointViewModel: ObservableObject {
             )
 
             store.saveLocation(configuredLocation)
+            remember(configuredLocation)
+            reading = store.loadReading(for: configuredLocation)
             self.configuredLocation = configuredLocation
             locationInputMode = .current
             try await fetchReadingValue(for: configuredLocation)
@@ -140,10 +192,13 @@ final class DewPointViewModel: ObservableObject {
         await runLoadingOperation {
             let configuredLocation = try await LocationSearchService.resolve(manualQuery)
             store.saveLocation(configuredLocation)
+            remember(configuredLocation)
+            reading = store.loadReading(for: configuredLocation)
             self.configuredLocation = configuredLocation
             locationInputMode = .manual
             manualQuery = configuredLocation.compactDisplayName
             try await fetchReadingValue(for: configuredLocation)
+            manualQuery = ""
             reloadWidgets()
         }
     }
@@ -162,6 +217,7 @@ final class DewPointViewModel: ObservableObject {
     }
 
     private func runLoadingOperation(_ operation: () async throws -> Void) async {
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer {
@@ -204,6 +260,7 @@ final class DewPointViewModel: ObservableObject {
 
         guard !resolvedLocation.hasSpecificDisplayName,
               let configuredLocation,
+              configuredLocation.mode == .current,
               configuredLocation.hasSpecificDisplayName else {
             return names
         }
@@ -212,7 +269,6 @@ final class DewPointViewModel: ObservableObject {
     }
 
     private func reloadWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: DewPointConfiguration.appWidgetKind)
-        WidgetCenter.shared.reloadTimelines(ofKind: DewPointConfiguration.watchWidgetKind)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

@@ -1,42 +1,27 @@
 import CoreLocation
 import SwiftUI
 
-struct DewPointAppView: View {
-    @StateObject private var viewModel = DewPointViewModel()
+struct DewPointLocationPage: View {
+    @ObservedObject var viewModel: DewPointViewModel
+    let location: DewPointLocation
+
+    private var displayedReading: DewPointReading? {
+        if viewModel.configuredLocation?.id == location.id { return viewModel.reading }
+        return DewPointStore().loadReading(for: location)
+    }
 
     var body: some View {
-        #if os(watchOS)
-        watchContent
-            .task {
-                viewModel.loadInitialReading()
-            }
-        #else
-        NavigationStack {
-            Form {
-                dewPointSection
-                forecastSection
-                locationSection
-            }
-            .formStyle(.grouped)
-            #if os(iOS)
-            .refreshable {
-                await viewModel.refreshNow()
-            }
-            .scrollDismissesKeyboard(.interactively)
-            #endif
-            #if os(macOS)
-            .navigationTitle("JustDew")
-            #endif
+        Form {
+            dewPointSection
+            forecastSection
         }
-        .task {
-            viewModel.loadInitialReading()
-        }
-        #endif
+        .formStyle(.grouped)
+        .refreshable { await viewModel.refreshNow() }
     }
 
     private var dewPointSection: some View {
         Section("Dew Point") {
-            if let reading = viewModel.reading {
+            if let reading = displayedReading {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .top) {
                         Text(DewPointFormatters.temperature(reading.dewPoint))
@@ -97,7 +82,7 @@ struct DewPointAppView: View {
 
     @ViewBuilder
     private var forecastSection: some View {
-        if let reading = viewModel.reading, hasFiveDayForecast(reading) {
+        if let reading = displayedReading, hasFiveDayForecast(reading) {
             Section("Forecast") {
                 DewPointWeekForecastView(
                     reading: reading,
@@ -166,175 +151,6 @@ struct DewPointAppView: View {
         #endif
     }
 
-    private var locationSection: some View {
-        #if os(watchOS)
-        Section("Location") {
-            locationModePicker
-
-            locationModeControls
-
-//            if viewModel.configuredLocation != nil {
-//                Button(role: .destructive) {
-//                    viewModel.clearLocation()
-//                } label: {
-//                    Label("Clear Location", systemImage: "xmark.circle")
-//                }
-//                .disabled(viewModel.isLoading)
-//            }
-
-//            #if DEBUG
-//            debugResetLocationButton
-//            #endif
-        }
-        #else
-        Section {
-            VStack(alignment: .leading, spacing: 14) {
-                locationModePicker
-                locationModeControls
-
-//                #if DEBUG
-//                debugResetLocationButton
-//                #endif
-            }
-            .padding(.vertical, 4)
-        } header: {
-            Text("Location")
-        }
-        #endif
-    }
-
-    private var locationModePicker: some View {
-        #if os(watchOS)
-        Picker("Source", selection: $viewModel.locationInputMode) {
-            Text("Current Location").tag(DewPointLocationMode.current)
-            Text("Search").tag(DewPointLocationMode.manual)
-        }
-        .onChange(of: viewModel.locationInputMode) { _, mode in
-            startCurrentLocationIfSelected(mode)
-        }
-        #elseif os(macOS)
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Location Source")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Picker("Location Source", selection: $viewModel.locationInputMode) {
-                Text("Current Location").tag(DewPointLocationMode.current)
-                Text("Search").tag(DewPointLocationMode.manual)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: .infinity)
-            .onChange(of: viewModel.locationInputMode) { _, mode in
-                startCurrentLocationIfSelected(mode)
-            }
-        }
-        #else
-        Picker("Location Source", selection: $viewModel.locationInputMode) {
-            Text("Current Location").tag(DewPointLocationMode.current)
-            Text("Search").tag(DewPointLocationMode.manual)
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: viewModel.locationInputMode) { _, mode in
-            startCurrentLocationIfSelected(mode)
-        }
-        #endif
-    }
-
-    private func startCurrentLocationIfSelected(_ mode: DewPointLocationMode) {
-        guard mode == .current else { return }
-
-        Task { @MainActor in
-            await Task.yield()
-            viewModel.useCurrentLocation()
-        }
-    }
-
-    @ViewBuilder
-    private var locationModeControls: some View {
-        switch viewModel.locationInputMode {
-        case .current:
-            currentLocationControls
-        case .manual:
-            manualLocationControls
-        }
-    }
-
-    @ViewBuilder
-    private var currentLocationControls: some View {
-        Group {
-            if viewModel.isLoading {
-                HStack(spacing: 10) {
-                    ProgressView()
-                        .controlSize(.small)
-
-                    Text("Finding location")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-        }
-        .task {
-            await Task.yield()
-            viewModel.useCurrentLocationIfNeeded()
-        }
-    }
-
-    private var manualLocationControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-
-            #if os(watchOS)
-            TextField("City or Address", text: $viewModel.manualQuery)
-                .onSubmit {
-                    submitManualLocationIfPossible()
-                }
-                .submitLabel(.search)
-                .lineLimit(1)
-                .disabled(viewModel.isLoading)
-            #else
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-
-                TextField("City or ZIP Code", text: $viewModel.manualQuery)
-                    .textFieldStyle(.plain)
-                    .onSubmit {
-                        submitManualLocationIfPossible()
-                    }
-                    .submitLabel(.search)
-                    .lineLimit(1)
-                    .disabled(viewModel.isLoading)
-
-                if !viewModel.manualQuery.isEmpty {
-                    Button {
-                        viewModel.manualQuery = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.body)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .disabled(viewModel.isLoading)
-                    .accessibilityLabel("Clear Search")
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            #endif
-        }
-    }
-
-    private func submitManualLocationIfPossible() {
-        guard canSubmitManualLocation else { return }
-        viewModel.useManualLocation()
-    }
-
-    private var canSubmitManualLocation: Bool {
-        !viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !viewModel.isLoading
-    }
-
     private func hasFiveDayForecast(_ reading: DewPointReading) -> Bool {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: reading.observedAt)
@@ -342,29 +158,6 @@ struct DewPointAppView: View {
 
         return reading.dailyForecastPoints.contains { $0.date >= tomorrowStart }
     }
-
-    #if DEBUG
-    private var debugResetLocationButton: some View {
-        Button(role: .destructive) {
-            viewModel.debugResetLocationState()
-        } label: {
-            Label("Debug Reset Location", systemImage: "arrow.counterclockwise")
-        }
-        .disabled(viewModel.isLoading)
-    }
-    #endif
-
-    #if os(watchOS)
-    private var watchContent: some View {
-        NavigationStack {
-            Form {
-                dewPointSection
-                forecastSection
-                locationSection
-            }
-        }
-    }
-    #endif
 
     private var displayTemperatureSize: CGFloat {
         #if os(watchOS)

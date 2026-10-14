@@ -46,7 +46,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF3EA97A2FBB5B4E000CF230"
             BuildableName = "JustDewWatch Watch App.app"
-            BlueprintName = "JustDewWatch Watch App"
             ReferencedContainer = "container:JustDew.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -63,7 +62,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "FF3EA97A2FBB5B4E000CF230"
             BuildableName = "JustDewWatch Watch App.app"
-            BlueprintName = "JustDewWatch Watch App"
             ReferencedContainer = "container:JustDew.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

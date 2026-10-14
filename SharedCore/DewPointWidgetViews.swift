@@ -6,6 +6,7 @@ struct DewPointWidgetEntry: TimelineEntry {
     let date: Date
     let reading: DewPointReading?
     let message: String?
+    var alwaysDark: Bool = false
 }
 
 extension DewPointWidgetEntry {
@@ -19,6 +20,7 @@ extension DewPointWidgetEntry {
 }
 
 struct JustDewWidgetEntryView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.widgetFamily) private var environmentFamily
     @Environment(\.widgetRenderingMode) private var renderingMode
 
@@ -40,7 +42,14 @@ struct JustDewWidgetEntryView: View {
         }
         .padding(widgetPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(for: .widget) {
+            if entry.alwaysDark {
+                Color(red: 0.07, green: 0.08, blue: 0.10)
+            } else {
+                Rectangle().fill(.fill.tertiary)
+            }
+        }
+        .environment(\.colorScheme, entry.alwaysDark ? .dark : colorScheme)
     }
 
     private var family: WidgetFamily {
@@ -243,7 +252,7 @@ struct JustDewWidgetEntryView: View {
     }
 
     private func macTextColor(opacity: Double) -> Color {
-        Color.black.opacity(opacity)
+        (entry.alwaysDark ? Color.white : Color.black).opacity(opacity)
     }
 
     private func dewPointValueColor(for reading: DewPointReading) -> Color {

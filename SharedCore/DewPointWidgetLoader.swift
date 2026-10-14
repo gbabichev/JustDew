@@ -89,6 +89,40 @@ enum DewPointWidgetLoader {
         return reading
     }
 
+    // Configurable widgets never change the app's selected location or legacy cache.
+    static func loadReading(locationID: String) async throws -> DewPointReading {
+        let store = DewPointStore()
+        let location: DewPointLocation
+        if locationID == "current" {
+            let current = try await currentWidgetLocation()
+            let names = await LocationSearchService.currentLocationNames(for: current)
+            location = DewPointLocation(mode: .current, name: names.name, shortName: names.shortName,
+                                        latitude: current.coordinate.latitude, longitude: current.coordinate.longitude,
+                                        savedAt: Date())
+        } else {
+            guard let saved = store.loadLocations().first(where: { $0.id == locationID }) else {
+                throw DewPointError.missingConfiguredLocation
+            }
+            location = saved
+        }
+        let reading = try await DewPointWeatherClient.reading(for: location)
+        store.saveCachedReading(reading)
+        return reading
+    }
+
+    static func cachedReading(locationID: String) -> DewPointReading? {
+        let store = DewPointStore()
+        if let location = store.loadLocations().first(where: { $0.id == locationID }) {
+            return store.loadReading(for: location)
+        }
+        if locationID == "current" {
+            let current = DewPointLocation(mode: .current, name: "Current Location", latitude: 0,
+                                           longitude: 0, savedAt: Date())
+            return store.loadReading(for: current)
+        }
+        return nil
+    }
+
     @MainActor
     private static func currentWidgetLocation() async throws -> CLLocation {
         let provider = OneShotLocationProvider()

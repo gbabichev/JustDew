@@ -1,0 +1,17 @@
+.DS_Store
+
+# Xcode and Swift build products
+build/
+DerivedData/
+.derivedData/
+.derivedData-ios/
+.build/
+*.xcresult
+xcuserdata/
+
+# Local dependency and build caches
+.cache/
+.home/
+.sourcepackages/
+.gradle/
+.gradle-home/

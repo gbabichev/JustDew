@@ -12,5 +12,7 @@ import SwiftUI
 struct JustDewWidgetBundle: WidgetBundle {
     var body: some Widget {
         JustDewWidget()
+        SavedLocationDewPointWidget()
+        AlwaysDarkDewPointWidget()
     }
 }

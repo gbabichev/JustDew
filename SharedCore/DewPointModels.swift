@@ -15,7 +15,12 @@ enum DewPointLocationMode: String, Codable, Sendable {
     }
 }
 
-struct DewPointLocation: Codable, Equatable, Sendable {
+struct DewPointLocation: Codable, Equatable, Sendable, Identifiable {
+    // Current Location keeps its identity as the device moves.
+    var id: String {
+        mode == .current ? "current" : String(format: "%.6f,%.6f", latitude, longitude)
+    }
+
     var mode: DewPointLocationMode
     var name: String
     var shortName: String? = nil
