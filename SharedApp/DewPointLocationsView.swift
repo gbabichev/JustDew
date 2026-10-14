@@ -44,37 +44,38 @@ struct DewPointAppView: View {
 private struct DewPointIOSPagesView: View {
     @ObservedObject var viewModel: DewPointViewModel
     @State private var showsLocations = false
-    @State private var selectedID = ""
+    @State private var selectedID: String
+    @State private var pageLocations: [DewPointLocation]
+    @State private var isLocationSheetActive = false
+
+    init(viewModel: DewPointViewModel) {
+        self.viewModel = viewModel
+        _pageLocations = State(initialValue: viewModel.savedLocations)
+        _selectedID = State(initialValue: viewModel.configuredLocation?.id ?? "")
+    }
 
     var body: some View {
         Group {
-            if viewModel.savedLocations.isEmpty {
+            if pageLocations.isEmpty {
                 NavigationStack {
                     DewPointLocationsList(viewModel: viewModel)
                         .navigationTitle("JustDew")
                 }
+                .id("location-setup")
             } else {
                 TabView(selection: $selectedID) {
-                    ForEach(viewModel.savedLocations) { location in
-                        // Keep the navigation bar and scrolling weather page together,
-                        // inside the pager, so native scroll-edge tracking stays local.
-                        NavigationStack {
-                            DewPointLocationPage(viewModel: viewModel, location: location)
-                                .navigationTitle("")
-                                .navigationBarTitleDisplayMode(.inline)
-                                .toolbar {
-                                    ToolbarItem(placement: .topBarTrailing) {
-                                        Button {
-                                            showsLocations = true
-                                        } label: {
-                                            Label("Locations", systemImage: "list.bullet")
-                                        }
-                                    }
-                                }
+                    ForEach(pageLocations) { location in
+                        DewPointIOSNavigationPage(viewModel: viewModel, location: location) {
+                            isLocationSheetActive = true
+                            showsLocations = true
                         }
+                        .id(location.id)
                         .tag(location.id)
                     }
                 }
+                // Rebuild the page controller only when membership changes, rather
+                // than letting UIKit transfer navigation items between child stacks.
+                .id(pageLocations.map(\.id))
                 .tabViewStyle(.page(indexDisplayMode: .always))
                 .indexViewStyle(.page(backgroundDisplayMode: .always))
                 // Extend the page controller's viewport behind the status bar.
@@ -84,7 +85,10 @@ private struct DewPointIOSPagesView: View {
             }
         }
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-        .sheet(isPresented: $showsLocations) {
+        .sheet(isPresented: $showsLocations, onDismiss: {
+            isLocationSheetActive = false
+            synchronizePages()
+        }) {
             NavigationStack {
                 DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
                     .navigationTitle("Locations")
@@ -96,19 +100,56 @@ private struct DewPointIOSPagesView: View {
             }
         }
         .task {
-            selectedID = viewModel.configuredLocation?.id ?? ""
             viewModel.loadInitialReading()
         }
         .onChange(of: selectedID) { _, id in
-            guard id != viewModel.configuredLocation?.id,
+            guard !isLocationSheetActive,
+                  id != viewModel.configuredLocation?.id,
                   let location = viewModel.savedLocations.first(where: { $0.id == id }) else { return }
             viewModel.selectLocation(location)
         }
-        .onChange(of: viewModel.configuredLocation?.id) { _, id in
-            selectedID = id ?? ""
+        .onChange(of: viewModel.configuredLocation?.id) { _, _ in synchronizePages() }
+        .onChange(of: viewModel.savedLocations) { _, _ in synchronizePages() }
+        .onChange(of: viewModel.isLoading) { _, isLoading in
+            if !isLoading { synchronizePages() }
+        }
+    }
+
+    private func synchronizePages() {
+        // Keep the presenting page controllers alive until the sheet and keyboard
+        // have finished dismissing. Updating them mid-presentation can cause
+        // UIKit to reuse a navigation item in two visible navigation bars.
+        guard !isLocationSheetActive, !viewModel.isLoading else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            pageLocations = viewModel.savedLocations
+            selectedID = viewModel.configuredLocation?.id ?? ""
         }
     }
 }
+
+private struct DewPointIOSNavigationPage: View {
+    @ObservedObject var viewModel: DewPointViewModel
+    let location: DewPointLocation
+    let showLocations: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            DewPointLocationPage(viewModel: viewModel, location: location)
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: showLocations) {
+                            Label("Locations", systemImage: "list.bullet")
+                        }
+                    }
+                }
+        }
+    }
+}
+
 #endif
 
 private struct DewPointLocationsList: View {
