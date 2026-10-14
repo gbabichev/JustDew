@@ -59,7 +59,7 @@ struct JustDewApp: App {
                 #endif
         }
         #if os(macOS)
-        .windowStyle(.hiddenTitleBar)
+        .windowStyle(.titleBar)
         .defaultSize(width: 400, height: 700)
         .windowResizability(.contentSize)
         #endif

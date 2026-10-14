@@ -6,6 +6,10 @@ struct DewPointAppView: View {
     @State private var selectedID = ""
 
     var body: some View {
+        #if os(macOS)
+        MacDewPointAppView(viewModel: viewModel)
+            .task { viewModel.loadInitialReading() }
+        #else
         NavigationStack {
             Group {
                 if viewModel.savedLocations.isEmpty {
@@ -79,6 +83,7 @@ struct DewPointAppView: View {
         .onChange(of: viewModel.configuredLocation?.id) { _, id in
             selectedID = id ?? ""
         }
+        #endif
     }
 }
 
