@@ -178,6 +178,7 @@ private struct DewPointLocationsList: View {
             if viewModel.isLoading {
                 Section {
                     ProgressView("Loading weather…")
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             if let message = viewModel.errorMessage {
