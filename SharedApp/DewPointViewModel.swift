@@ -255,11 +255,11 @@ final class DewPointViewModel: ObservableObject {
         guard let reading else { return true }
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: Date())
-        guard let fifthDayStart = calendar.date(byAdding: .day, value: 5, to: start) else {
+        guard let lastDayStart = calendar.date(byAdding: .day, value: DewPointConfiguration.forecastDayCount - 1, to: start) else {
             return reading.dailyForecastPoints.isEmpty
         }
 
-        return !reading.dailyForecastPoints.contains { $0.date >= fifthDayStart }
+        return !reading.dailyForecastPoints.contains { $0.date >= lastDayStart }
     }
 
     private func currentLocationNames(_ names: (name: String, shortName: String?)) -> (name: String, shortName: String?) {

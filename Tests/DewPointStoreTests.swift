@@ -32,6 +32,30 @@ struct DewPointStoreTests {
         precondition(store.loadReading(for: second)?.dewPointCelsius == 22)
         precondition(store.loadLocations() == [first, second])
 
+        // The final supported day must survive cache merging; day eleven must not.
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: now)
+        let lastDay = calendar.date(byAdding: .day, value: 9, to: start)!
+        let outside = calendar.date(byAdding: .day, value: 10, to: start)!
+        func point(_ date: Date) -> DewPointForecastPoint {
+            DewPointForecastPoint(date: date, dewPointCelsius: 15, temperatureCelsius: 25, humidity: 0.5)
+        }
+        var extended = reading(first, dew: 12)
+        extended.dailyForecast = [point(lastDay), point(outside)]
+        store.saveReading(extended)
+        store.saveReading(reading(first, dew: 13))
+        let forecast = store.loadReading(for: first)!.dailyForecastPoints
+        precondition(forecast.contains { $0.date == lastDay }, "Keep the tenth forecast day")
+        precondition(!forecast.contains { $0.date >= outside }, "Exclude the eleventh day")
+
+        // Calendar days remain correct across a daylight saving transition.
+        var newYork = Calendar(identifier: .gregorian)
+        newYork.timeZone = TimeZone(identifier: "America/New_York")!
+        let springDate = newYork.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 12))!
+        let range = DewPointConfiguration.forecastDateRange(for: springDate, calendar: newYork)
+        precondition(newYork.dateComponents([.day], from: range.lowerBound, to: range.upperBound).day == 10)
+        precondition(range.upperBound.timeIntervalSince(range.lowerBound) == 10 * 86_400 - 3_600)
+
         var moving = first
         moving.mode = .current
         var moved = moving

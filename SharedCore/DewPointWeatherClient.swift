@@ -6,11 +6,11 @@ enum DewPointWeatherClient {
     static func reading(for location: DewPointLocation) async throws -> DewPointReading {
         do {
             let requestDate = Date()
-            let forecastRange = forecastDateRange(for: requestDate)
+            let forecastRange = DewPointConfiguration.forecastDateRange(for: requestDate)
             let (current, hourly) = try await WeatherService.shared.weather(
                 for: location.clLocation,
                 including: .current,
-                .hourly(startDate: requestDate, endDate: forecastRange.end)
+                .hourly(startDate: requestDate, endDate: forecastRange.upperBound)
             )
             let currentForecastPoint = DewPointForecastPoint(
                 date: current.date,
@@ -47,8 +47,7 @@ enum DewPointWeatherClient {
         observedAt: Date,
         currentPoint: DewPointForecastPoint
     ) -> [DewPointForecastPoint] {
-        let forecastRange = forecastDateRange(for: observedAt)
-        let forecastInterval = forecastRange.start..<forecastRange.end
+        let forecastInterval = DewPointConfiguration.forecastDateRange(for: observedAt)
 
         let forecastPoints = hourlyForecast
             .filter { forecastInterval.contains($0.date) }
@@ -68,12 +67,7 @@ enum DewPointWeatherClient {
             .sorted { $0.date < $1.date }
     }
 
-    private static func forecastDateRange(for date: Date) -> (start: Date, end: Date) {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: date)
-        let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start.addingTimeInterval(518_400)
-        return (start, end)
-    }
+
 }
 
 private extension Array where Element == DewPointForecastPoint {

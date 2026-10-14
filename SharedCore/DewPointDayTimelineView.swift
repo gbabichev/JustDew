@@ -136,7 +136,7 @@ struct DewPointDayTimelineView: View {
     }
 }
 
-struct DewPointWeekForecastView: View {
+struct DewPointForecastView: View {
     var reading: DewPointReading
     var trackHeight: CGFloat = 7
     var monochromeColor: Color = .secondary
@@ -145,7 +145,7 @@ struct DewPointWeekForecastView: View {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: reading.observedAt)
 
-        return (1...5).compactMap { dayOffset in
+        return (1..<DewPointConfiguration.forecastDayCount).compactMap { dayOffset in
             guard let dayStart = calendar.date(byAdding: .day, value: dayOffset, to: todayStart),
                   let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return nil

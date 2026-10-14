@@ -29,6 +29,7 @@ JustDew is a small weather utility built around one useful number: dew point. It
 ## Features
 
 - Dew point, air temperature, humidity, location, and last update time
+- Up to 10 days of forecast data, including today and nine upcoming days
 - Saved locations with swipeable pages on iPhone and iPad
 - Add, select, and remove cities through the Locations list
 - iPhone and Mac widgets, including Always Dark and configurable location widgets

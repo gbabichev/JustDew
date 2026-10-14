@@ -82,9 +82,9 @@ struct DewPointLocationPage: View {
 
     @ViewBuilder
     private var forecastSection: some View {
-        if let reading = displayedReading, hasFiveDayForecast(reading) {
+        if let reading = displayedReading, hasFutureForecast(reading) {
             Section("Forecast") {
-                DewPointWeekForecastView(
+                DewPointForecastView(
                     reading: reading,
                     trackHeight: weeklyForecastTrackHeight
                 )
@@ -151,7 +151,7 @@ struct DewPointLocationPage: View {
         #endif
     }
 
-    private func hasFiveDayForecast(_ reading: DewPointReading) -> Bool {
+    private func hasFutureForecast(_ reading: DewPointReading) -> Bool {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: reading.observedAt)
         guard let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) else { return false }

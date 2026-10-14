@@ -85,7 +85,7 @@ struct DewPointStore {
         }
 
         var mergedReading = incoming
-        let forecastInterval = forecastDateInterval(for: incoming.observedAt)
+        let forecastInterval = DewPointConfiguration.forecastDateRange(for: incoming.observedAt)
         let forecastPoints = (existing.dailyForecastPoints + incoming.dailyForecastPoints)
             .filter { forecastInterval.contains($0.date) }
             .uniquedByHour()
@@ -99,12 +99,7 @@ struct DewPointStore {
         abs(lhs.latitude - rhs.latitude) < 0.05 && abs(lhs.longitude - rhs.longitude) < 0.05
     }
 
-    private func forecastDateInterval(for date: Date) -> DateInterval {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: date)
-        let end = calendar.date(byAdding: .day, value: 6, to: start) ?? start.addingTimeInterval(518_400)
-        return DateInterval(start: start, end: end)
-    }
+
 }
 
 private extension Array where Element == DewPointForecastPoint {
