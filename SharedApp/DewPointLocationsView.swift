@@ -44,6 +44,13 @@ struct DewPointAppView: View {
                     }
                 }
             }
+            #if os(watchOS)
+            // Quickboard needs to present text entry without a modal sheet in flight.
+            .navigationDestination(isPresented: $showsLocations) {
+                DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
+                    .navigationTitle("Locations")
+            }
+            #else
             .sheet(isPresented: $showsLocations) {
                 NavigationStack {
                     DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
@@ -58,6 +65,7 @@ struct DewPointAppView: View {
                 .frame(minWidth: 400, minHeight: 450)
                 #endif
             }
+            #endif
         }
         .task {
             selectedID = viewModel.configuredLocation?.id ?? ""
