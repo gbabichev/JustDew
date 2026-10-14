@@ -61,6 +61,8 @@ struct JustDewWidgetEntryView: View {
         #if os(iOS)
         case .accessoryCircular:
             .center
+        case .accessoryRectangular:
+            .leading
         #endif
         case .accessoryInline:
             .center
@@ -105,29 +107,7 @@ struct JustDewWidgetEntryView: View {
             }
             .foregroundStyle(primaryTextColor)
         case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Dew Point")
-                    .font(.caption2)
-                    .foregroundStyle(secondaryTextColor)
-                Text(DewPointFormatters.temperature(reading.dewPoint))
-                    .font(.headline.monospacedDigit())
-                    .foregroundStyle(primaryTextColor)
-                DewPointDayTimelineView(
-                    reading: reading,
-                    showsLabels: false,
-                    trackHeight: 4,
-                    markerSize: 8,
-                    usesComfortColor: true,
-                    monochromeColor: secondaryTextColor
-                )
-                Text(reading.location.widgetDisplayName)
-                    .font(.caption2)
-                    .foregroundStyle(secondaryTextColor)
-                    .lineLimit(1)
-                Text(DewPointFormatters.updatedTime(reading.fetchedAt))
-                    .font(.caption2)
-                    .foregroundStyle(secondaryTextColor)
-            }
+            DewPointLockScreenRectangularView(reading: reading)
         #endif
         case .systemMedium, .systemLarge, .systemExtraLarge:
             VStack(alignment: .leading, spacing: 5) {
@@ -275,6 +255,47 @@ struct JustDewWidgetEntryView: View {
         DewPointComfortScale.color(for: reading.dewPointCelsius)
     }
 }
+#if os(iOS)
+private struct DewPointLockScreenRectangularView: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("Dew Point")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Text(DewPointFormatters.temperature(reading.dewPoint))
+                    .font(.headline.monospacedDigit())
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+
+            DewPointDayTimelineView(
+                reading: reading,
+                showsLabels: false,
+                trackHeight: 3,
+                markerSize: 7,
+                usesComfortColor: false,
+                monochromeColor: .primary
+            )
+
+            HStack(spacing: 6) {
+                Text(reading.location.widgetDisplayName)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Text(DewPointFormatters.updatedTime(reading.fetchedAt))
+                    .fixedSize()
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+}
+#endif
+
 #endif
 
 #if os(watchOS)
