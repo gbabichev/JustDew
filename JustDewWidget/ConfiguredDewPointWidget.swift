@@ -86,3 +86,17 @@ struct AlwaysDarkDewPointWidget: Widget {
         .contentMarginsDisabled()
     }
 }
+
+struct AlwaysDarkLocationDewPointWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "JustDewAlwaysDarkLocationWidget", intent: DarkDewPointWidgetIntent.self,
+                               provider: DarkDewPointProvider()) { entry in
+            JustDewWidgetEntryView(entry: DewPointWidgetEntry(date: entry.date, reading: entry.reading,
+                                                            message: entry.message, alwaysDark: true))
+        }
+        .configurationDisplayName("Dew Point · Location · Always Dark")
+        .description("Choose a saved city in Edit Widget to keep its dew point visible in an always dark appearance.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled()
+    }
+}

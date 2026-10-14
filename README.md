@@ -58,8 +58,10 @@ On iPhone and iPad, swipe between saved location pages. On Mac and Apple Watch,
 choose a location from the Locations list. Swipe to delete a saved location on
 mobile devices, or use its context menu on Mac.
 
-The widget gallery includes **Dew Point · Location** and **Dew Point · Always Dark**.
-Edit either widget to choose Current Location or a city saved in the app on that
+The widget gallery includes **Dew Point · Location**, **Dew Point · Always Dark**,
+and **Dew Point · Location · Always Dark**. The dedicated Location · Always Dark
+widget is available in small and medium sizes.
+Edit any of these widgets to choose Current Location or a city saved in the app on that
 device. The Location widget also offers an Always Dark switch. Each widget keeps
 its own location selection when you browse other cities in the app. Existing
 Dew Point widgets retain their original behavior of following the app selection.

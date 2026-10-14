@@ -188,18 +188,32 @@ final class DewPointViewModel: ObservableObject {
         }
     }
 
-    private func setManualLocation() async {
+    func addLocation(_ location: DewPointLocation) async {
+        guard !isLoading else { return }
+        if let saved = savedLocations.first(where: { $0.id == location.id }) {
+            selectLocation(saved)
+            return
+        }
         await runLoadingOperation {
-            let configuredLocation = try await LocationSearchService.resolve(manualQuery)
-            store.saveLocation(configuredLocation)
-            remember(configuredLocation)
-            reading = store.loadReading(for: configuredLocation)
-            self.configuredLocation = configuredLocation
+            store.saveLocation(location)
+            remember(location)
+            reading = store.loadReading(for: location)
+            configuredLocation = location
             locationInputMode = .manual
-            manualQuery = configuredLocation.compactDisplayName
-            try await fetchReadingValue(for: configuredLocation)
             manualQuery = ""
+            // Save the choice even if weather is temporarily unavailable.
             reloadWidgets()
+            try await fetchReadingValue(for: location)
+            reloadWidgets()
+        }
+    }
+
+    private func setManualLocation() async {
+        do {
+            let location = try await LocationSearchService.resolve(manualQuery)
+            await addLocation(location)
+        } catch {
+            errorMessage = error.dewPointDisplayMessage
         }
     }
 

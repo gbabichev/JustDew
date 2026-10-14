@@ -14,5 +14,6 @@ struct JustDewWidgetBundle: WidgetBundle {
         JustDewWidget()
         SavedLocationDewPointWidget()
         AlwaysDarkDewPointWidget()
+        AlwaysDarkLocationDewPointWidget()
     }
 }

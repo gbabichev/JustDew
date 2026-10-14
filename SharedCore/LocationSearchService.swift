@@ -4,6 +4,13 @@ import MapKit
 
 enum LocationSearchService {
     static func resolve(_ query: String) async throws -> DewPointLocation {
+        guard let location = try await search(query).first else {
+            throw DewPointError.geocodingNoResults
+        }
+        return location
+    }
+
+    static func search(_ query: String) async throws -> [DewPointLocation] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else { throw DewPointError.geocodingNoResults }
 
@@ -18,19 +25,19 @@ enum LocationSearchService {
             throw normalizedGeocodingError(error)
         }
 
-        guard let mapItem = mapItems.first else {
-            throw DewPointError.geocodingNoResults
+        var seen = Set<String>()
+        return mapItems.compactMap { mapItem in
+            let names = displayNames(for: mapItem, fallback: trimmedQuery)
+            let location = DewPointLocation(
+                mode: .manual,
+                name: names.name,
+                shortName: names.shortName,
+                latitude: mapItem.location.coordinate.latitude,
+                longitude: mapItem.location.coordinate.longitude,
+                savedAt: Date()
+            )
+            return seen.insert(location.id).inserted ? location : nil
         }
-
-        let names = displayNames(for: mapItem, fallback: trimmedQuery)
-        return DewPointLocation(
-            mode: .manual,
-            name: names.name,
-            shortName: names.shortName,
-            latitude: mapItem.location.coordinate.latitude,
-            longitude: mapItem.location.coordinate.longitude,
-            savedAt: Date()
-        )
     }
 
     static func currentLocationName(for location: CLLocation) async -> String {

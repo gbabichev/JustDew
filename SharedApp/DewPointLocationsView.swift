@@ -46,7 +46,7 @@ struct DewPointAppView: View {
             }
             .sheet(isPresented: $showsLocations) {
                 NavigationStack {
-                    DewPointLocationsList(viewModel: viewModel)
+                    DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
                         .navigationTitle("Locations")
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
@@ -76,62 +76,192 @@ struct DewPointAppView: View {
 
 private struct DewPointLocationsList: View {
     @ObservedObject var viewModel: DewPointViewModel
+    var onSelection: () -> Void = {}
+    @State private var query = ""
+    @State private var results: [DewPointLocation] = []
+    @State private var isSearching = false
+    @State private var searchError: String?
+
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     var body: some View {
-        Form {
-            Section("Saved Locations") {
-                ForEach(viewModel.savedLocations) { location in
-                    Button {
-                        viewModel.selectLocation(location)
-                    } label: {
-                        HStack {
-                            Label(location.mode == .current ? "Current Location" : location.compactDisplayName,
-                                  systemImage: location.mode == .current ? "location.fill" : "mappin.and.ellipse")
-                            Spacer()
-                            if viewModel.configuredLocation?.id == location.id {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                    .disabled(viewModel.isLoading)
-                    #if os(macOS)
-                    .contextMenu {
-                        Button("Remove Location", role: .destructive) {
-                            viewModel.removeLocation(id: location.id)
+        List {
+            if trimmedQuery.isEmpty {
+                Section {
+                    ForEach(viewModel.savedLocations) { location in
+                        Button {
+                            viewModel.selectLocation(location)
+                            onSelection()
+                        } label: {
+                            SavedLocationRow(location: location,
+                                             isSelected: viewModel.configuredLocation?.id == location.id)
                         }
                         .disabled(viewModel.isLoading)
+                        #if os(macOS)
+                        .contextMenu {
+                            Button("Remove Location", role: .destructive) {
+                                viewModel.removeLocation(id: location.id)
+                            }
+                            .disabled(viewModel.isLoading)
+                        }
+                        #endif
                     }
-                    #endif
+                    .onDelete(perform: viewModel.removeLocations)
+                } header: {
+                    Text("Your Locations")
+                } footer: {
+                    Text("Search for a city or ZIP code to add another location.")
                 }
-                .onDelete(perform: viewModel.removeLocations)
-            }
-            Section("Add Location") {
-                Button {
-                    viewModel.useCurrentLocation()
-                } label: {
-                    Label("Use Current Location", systemImage: "location.fill")
-                }
-                .disabled(viewModel.isLoading)
 
-                TextField("City or ZIP Code", text: $viewModel.manualQuery)
-                    .onSubmit { addLocation() }
-                    .submitLabel(.search)
-                    .disabled(viewModel.isLoading)
-                Button("Add Location", action: addLocation)
-                    .disabled(viewModel.isLoading || viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                if viewModel.isLoading {
+                if !viewModel.savedLocations.contains(where: { $0.mode == .current }) {
+                    Section {
+                        Button {
+                            viewModel.useCurrentLocation()
+                        } label: {
+                            Label("Use Current Location", systemImage: "location.fill")
+                                .padding(.vertical, 6)
+                        }
+                        .disabled(viewModel.isLoading)
+                    } footer: {
+                        Text("Automatically follows you as you travel.")
+                    }
+                }
+            } else {
+                Section("Search Results") {
+                    if isSearching {
+                        ProgressView("Searching…")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else if let searchError {
+                        Label(searchError, systemImage: "exclamationmark.magnifyingglass")
+                            .foregroundStyle(.secondary)
+                    } else if results.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("No locations found").font(.headline)
+                            Text("Try a city and state, or a ZIP code.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 8)
+                    } else {
+                        ForEach(results) { location in
+                            let isSaved = viewModel.savedLocations.contains { $0.id == location.id }
+                            Button {
+                                Task {
+                                    await viewModel.addLocation(location)
+                                    query = ""
+                                    onSelection()
+                                }
+                            } label: {
+                                LocationSearchResultRow(location: location, isSaved: isSaved)
+                            }
+                            .disabled(viewModel.isLoading)
+                        }
+                    }
+                }
+            }
+
+            if viewModel.isLoading {
+                Section {
                     ProgressView("Loading weather…")
                 }
-                if let message = viewModel.errorMessage {
-                    Text(message).foregroundStyle(.orange)
+            }
+            if let message = viewModel.errorMessage {
+                Section {
+                    Label(message, systemImage: "exclamationmark.triangle")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
                 }
             }
         }
-        .formStyle(.grouped)
+        #if os(iOS)
+        .listStyle(.insetGrouped)
+        .scrollDismissesKeyboard(.interactively)
+        #elseif os(macOS)
+        .listStyle(.inset)
+        #endif
+        #if os(iOS)
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "City or ZIP Code")
+        #else
+        .searchable(text: $query, prompt: "City or ZIP Code")
+        #endif
+        .task(id: query) {
+            await searchLocations()
+        }
     }
 
-    private func addLocation() {
-        guard !viewModel.manualQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        viewModel.useManualLocation()
+    @MainActor
+    private func searchLocations() async {
+        results = []
+        searchError = nil
+        guard !trimmedQuery.isEmpty else {
+            isSearching = false
+            return
+        }
+        isSearching = true
+        do {
+            try await Task.sleep(for: .milliseconds(400))
+            let matches = try await LocationSearchService.search(trimmedQuery)
+            try Task.checkCancellation()
+            results = matches
+            isSearching = false
+        } catch {
+            guard !Task.isCancelled else { return }
+            searchError = error.dewPointDisplayMessage
+            isSearching = false
+        }
+    }
+}
+
+private struct SavedLocationRow: View {
+    let location: DewPointLocation
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: location.mode == .current ? "location.fill" : "mappin.and.ellipse")
+                .font(.title3)
+                .foregroundStyle(.cyan)
+                .frame(width: 30)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(location.mode == .current ? "Current Location" : location.compactDisplayName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                if location.mode == .current {
+                    Text(location.compactDisplayName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 8)
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.tint)
+                    .accessibilityLabel("Selected")
+            }
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct LocationSearchResultRow: View {
+    let location: DewPointLocation
+    let isSaved: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "mappin.and.ellipse")
+                .foregroundStyle(.cyan)
+            Text(location.name)
+                .foregroundStyle(.primary)
+            Spacer(minLength: 8)
+            Image(systemName: isSaved ? "checkmark.circle.fill" : "plus.circle.fill")
+                .foregroundStyle(.tint)
+                .accessibilityLabel(isSaved ? "Saved" : "Add location")
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
     }
 }
