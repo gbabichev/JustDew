@@ -188,6 +188,22 @@ final class DewPointViewModel: ObservableObject {
         }
     }
 
+    func addLocation(_ suggestion: LocationSuggestion) async -> Bool {
+        guard !isLoading else { return false }
+        isLoading = true
+        errorMessage = nil
+        do {
+            let location = try await LocationSearchService.resolve(suggestion.completion)
+            isLoading = false
+            await addLocation(location)
+            return configuredLocation?.id == location.id
+        } catch {
+            isLoading = false
+            errorMessage = error.dewPointDisplayMessage
+            return false
+        }
+    }
+
     func addLocation(_ location: DewPointLocation) async {
         guard !isLoading else { return }
         if let saved = savedLocations.first(where: { $0.id == location.id }) {

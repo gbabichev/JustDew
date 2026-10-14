@@ -81,9 +81,7 @@ private struct MacLocationPicker: View {
     @ObservedObject var viewModel: DewPointViewModel
     var onSelection: () -> Void = {}
     @State private var query = ""
-    @State private var results: [DewPointLocation] = []
-    @State private var isSearching = false
-    @State private var searchError: String?
+    @State private var search = LocationAutocomplete()
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -128,16 +126,16 @@ private struct MacLocationPicker: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-            } else if isSearching {
+            } else if search.isSearching {
                 ProgressView("Searching…")
                     .controlSize(.small)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-            } else if let searchError {
+            } else if let searchError = search.errorMessage {
                 Label(searchError, systemImage: "exclamationmark.triangle")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-            } else if results.isEmpty {
+            } else if search.results.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("No locations found").font(.headline)
                     Text("Try a city and state, or a ZIP code.")
@@ -149,20 +147,25 @@ private struct MacLocationPicker: View {
                 Text("Search Results")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
-                ForEach(results) { location in
+                ForEach(search.results) { suggestion in
                     Button {
                         Task {
-                            await viewModel.addLocation(location)
-                            query = ""
-                            onSelection()
+                            if await viewModel.addLocation(suggestion) {
+                                query = ""
+                                onSelection()
+                            }
                         }
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "mappin.and.ellipse").foregroundStyle(.cyan)
-                            Text(location.name).foregroundStyle(.primary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(suggestion.title).foregroundStyle(.primary)
+                                if !suggestion.subtitle.isEmpty {
+                                    Text(suggestion.subtitle).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
                             Spacer(minLength: 8)
-                            Image(systemName: viewModel.savedLocations.contains(where: { $0.id == location.id })
-                                  ? "checkmark.circle.fill" : "plus.circle.fill")
+                            Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.tint)
                         }
                         .padding(12)
@@ -185,29 +188,10 @@ private struct MacLocationPicker: View {
                     .foregroundStyle(.orange)
             }
         }
-        .task(id: query) { await searchLocations() }
-    }
-
-    @MainActor
-    private func searchLocations() async {
-        results = []
-        searchError = nil
-        guard !trimmedQuery.isEmpty else {
-            isSearching = false
-            return
+        .onChange(of: query, initial: true) { _, value in
+            search.updateQuery(value)
         }
-        isSearching = true
-        do {
-            try await Task.sleep(for: .milliseconds(400))
-            let matches = try await LocationSearchService.search(trimmedQuery)
-            try Task.checkCancellation()
-            results = matches
-            isSearching = false
-        } catch {
-            guard !Task.isCancelled else { return }
-            searchError = error.dewPointDisplayMessage
-            isSearching = false
-        }
+        .onDisappear { search.cancel() }
     }
 }
 

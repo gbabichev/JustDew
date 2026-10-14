@@ -91,9 +91,7 @@ private struct DewPointLocationsList: View {
     @ObservedObject var viewModel: DewPointViewModel
     var onSelection: () -> Void = {}
     @State private var query = ""
-    @State private var results: [DewPointLocation] = []
-    @State private var isSearching = false
-    @State private var searchError: String?
+    @State private var search = LocationAutocomplete()
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -143,13 +141,13 @@ private struct DewPointLocationsList: View {
                 }
             } else {
                 Section("Search Results") {
-                    if isSearching {
+                    if search.isSearching {
                         ProgressView("Searching…")
                             .frame(maxWidth: .infinity, alignment: .center)
-                    } else if let searchError {
+                    } else if let searchError = search.errorMessage {
                         Label(searchError, systemImage: "exclamationmark.magnifyingglass")
                             .foregroundStyle(.secondary)
-                    } else if results.isEmpty {
+                    } else if search.results.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("No locations found").font(.headline)
                             Text("Try a city and state, or a ZIP code.")
@@ -158,16 +156,16 @@ private struct DewPointLocationsList: View {
                         }
                         .padding(.vertical, 8)
                     } else {
-                        ForEach(results) { location in
-                            let isSaved = viewModel.savedLocations.contains { $0.id == location.id }
+                        ForEach(search.results) { suggestion in
                             Button {
                                 Task {
-                                    await viewModel.addLocation(location)
-                                    query = ""
-                                    onSelection()
+                                    if await viewModel.addLocation(suggestion) {
+                                        query = ""
+                                        onSelection()
+                                    }
                                 }
                             } label: {
-                                LocationSearchResultRow(location: location, isSaved: isSaved)
+                                LocationSearchResultRow(title: suggestion.title, subtitle: suggestion.subtitle)
                             }
                             .disabled(viewModel.isLoading)
                         }
@@ -200,31 +198,10 @@ private struct DewPointLocationsList: View {
         #else
         .searchable(text: $query, prompt: "City or ZIP Code")
         #endif
-        .task(id: query) {
-            await searchLocations()
+        .onChange(of: query, initial: true) { _, value in
+            search.updateQuery(value)
         }
-    }
-
-    @MainActor
-    private func searchLocations() async {
-        results = []
-        searchError = nil
-        guard !trimmedQuery.isEmpty else {
-            isSearching = false
-            return
-        }
-        isSearching = true
-        do {
-            try await Task.sleep(for: .milliseconds(400))
-            let matches = try await LocationSearchService.search(trimmedQuery)
-            try Task.checkCancellation()
-            results = matches
-            isSearching = false
-        } catch {
-            guard !Task.isCancelled else { return }
-            searchError = error.dewPointDisplayMessage
-            isSearching = false
-        }
+        .onDisappear { search.cancel() }
     }
 }
 
@@ -261,19 +238,23 @@ private struct SavedLocationRow: View {
 }
 
 private struct LocationSearchResultRow: View {
-    let location: DewPointLocation
-    let isSaved: Bool
+    let title: String
+    let subtitle: String
 
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: "mappin.and.ellipse")
                 .foregroundStyle(.cyan)
-            Text(location.name)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).foregroundStyle(.primary)
+                if !subtitle.isEmpty {
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Spacer(minLength: 8)
-            Image(systemName: isSaved ? "checkmark.circle.fill" : "plus.circle.fill")
+            Image(systemName: "plus.circle.fill")
                 .foregroundStyle(.tint)
-                .accessibilityLabel(isSaved ? "Saved" : "Add location")
+                .accessibilityLabel("Add location")
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())

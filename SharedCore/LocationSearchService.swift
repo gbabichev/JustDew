@@ -40,6 +40,25 @@ enum LocationSearchService {
         }
     }
 
+    static func resolve(_ completion: MKLocalSearchCompletion) async throws -> DewPointLocation {
+        let request = MKLocalSearch.Request(completion: completion)
+        request.resultTypes = .address
+        let response: MKLocalSearch.Response
+        do {
+            response = try await MKLocalSearch(request: request).start()
+        } catch {
+            throw normalizedGeocodingError(error)
+        }
+        guard let mapItem = response.mapItems.first else {
+            throw DewPointError.geocodingNoResults
+        }
+        let fallback = [completion.title, completion.subtitle].filter { !$0.isEmpty }.joined(separator: ", ")
+        let names = displayNames(for: mapItem, fallback: fallback)
+        return DewPointLocation(mode: .manual, name: names.name, shortName: names.shortName,
+                                latitude: mapItem.location.coordinate.latitude,
+                                longitude: mapItem.location.coordinate.longitude, savedAt: Date())
+    }
+
     static func currentLocationName(for location: CLLocation) async -> String {
         await currentLocationNames(for: location).name
     }

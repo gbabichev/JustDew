@@ -54,7 +54,9 @@ open JustDew.xcodeproj
 
 ## Locations and Widgets
 
-Open **Locations** in the app to add a city or ZIP code, or use Current Location.
+Open **Locations** and type a city or ZIP code to see Apple Maps autocomplete
+suggestions. Select a suggestion to resolve and save that exact place, or use
+Current Location.
 On iPhone and iPad, swipe between saved location pages. On Mac and Apple Watch,
 choose a location from the Locations list. Swipe to delete a saved location on
 mobile devices, or use its context menu on Mac.
