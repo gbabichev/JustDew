@@ -16,11 +16,14 @@ struct DewPointLocationPage: View {
             forecastSection
         }
         .formStyle(.grouped)
+        #if os(iOS) || os(macOS)
+        .scrollEdgeEffectStyle(.soft, for: .top)
+        #endif
         .refreshable { await viewModel.refreshNow() }
     }
 
     private var dewPointSection: some View {
-        Section("Dew Point") {
+        Section {
             if let reading = displayedReading {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .top) {
@@ -38,9 +41,11 @@ struct DewPointLocationPage: View {
                             .padding(.top, 6)
                     }
 
+                    #if os(watchOS)
                     Label(reading.location.compactDisplayName, systemImage: "mappin.and.ellipse")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    #endif
 
                     HStack {
                         Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
@@ -77,6 +82,13 @@ struct DewPointLocationPage: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+        } header: {
+            #if os(watchOS)
+            Text("Dew Point")
+            #else
+            DewPointLocationHeading(location: location)
+                .textCase(nil)
+            #endif
         }
     }
 
@@ -199,3 +211,28 @@ struct DewPointLocationPage: View {
         #endif
     }
 }
+
+#if os(iOS) || os(macOS)
+private struct DewPointLocationHeading: View {
+    let location: DewPointLocation
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(location.compactDisplayName)
+                .font(.largeTitle.weight(.bold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            if location.mode == .current {
+                Label("Current Location", systemImage: "location.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Dew Point")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.bottom, 4)
+    }
+}
+#endif

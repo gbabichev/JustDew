@@ -3,41 +3,22 @@ import SwiftUI
 struct DewPointAppView: View {
     @StateObject private var viewModel = DewPointViewModel()
     @State private var showsLocations = false
-    @State private var selectedID = ""
 
     var body: some View {
         #if os(macOS)
         MacDewPointAppView(viewModel: viewModel)
             .task { viewModel.loadInitialReading() }
+        #elseif os(iOS)
+        DewPointIOSPagesView(viewModel: viewModel)
         #else
         NavigationStack {
             Group {
                 if viewModel.savedLocations.isEmpty {
                     DewPointLocationsList(viewModel: viewModel)
-                } else {
-                    #if os(iOS)
-                    TabView(selection: $selectedID) {
-                        ForEach(viewModel.savedLocations) { location in
-                            DewPointLocationPage(viewModel: viewModel, location: location)
-                                .tag(location.id)
-                        }
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .always))
-                    .indexViewStyle(.page(backgroundDisplayMode: .always))
-                    .allowsHitTesting(!viewModel.isLoading)
-                    #else
-                    if let location = viewModel.configuredLocation {
-                        DewPointLocationPage(viewModel: viewModel, location: location)
-                    }
-                    #endif
+                } else if let location = viewModel.configuredLocation {
+                    DewPointLocationPage(viewModel: viewModel, location: location)
                 }
             }
-            #if os(iOS)
-            // Match the forms across the navigation bar and bottom safe area.
-            .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-            .toolbarBackground(Color(uiColor: .systemGroupedBackground), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            #endif
             .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
             .toolbar {
                 ToolbarItem {
@@ -48,28 +29,71 @@ struct DewPointAppView: View {
                     }
                 }
             }
-            #if os(watchOS)
             // Quickboard needs to present text entry without a modal sheet in flight.
             .navigationDestination(isPresented: $showsLocations) {
                 DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
                     .navigationTitle("Locations")
             }
-            #else
-            .sheet(isPresented: $showsLocations) {
+        }
+        .task { viewModel.loadInitialReading() }
+        #endif
+    }
+}
+
+#if os(iOS)
+private struct DewPointIOSPagesView: View {
+    @ObservedObject var viewModel: DewPointViewModel
+    @State private var showsLocations = false
+    @State private var selectedID = ""
+
+    var body: some View {
+        Group {
+            if viewModel.savedLocations.isEmpty {
                 NavigationStack {
-                    DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
-                        .navigationTitle("Locations")
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { showsLocations = false }
-                            }
-                        }
+                    DewPointLocationsList(viewModel: viewModel)
+                        .navigationTitle("JustDew")
                 }
-                #if os(macOS)
-                .frame(minWidth: 400, minHeight: 450)
-                #endif
+            } else {
+                TabView(selection: $selectedID) {
+                    ForEach(viewModel.savedLocations) { location in
+                        // Keep the navigation bar and scrolling weather page together,
+                        // inside the pager, so native scroll-edge tracking stays local.
+                        NavigationStack {
+                            DewPointLocationPage(viewModel: viewModel, location: location)
+                                .navigationTitle("")
+                                .navigationBarTitleDisplayMode(.inline)
+                                .toolbar {
+                                    ToolbarItem(placement: .topBarTrailing) {
+                                        Button {
+                                            showsLocations = true
+                                        } label: {
+                                            Label("Locations", systemImage: "list.bullet")
+                                        }
+                                    }
+                                }
+                        }
+                        .tag(location.id)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .always))
+                .indexViewStyle(.page(backgroundDisplayMode: .always))
+                // Extend the page controller's viewport behind the status bar.
+                // Each nested navigation stack still manages its content insets.
+                .ignoresSafeArea(.container, edges: .top)
+                .allowsHitTesting(!viewModel.isLoading)
             }
-            #endif
+        }
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .sheet(isPresented: $showsLocations) {
+            NavigationStack {
+                DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
+                    .navigationTitle("Locations")
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showsLocations = false }
+                        }
+                    }
+            }
         }
         .task {
             selectedID = viewModel.configuredLocation?.id ?? ""
@@ -83,9 +107,9 @@ struct DewPointAppView: View {
         .onChange(of: viewModel.configuredLocation?.id) { _, id in
             selectedID = id ?? ""
         }
-        #endif
     }
 }
+#endif
 
 private struct DewPointLocationsList: View {
     @ObservedObject var viewModel: DewPointViewModel
