@@ -51,3 +51,13 @@ struct DarkDewPointWidgetIntent: WidgetConfigurationIntent {
     @Parameter(title: "Location")
     var location: DewPointLocationEntity?
 }
+
+#if os(watchOS)
+struct WatchLocationDewPointIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Dew Point Location"
+    static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+}
+#endif

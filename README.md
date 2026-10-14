@@ -67,6 +67,11 @@ its own location selection when you browse other cities in the app. Existing
 Dew Point widgets retain their original behavior of following the app selection.
 System tinting and Lock Screen rendering still control widget presentation.
 
+On Apple Watch, add **Dew Point · Location** to your watch face or Smart Stack,
+then configure its Location to choose a city saved in the Watch app. Each
+complication keeps its own selection when you browse other locations in the app.
+Locations are saved separately on each device.
+
 ## Storage Checks
 
 Run the focused persistence checks without WeatherKit credentials:

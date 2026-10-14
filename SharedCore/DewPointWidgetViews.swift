@@ -107,7 +107,7 @@ struct JustDewWidgetEntryView: View {
             }
             .foregroundStyle(primaryTextColor)
         case .accessoryRectangular:
-            DewPointLockScreenRectangularView(reading: reading)
+            DewPointAccessoryRectangularView(reading: reading)
         #endif
         case .systemMedium, .systemLarge, .systemExtraLarge:
             VStack(alignment: .leading, spacing: 5) {
@@ -255,9 +255,12 @@ struct JustDewWidgetEntryView: View {
         DewPointComfortScale.color(for: reading.dewPointCelsius)
     }
 }
-#if os(iOS)
-private struct DewPointLockScreenRectangularView: View {
+#endif
+
+#if os(iOS) || os(watchOS)
+private struct DewPointAccessoryRectangularView: View {
     let reading: DewPointReading
+    var usesComfortColor = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -277,7 +280,7 @@ private struct DewPointLockScreenRectangularView: View {
                 showsLabels: false,
                 trackHeight: 3,
                 markerSize: 7,
-                usesComfortColor: false,
+                usesComfortColor: usesComfortColor,
                 monochromeColor: .primary
             )
 
@@ -294,8 +297,6 @@ private struct DewPointLockScreenRectangularView: View {
         }
     }
 }
-#endif
-
 #endif
 
 #if os(watchOS)
@@ -356,26 +357,7 @@ struct JustDewWatchEntryView: View {
                 circularGaugeContent(for: reading)
             }
         default:
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Dew Point")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(DewPointFormatters.temperature(reading.dewPoint))
-                    .font(.headline.monospacedDigit())
-                DewPointDayTimelineView(
-                    reading: reading,
-                    showsLabels: false,
-                    trackHeight: 4,
-                    markerSize: 8
-                )
-                Text(reading.location.widgetDisplayName)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Text(DewPointFormatters.updatedTime(reading.fetchedAt))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
+            DewPointAccessoryRectangularView(reading: reading, usesComfortColor: true)
         }
     }
 
