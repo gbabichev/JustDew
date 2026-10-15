@@ -48,7 +48,7 @@ struct JustDewWatch: Widget {
         StaticConfiguration(kind: DewPointConfiguration.watchWidgetKind, provider: WatchDewPointProvider()) { entry in
             JustDewWatchEntryView(entry: entry)
         }
-        .configurationDisplayName("Dew Point")
+        .configurationDisplayName("Current Location")
         .description("Shows the dew point at your current location, wherever you go.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
     }

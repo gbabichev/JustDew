@@ -70,8 +70,8 @@ Location widget also supports Lock Screen sizes and an Always Dark switch.
 Edit a location widget to choose its location. Each widget keeps its own choice.
 System tinting and Lock Screen rendering still control widget presentation.
 
-On Apple Watch, the standard **Dew Point** complication always follows Current
-Location. Add **Dew Point · Location** to your watch face or Smart Stack,
+On Apple Watch, **Current Location** always follows your device.
+Add **Saved Location** to your watch face or Smart Stack,
 then configure its Location to choose a city saved in the Watch app. Each
 complication keeps its own selection when you browse other locations in the app.
 Locations are saved separately on each device.

@@ -277,6 +277,9 @@ private struct SavedLocationRow: View {
     let isSelected: Bool
 
     var body: some View {
+        #if os(watchOS)
+        WatchSavedLocationRow(location: location, isSelected: isSelected)
+        #else
         HStack(spacing: 14) {
             Image(systemName: location.mode == .current ? "location.fill" : "mappin.and.ellipse")
                 .font(.title3)
@@ -301,6 +304,7 @@ private struct SavedLocationRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        #endif
     }
 }
 
@@ -309,6 +313,9 @@ private struct LocationSearchResultRow: View {
     let subtitle: String
 
     var body: some View {
+        #if os(watchOS)
+        WatchLocationSearchResultRow(title: title, subtitle: subtitle)
+        #else
         HStack(spacing: 14) {
             Image(systemName: "mappin.and.ellipse")
                 .foregroundStyle(.cyan)
@@ -325,5 +332,99 @@ private struct LocationSearchResultRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        #endif
     }
 }
+
+#if os(watchOS)
+private struct WatchSavedLocationRow: View {
+    let location: DewPointLocation
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if location.mode == .current {
+                HStack(spacing: 5) {
+                    Image(systemName: "location.fill")
+                        .foregroundStyle(.cyan)
+                    Text("Current Location")
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    Spacer(minLength: 0)
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.tint)
+                            .accessibilityLabel("Selected")
+                    }
+                }
+                .font(.caption2)
+                Text(location.compactDisplayName)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption)
+                        .foregroundStyle(.cyan)
+                    Text(location.compactDisplayName)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.tint)
+                            .accessibilityLabel("Selected")
+                    }
+                }
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+    }
+}
+#endif
+
+#if os(watchOS)
+private struct WatchLocationSearchResultRow: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 6) {
+                Image(systemName: "mappin.and.ellipse")
+                    .foregroundStyle(.cyan)
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(.tint)
+                    .accessibilityLabel("Add location")
+            }
+            .font(.caption2)
+        }
+        .multilineTextAlignment(.leading)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+    }
+}
+#endif
