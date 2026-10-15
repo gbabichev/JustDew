@@ -9,33 +9,7 @@ struct DewPointWeatherScrollView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Dew Point")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .accessibilityAddTraits(.isHeader)
-                DewPointWeatherCard {
-                    if let reading {
-                        DewPointCurrentWeatherView(reading: reading, errorMessage: errorMessage)
-                    } else {
-                        VStack(spacing: 12) {
-                            if isLoading {
-                                ProgressView("Loading weather…")
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                ContentUnavailableView("No Dew Point", systemImage: "drop.degreesign")
-                            }
-                            DewPointWeatherErrorView(message: errorMessage)
-                        }
-                    }
-                }
-                if let reading {
-                    DewPointForecastSection(reading: reading)
-                }
-            }
-            .padding(20)
-            // Leave room for the iOS page indicator without changing the viewport.
-            .padding(.bottom, 24)
+            DewPointWeatherContent(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
         }
         .background {
             #if os(iOS)
@@ -46,6 +20,42 @@ struct DewPointWeatherScrollView: View {
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
         .refreshable { await refresh() }
+    }
+}
+
+struct DewPointWeatherContent: View {
+    let reading: DewPointReading?
+    let isLoading: Bool
+    let errorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Dew Point")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
+            DewPointWeatherCard {
+                if let reading {
+                    DewPointCurrentWeatherView(reading: reading, errorMessage: errorMessage)
+                } else {
+                    VStack(spacing: 12) {
+                        if isLoading {
+                            ProgressView("Loading weather…")
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            ContentUnavailableView("No Dew Point", systemImage: "drop.degreesign")
+                        }
+                        DewPointWeatherErrorView(message: errorMessage)
+                    }
+                }
+            }
+            if let reading {
+                DewPointForecastSection(reading: reading)
+            }
+        }
+        .padding(20)
+        // Leave room for the iOS page indicator without changing the viewport.
+        .padding(.bottom, 24)
     }
 }
 

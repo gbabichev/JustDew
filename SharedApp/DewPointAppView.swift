@@ -4,6 +4,7 @@ import SwiftUI
 struct DewPointLocationPage: View {
     @ObservedObject var viewModel: DewPointViewModel
     let location: DewPointLocation
+    var scrollsVertically = true
 
     private var displayedReading: DewPointReading? {
         if viewModel.configuredLocation?.id == location.id { return viewModel.reading }
@@ -19,12 +20,20 @@ struct DewPointLocationPage: View {
         .formStyle(.grouped)
         .refreshable { await viewModel.refreshNow() }
         #else
-        DewPointWeatherScrollView(
-            reading: displayedReading,
-            isLoading: viewModel.isLoading,
-            errorMessage: viewModel.errorMessage,
-            refresh: { [viewModel] in await viewModel.refreshNow() }
-        )
+        if scrollsVertically {
+            DewPointWeatherScrollView(
+                reading: displayedReading,
+                isLoading: viewModel.isLoading,
+                errorMessage: viewModel.errorMessage,
+                refresh: { [viewModel] in await viewModel.refreshNow() }
+            )
+        } else {
+            DewPointWeatherContent(
+                reading: displayedReading,
+                isLoading: viewModel.isLoading,
+                errorMessage: viewModel.errorMessage
+            )
+        }
         #endif
     }
 
