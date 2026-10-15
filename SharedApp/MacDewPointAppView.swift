@@ -26,7 +26,22 @@ struct MacDewPointAppView: View {
             .toolbar {
                 if !viewModel.savedLocations.isEmpty {
                     ToolbarSpacer(.flexible, placement: .automatic)
-                    ToolbarItem(placement: .automatic) {
+                    ToolbarItemGroup(placement: .automatic) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 20, height: 20)
+                                .accessibilityLabel("Refreshing")
+                        } else {
+                            Button {
+                                viewModel.refresh()
+                            } label: {
+                                Label("Refresh", systemImage: "arrow.clockwise")
+                            }
+                            .disabled(viewModel.configuredLocation == nil)
+                            .keyboardShortcut("r", modifiers: .command)
+                            .help("Refresh weather")
+                        }
                         Button {
                             showsLocations = true
                         } label: {

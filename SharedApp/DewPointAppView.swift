@@ -11,17 +11,25 @@ struct DewPointLocationPage: View {
     }
 
     var body: some View {
+        #if os(watchOS)
         Form {
             dewPointSection
             forecastSection
         }
         .formStyle(.grouped)
-        #if os(iOS) || os(macOS)
-        .scrollEdgeEffectStyle(.soft, for: .top)
-        #endif
         .refreshable { await viewModel.refreshNow() }
+        #else
+        DewPointWeatherScrollView(
+            location: location,
+            reading: displayedReading,
+            isLoading: viewModel.isLoading,
+            errorMessage: viewModel.errorMessage,
+            refresh: { [viewModel] in await viewModel.refreshNow() }
+        )
+        #endif
     }
 
+    #if os(watchOS)
     private var dewPointSection: some View {
         Section {
             if let reading = displayedReading {
@@ -210,29 +218,5 @@ struct DewPointLocationPage: View {
         7
         #endif
     }
+    #endif
 }
-
-#if os(iOS) || os(macOS)
-private struct DewPointLocationHeading: View {
-    let location: DewPointLocation
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(location.compactDisplayName)
-                .font(.largeTitle.weight(.bold))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if location.mode == .current {
-                Label("Current Location", systemImage: "location.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Text("Dew Point")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-        }
-        .padding(.bottom, 4)
-    }
-}
-#endif
