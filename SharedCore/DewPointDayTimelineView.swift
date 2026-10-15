@@ -139,13 +139,17 @@ struct DewPointDayTimelineView: View {
 struct DewPointForecastView: View {
     var reading: DewPointReading
     var trackHeight: CGFloat = 7
+    var maximumDayCount = DewPointConfiguration.forecastDayCount - 1
+    var rowSpacing: CGFloat = 8
+    var usesComfortColor = true
     var monochromeColor: Color = .secondary
 
     private var forecastDays: [DewPointForecastDay] {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: reading.observedAt)
 
-        return (1..<DewPointConfiguration.forecastDayCount).compactMap { dayOffset in
+        let count = min(max(maximumDayCount, 0), DewPointConfiguration.forecastDayCount - 1)
+        return (1..<(count + 1)).compactMap { dayOffset in
             guard let dayStart = calendar.date(byAdding: .day, value: dayOffset, to: todayStart),
                   let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return nil
@@ -167,7 +171,7 @@ struct DewPointForecastView: View {
 
     var body: some View {
         if !forecastDays.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: rowSpacing) {
                 ForEach(forecastDays) { day in
                     dayRow(for: day)
                 }
@@ -237,7 +241,9 @@ struct DewPointForecastView: View {
                         stops: timelineGradientStops(
                             for: day.points,
                             start: day.dayStart,
-                            end: day.dayEnd
+                            end: day.dayEnd,
+                            usesComfortColor: usesComfortColor,
+                            monochromeColor: monochromeColor
                         ),
                         startPoint: .leading,
                         endPoint: .trailing

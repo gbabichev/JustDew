@@ -51,10 +51,10 @@ struct JustDewWidget: Widget {
         .configurationDisplayName("Dew Point")
         .description("Shows the dew point at your current location, wherever you go.")
         #if os(macOS)
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()
         #else
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryCircular, .accessoryRectangular, .accessoryInline])
         .contentMarginsDisabled()
         #endif
     }

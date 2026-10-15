@@ -76,8 +76,10 @@ struct JustDewWidgetEntryView: View {
         #if os(iOS)
         case .systemSmall:
             EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
-        case .systemMedium, .systemLarge, .systemExtraLarge:
+        case .systemMedium:
             EdgeInsets(top: 25, leading: 20, bottom: 16, trailing: 20)
+        case .systemLarge, .systemExtraLarge:
+            EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
         case .accessoryCircular, .accessoryRectangular, .accessoryInline:
             EdgeInsets()
         #endif
@@ -110,7 +112,16 @@ struct JustDewWidgetEntryView: View {
         case .accessoryRectangular:
             DewPointAccessoryRectangularView(reading: reading)
         #endif
-        case .systemMedium, .systemLarge, .systemExtraLarge:
+        case .systemLarge, .systemExtraLarge:
+            DewPointLargeWidgetContent(
+                reading: reading,
+                primaryColor: primaryTextColor,
+                secondaryColor: secondaryTextColor,
+                valueColor: dewPointValueColor(for: reading),
+                accentColor: comfortAccentColor(for: reading),
+                usesComfortColor: showsComfortColor
+            )
+        case .systemMedium:
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     HStack(spacing: 6) {
@@ -256,6 +267,110 @@ struct JustDewWidgetEntryView: View {
         DewPointComfortScale.color(for: reading.dewPointCelsius)
     }
 }
+
+private struct DewPointLargeWidgetContent: View {
+    let reading: DewPointReading
+    let primaryColor: Color
+    let secondaryColor: Color
+    let valueColor: Color
+    let accentColor: Color
+    let usesComfortColor: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            DewPointLargeWidgetCurrentConditions(
+                reading: reading, secondaryColor: secondaryColor,
+                valueColor: valueColor, accentColor: accentColor,
+                usesComfortColor: usesComfortColor
+            )
+            Divider().overlay(secondaryColor.opacity(0.2))
+            DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
+                                       secondaryColor: secondaryColor, usesComfortColor: usesComfortColor)
+            Spacer(minLength: 0)
+            Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+                .font(.caption2)
+                .foregroundStyle(secondaryColor)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct DewPointLargeWidgetCurrentConditions: View {
+    let reading: DewPointReading
+    let secondaryColor: Color
+    let valueColor: Color
+    let accentColor: Color
+    let usesComfortColor: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Label("Dew Point", systemImage: "drop.degreesign.fill")
+                    .foregroundStyle(accentColor)
+                Spacer(minLength: 8)
+                Image(systemName: reading.symbolName)
+                    .foregroundStyle(secondaryColor)
+            }
+            .font(.caption)
+            HStack(alignment: .center) {
+                Text(DewPointFormatters.temperature(reading.dewPoint))
+                    .font(.system(size: 40, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(valueColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                }
+                .font(.caption2)
+                .foregroundStyle(secondaryColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+            DewPointWidgetLocationText(location: reading.location)
+                .font(.caption)
+                .foregroundStyle(secondaryColor)
+                .lineLimit(1)
+            DewPointDayTimelineView(reading: reading, showsLabels: false,
+                                   trackHeight: 5, markerSize: 10,
+                                   usesComfortColor: usesComfortColor, monochromeColor: secondaryColor)
+        }
+    }
+}
+
+private struct DewPointLargeWidgetForecast: View {
+    let reading: DewPointReading
+    let textColor: Color
+    let secondaryColor: Color
+    let usesComfortColor: Bool
+
+    private var hasForecast: Bool {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: reading.observedAt)
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: start) else { return false }
+        return reading.dailyForecastPoints.contains { $0.date >= tomorrow }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Dew Point Forecast")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(secondaryColor)
+            if hasForecast {
+                DewPointForecastView(reading: reading, trackHeight: 5, maximumDayCount: 7,
+                                     rowSpacing: 6, usesComfortColor: usesComfortColor,
+                                     monochromeColor: textColor)
+            } else {
+                Text("Forecast temporarily unavailable")
+                    .font(.caption2)
+                    .foregroundStyle(secondaryColor)
+            }
+        }
+    }
+}
+
 #endif
 
 #if os(iOS) || os(watchOS)

@@ -65,9 +65,9 @@ struct SavedLocationDewPointWidget: Widget {
         .configurationDisplayName("Dew Point · Location")
         .description("Choose Current Location or a saved city, with an optional dark appearance.")
         #if os(macOS)
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         #else
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryCircular, .accessoryRectangular, .accessoryInline])
         #endif
         .contentMarginsDisabled()
     }
@@ -81,7 +81,7 @@ struct AlwaysDarkDewPointWidget: Widget {
         }
         .configurationDisplayName("Dew Point · Always Dark")
         .description("An always dark dew point widget that follows your current location.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()
     }
 }
@@ -95,7 +95,7 @@ struct AlwaysDarkLocationDewPointWidget: Widget {
         }
         .configurationDisplayName("Dew Point · Location · Always Dark")
         .description("Choose a saved city in Edit Widget to keep its dew point visible in an always dark appearance.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabled()
     }
 }

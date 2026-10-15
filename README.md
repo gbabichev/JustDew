@@ -63,9 +63,11 @@ mobile devices, or use its context menu on Mac.
 
 **Dew Point** and **Dew Point · Always Dark** always follow your current location.
 Browsing a saved city in the app does not change them.
+All four iOS and Mac widget styles offer a large size with current conditions
+and the next seven days of dew point forecasts.
 
 Use **Dew Point · Location** or **Dew Point · Location · Always Dark** to pin a
-widget to a city saved on that device. Both offer small and medium sizes; the
+widget to a city saved on that device. Both offer small, medium, and large sizes; the
 Location widget also supports Lock Screen sizes and an Always Dark switch.
 Edit a location widget to choose its location. Each widget keeps its own choice.
 System tinting and Lock Screen rendering still control widget presentation.
