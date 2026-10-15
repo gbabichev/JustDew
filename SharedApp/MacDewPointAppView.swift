@@ -22,7 +22,8 @@ struct MacDewPointAppView: View {
                 }
             }
             .background(Color(nsColor: .windowBackgroundColor))
-            .navigationTitle("JustDew")
+            .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
+            .navigationSubtitle(viewModel.configuredLocation?.mode == .current ? Text("Current Location") : Text(""))
             .toolbar {
                 if !viewModel.savedLocations.isEmpty {
                     ToolbarSpacer(.flexible, placement: .automatic)

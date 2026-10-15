@@ -2,7 +2,6 @@
 import SwiftUI
 
 struct DewPointWeatherScrollView: View {
-    let location: DewPointLocation
     let reading: DewPointReading?
     let isLoading: Bool
     let errorMessage: String?
@@ -11,7 +10,10 @@ struct DewPointWeatherScrollView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                DewPointLocationHeading(location: location)
+                Text("Dew Point")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
                 DewPointWeatherCard {
                     if let reading {
                         DewPointCurrentWeatherView(reading: reading, errorMessage: errorMessage)
@@ -44,28 +46,6 @@ struct DewPointWeatherScrollView: View {
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
         .refreshable { await refresh() }
-    }
-}
-
-private struct DewPointLocationHeading: View {
-    let location: DewPointLocation
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(location.compactDisplayName)
-                .font(.largeTitle.weight(.bold))
-                .foregroundStyle(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if location.mode == .current {
-                Label("Current Location", systemImage: "location.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Text("Dew Point")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-        }
     }
 }
 

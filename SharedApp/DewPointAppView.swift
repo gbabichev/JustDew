@@ -20,7 +20,6 @@ struct DewPointLocationPage: View {
         .refreshable { await viewModel.refreshNow() }
         #else
         DewPointWeatherScrollView(
-            location: location,
             reading: displayedReading,
             isLoading: viewModel.isLoading,
             errorMessage: viewModel.errorMessage,

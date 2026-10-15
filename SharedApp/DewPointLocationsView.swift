@@ -137,8 +137,10 @@ private struct DewPointIOSNavigationPage: View {
     var body: some View {
         NavigationStack {
             DewPointLocationPage(viewModel: viewModel, location: location)
-                .navigationTitle("")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle(location.compactDisplayName)
+                .navigationSubtitle(location.mode == .current ? Text("Current Location") : Text(""))
+                .navigationBarTitleDisplayMode(.large)
+                .background(DewPointNavigationBarMargins(horizontal: 20))
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(action: showLocations) {
