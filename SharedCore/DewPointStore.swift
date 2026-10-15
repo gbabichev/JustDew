@@ -85,10 +85,11 @@ struct DewPointStore {
         }
 
         var mergedReading = incoming
-        let forecastInterval = DewPointConfiguration.forecastDateRange(for: incoming.observedAt)
+        mergedReading.location.timeZoneIdentifier = incoming.location.timeZoneIdentifier ?? existing.location.timeZoneIdentifier
+        let forecastInterval = DewPointConfiguration.forecastDateRange(for: incoming.observedAt, calendar: mergedReading.forecastCalendar)
         let forecastPoints = (existing.dailyForecastPoints + incoming.dailyForecastPoints)
             .filter { forecastInterval.contains($0.date) }
-            .uniquedByHour()
+            .uniquedByHour(calendar: mergedReading.forecastCalendar)
             .sorted { $0.date < $1.date }
 
         mergedReading.dailyForecast = forecastPoints
@@ -103,8 +104,7 @@ struct DewPointStore {
 }
 
 private extension Array where Element == DewPointForecastPoint {
-    func uniquedByHour() -> [DewPointForecastPoint] {
-        let calendar = Calendar.current
+    func uniquedByHour(calendar: Calendar) -> [DewPointForecastPoint] {
 
         return reduce(into: [Date: DewPointForecastPoint]()) { partialResult, point in
             let key = calendar.startOfHour(for: point.date)
@@ -117,7 +117,6 @@ private extension Array where Element == DewPointForecastPoint {
 
 private extension Calendar {
     func startOfHour(for date: Date) -> Date {
-        let components = dateComponents([.year, .month, .day, .hour], from: date)
-        return self.date(from: components) ?? date
+        dateInterval(of: .hour, for: date)?.start ?? date
     }
 }

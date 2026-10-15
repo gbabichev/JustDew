@@ -7,6 +7,8 @@ struct DewPointDayTimelineView: View {
     var markerSize: CGFloat = 14
     var usesComfortColor = true
     var monochromeColor: Color = .secondary
+    var referenceDate: Date? = nil
+    var metric: DayTimelineMetric = .dewPoint
 
     private var forecastPoints: [DewPointForecastPoint] {
         reading.dailyForecastPoints
@@ -36,8 +38,8 @@ struct DewPointDayTimelineView: View {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Today's dew point")
-            .accessibilityValue("Now \(DewPointFormatters.temperature(reading.dewPoint))")
+            .accessibilityLabel(metric == .dewPoint ? Text("Today's dew point") : Text("Today's temperature"))
+            .accessibilityValue("Now \(DewPointFormatters.temperature(metric.currentValue(in: reading)))")
         }
     }
 
@@ -55,7 +57,8 @@ struct DewPointDayTimelineView: View {
                             start: dayStart,
                             end: dayEnd,
                             usesComfortColor: usesComfortColor,
-                            monochromeColor: monochromeColor
+                            monochromeColor: monochromeColor,
+                            metric: metric
                         ),
                         startPoint: .leading,
                         endPoint: .trailing
@@ -63,15 +66,17 @@ struct DewPointDayTimelineView: View {
                     .frame(height: trackHeight)
                     .position(x: width / 2, y: centerY)
 
-                Circle()
-                    .fill(markerColor)
-                    .frame(width: markerSize, height: markerSize)
-                    .overlay {
-                        Circle()
-                            .stroke(.white.opacity(0.9), lineWidth: max(markerSize * 0.16, 1.5))
-                    }
-                    .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
-                    .position(x: markerX, y: centerY)
+                if reading.observedAt >= dayStart && reading.observedAt < dayEnd {
+                    Circle()
+                        .fill(markerColor)
+                        .frame(width: markerSize, height: markerSize)
+                        .overlay {
+                            Circle()
+                                .stroke(.white.opacity(0.9), lineWidth: max(markerSize * 0.16, 1.5))
+                        }
+                        .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
+                        .position(x: markerX, y: centerY)
+                }
             }
         }
         .frame(height: max(trackHeight, markerSize))
@@ -79,39 +84,44 @@ struct DewPointDayTimelineView: View {
 
     private func axisLabel(for date: Date, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 1) {
-            Text(DewPointFormatters.hourLabel(date))
+            Text(DewPointFormatters.hourLabel(date, timeZone: reading.forecastCalendar.timeZone))
 
             if let forecastPoint = forecastPoint(nearest: date) {
-                Text(DewPointFormatters.temperature(forecastPoint.dewPoint))
+                Text(DewPointFormatters.temperature(metric.forecastValue(in: forecastPoint)))
                     .fontWeight(.semibold)
                     .monospacedDigit()
+            } else {
+                Text("—")
             }
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment(for: alignment))
     }
 
     private var dayStart: Date {
-        Calendar.current.startOfDay(for: reading.observedAt)
+        reading.forecastCalendar.startOfDay(for: referenceDate ?? reading.observedAt)
     }
 
     private var dayEnd: Date {
-        Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
+        reading.forecastCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
     }
 
     private var midday: Date {
-        Calendar.current.date(byAdding: .hour, value: 12, to: dayStart) ?? dayStart.addingTimeInterval(43_200)
+        reading.forecastCalendar.date(byAdding: .hour, value: 12, to: dayStart) ?? dayStart.addingTimeInterval(43_200)
     }
 
     private var lateEvening: Date {
-        Calendar.current.date(byAdding: .hour, value: 23, to: dayStart) ?? dayEnd.addingTimeInterval(-3_600)
+        reading.forecastCalendar.date(byAdding: .hour, value: 23, to: dayStart) ?? dayEnd.addingTimeInterval(-3_600)
     }
 
     private var markerColor: Color {
-        usesComfortColor ? DewPointComfortScale.color(for: reading.dewPointCelsius) : monochromeColor
+        usesComfortColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : monochromeColor
     }
 
     private func forecastPoint(nearest date: Date) -> DewPointForecastPoint? {
-        forecastPoints.min {
+        guard let first = forecastPoints.first, let last = forecastPoints.last,
+              date >= first.date.addingTimeInterval(-1_800),
+              date <= last.date.addingTimeInterval(3_600) else { return nil }
+        return forecastPoints.min {
             abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
         }
     }
@@ -145,7 +155,7 @@ struct DewPointForecastView: View {
     var monochromeColor: Color = .secondary
 
     private var forecastDays: [DewPointForecastDay] {
-        let calendar = Calendar.current
+        let calendar = reading.forecastCalendar
         let todayStart = calendar.startOfDay(for: reading.observedAt)
 
         let count = min(max(maximumDayCount, 0), DewPointConfiguration.forecastDayCount - 1)
@@ -189,7 +199,7 @@ struct DewPointForecastView: View {
         }
         #else
         HStack(spacing: 10) {
-            Text(DewPointFormatters.weekdayLabel(day.dayStart))
+            Text(DewPointFormatters.weekdayLabel(day.dayStart, calendar: reading.forecastCalendar))
                 .font(.caption)
                 .foregroundStyle(monochromeColor)
                 .lineLimit(1)
@@ -206,7 +216,7 @@ struct DewPointForecastView: View {
 
     private func forecastDayHeader(for day: DewPointForecastDay) -> some View {
         HStack(spacing: 8) {
-            Text(DewPointFormatters.weekdayLabel(day.dayStart))
+            Text(DewPointFormatters.weekdayLabel(day.dayStart, calendar: reading.forecastCalendar))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
@@ -279,7 +289,8 @@ private func timelineGradientStops(
     start: Date,
     end: Date,
     usesComfortColor: Bool = true,
-    monochromeColor: Color = .secondary
+    monochromeColor: Color = .secondary,
+    metric: DayTimelineMetric = .dewPoint
 ) -> [Gradient.Stop] {
     let sortedPoints = points.sorted { $0.date < $1.date }
     let inactiveColor = monochromeColor.opacity(0.18)
@@ -294,7 +305,7 @@ private func timelineGradientStops(
     let duration = max(end.timeIntervalSince(start), 1)
     let color: (DewPointForecastPoint) -> Color = { point in
         usesComfortColor
-            ? DewPointComfortScale.color(for: point.dewPointCelsius)
+            ? metric.color(forCelsius: metric.forecastValue(in: point).value)
             : monochromeColor.opacity(0.45)
     }
     let location: (Date) -> CGFloat = { date in
@@ -302,12 +313,48 @@ private func timelineGradientStops(
         return CGFloat(min(max(progress, 0), 1))
     }
 
-    return (
-        [Gradient.Stop(color: color(firstPoint), location: 0)]
-        + sortedPoints.map { point in
-            Gradient.Stop(color: color(point), location: location(point.date))
+    var stops: [Gradient.Stop] = []
+    let firstLocation = location(firstPoint.date)
+    if firstLocation > 0 {
+        stops.append(Gradient.Stop(color: inactiveColor, location: 0))
+        stops.append(Gradient.Stop(color: inactiveColor, location: max(firstLocation - 0.0001, 0)))
+    }
+    stops += sortedPoints.map { point in
+        Gradient.Stop(color: color(point), location: location(point.date))
+    }
+    let lastLocation = location(lastPoint.date.addingTimeInterval(3_600))
+    stops.append(Gradient.Stop(color: color(lastPoint), location: lastLocation))
+    if lastLocation < 1 {
+        stops.append(Gradient.Stop(color: inactiveColor, location: min(lastLocation + 0.0001, 1)))
+        stops.append(Gradient.Stop(color: inactiveColor, location: 1))
+    }
+    return stops.sorted { $0.location < $1.location }
+}
+
+enum DayTimelineMetric: Equatable {
+    case dewPoint, temperature
+
+    func currentValue(in reading: DewPointReading) -> Measurement<UnitTemperature> {
+        self == .dewPoint ? reading.dewPoint : reading.temperature
+    }
+
+    func forecastValue(in point: DewPointForecastPoint) -> Measurement<UnitTemperature> {
+        self == .dewPoint ? point.dewPoint : point.temperature
+    }
+
+    func color(forCelsius value: Double) -> Color {
+        self == .dewPoint ? DewPointComfortScale.color(for: value) : WeatherTemperatureColors.color(forCelsius: value)
+    }
+}
+
+enum WeatherTemperatureColors {
+    static func color(forCelsius value: Double) -> Color {
+        switch value {
+        case ..<0: return .blue
+        case ..<15: return .cyan
+        case ..<25: return .yellow
+        case ..<32: return .orange
+        default: return .red
         }
-        + [Gradient.Stop(color: color(lastPoint), location: 1)]
-    )
-    .sorted { $0.location < $1.location }
+    }
 }

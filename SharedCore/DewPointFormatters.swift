@@ -35,15 +35,17 @@ enum DewPointFormatters {
         return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value * 100))%"
     }
 
-    static func updatedTime(_ date: Date) -> String {
+    static func updatedTime(_ date: Date, timeZone: TimeZone? = nil, includesDate: Bool = false) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .none
+        formatter.timeZone = timeZone ?? .current
+        formatter.dateStyle = includesDate ? .short : .none
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 
-    static func hourLabel(_ date: Date) -> String {
+    static func hourLabel(_ date: Date, timeZone: TimeZone? = nil) -> String {
         let formatter = DateFormatter()
+        formatter.timeZone = timeZone ?? .current
         formatter.dateStyle = .none
         formatter.dateFormat = DateFormatter.dateFormat(
             fromTemplate: "ha",
@@ -53,17 +55,26 @@ enum DewPointFormatters {
         return formatter.string(from: date)
     }
 
-    static func weekdayLabel(_ date: Date) -> String {
-        if Calendar.current.isDateInTomorrow(date) {
+    static func weekdayLabel(_ date: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDateInTomorrow(date) {
             return "Tomorrow"
         }
 
         let formatter = DateFormatter()
+        formatter.timeZone = calendar.timeZone
         formatter.dateFormat = DateFormatter.dateFormat(
             fromTemplate: "EEE",
             options: 0,
             locale: .current
         )
+        return formatter.string(from: date)
+    }
+
+    static func forecastDayLabel(_ date: Date, relativeTo reference: Date, calendar: Calendar) -> String {
+        if calendar.isDate(date, inSameDayAs: reference) { return String(localized: "Today") }
+        let formatter = DateFormatter()
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "EEE", options: 0, locale: .current)
         return formatter.string(from: date)
     }
 

@@ -174,7 +174,8 @@ final class DewPointViewModel: ObservableObject {
                 shortName: resolvedNames.shortName,
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
-                savedAt: Date()
+                savedAt: Date(),
+                timeZoneIdentifier: names.timeZoneIdentifier
             )
 
             store.saveLocation(configuredLocation)
@@ -242,7 +243,14 @@ final class DewPointViewModel: ObservableObject {
     private func fetchReadingValue(for location: DewPointLocation) async throws {
         let reading = try await DewPointWeatherClient.reading(for: location)
         store.saveReading(reading)
-        self.reading = reading
+        let storedReading = store.loadReading(for: reading.location) ?? reading
+        self.reading = storedReading
+        configuredLocation = storedReading.location
+        if let index = savedLocations.firstIndex(where: { $0.id == storedReading.location.id }),
+           savedLocations[index] != storedReading.location {
+            savedLocations[index] = storedReading.location
+            store.saveLocations(savedLocations)
+        }
     }
 
     private func runLoadingOperation(_ operation: () async throws -> Void) async {
@@ -268,7 +276,8 @@ final class DewPointViewModel: ObservableObject {
 
     private func shouldRefreshForecast(_ reading: DewPointReading?) -> Bool {
         guard let reading else { return true }
-        let calendar = Calendar.current
+        guard reading.dailyWeather != nil else { return true }
+        let calendar = reading.forecastCalendar
         let start = calendar.startOfDay(for: Date())
         guard let lastDayStart = calendar.date(byAdding: .day, value: DewPointConfiguration.forecastDayCount - 1, to: start) else {
             return reading.dailyForecastPoints.isEmpty
@@ -277,7 +286,7 @@ final class DewPointViewModel: ObservableObject {
         return !reading.dailyForecastPoints.contains { $0.date >= lastDayStart }
     }
 
-    private func currentLocationNames(_ names: (name: String, shortName: String?)) -> (name: String, shortName: String?) {
+    private func currentLocationNames(_ names: (name: String, shortName: String?, timeZoneIdentifier: String?)) -> (name: String, shortName: String?) {
         let resolvedLocation = DewPointLocation(
             mode: .current,
             name: names.name,
@@ -291,7 +300,7 @@ final class DewPointViewModel: ObservableObject {
               let configuredLocation,
               configuredLocation.mode == .current,
               configuredLocation.hasSpecificDisplayName else {
-            return names
+            return (names.name, names.shortName)
         }
 
         return (configuredLocation.name, configuredLocation.shortName)

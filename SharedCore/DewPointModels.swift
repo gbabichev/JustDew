@@ -27,6 +27,7 @@ struct DewPointLocation: Codable, Equatable, Sendable, Identifiable {
     var latitude: Double
     var longitude: Double
     var savedAt: Date
+    var timeZoneIdentifier: String? = nil
 
     var clLocation: CLLocation {
         CLLocation(latitude: latitude, longitude: longitude)
@@ -88,6 +89,16 @@ struct DewPointReading: Codable, Equatable, Sendable {
     var observedAt: Date
     var fetchedAt: Date
     var dailyForecast: [DewPointForecastPoint]? = nil
+    var apparentTemperatureCelsius: Double? = nil
+    var dailyWeather: [WeatherForecastDay]? = nil
+
+    var forecastCalendar: Calendar {
+        var calendar = Calendar.current
+        if let identifier = location.timeZoneIdentifier, let timeZone = TimeZone(identifier: identifier) {
+            calendar.timeZone = timeZone
+        }
+        return calendar
+    }
 
     var dewPoint: Measurement<UnitTemperature> {
         Measurement(value: dewPointCelsius, unit: .celsius)
@@ -100,6 +111,17 @@ struct DewPointReading: Codable, Equatable, Sendable {
     var dailyForecastPoints: [DewPointForecastPoint] {
         dailyForecast ?? []
     }
+}
+
+struct WeatherForecastDay: Codable, Equatable, Sendable, Identifiable {
+    var date: Date
+    var lowTemperatureCelsius: Double
+    var highTemperatureCelsius: Double
+    var condition: String
+    var symbolName: String
+    var precipitationChance: Double
+
+    var id: Date { date }
 }
 
 struct DewPointForecastPoint: Codable, Equatable, Sendable, Identifiable {

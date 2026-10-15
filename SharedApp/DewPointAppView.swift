@@ -180,7 +180,7 @@ struct DewPointLocationPage: View {
     }
 
     private func hasFutureForecast(_ reading: DewPointReading) -> Bool {
-        let calendar = Calendar.current
+        let calendar = reading.forecastCalendar
         let todayStart = calendar.startOfDay(for: reading.observedAt)
         guard let tomorrowStart = calendar.date(byAdding: .day, value: 1, to: todayStart) else { return false }
 

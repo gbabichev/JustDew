@@ -5,12 +5,21 @@ import WeatherKit
 enum DewPointWeatherClient {
     static func reading(for location: DewPointLocation) async throws -> DewPointReading {
         do {
+            var resolvedLocation = location
+            if resolvedLocation.timeZoneIdentifier == nil {
+                resolvedLocation.timeZoneIdentifier = await LocationSearchService.timeZoneIdentifier(for: location.clLocation)
+            }
+            var calendar = Calendar.current
+            if let identifier = resolvedLocation.timeZoneIdentifier, let timeZone = TimeZone(identifier: identifier) {
+                calendar.timeZone = timeZone
+            }
             let requestDate = Date()
-            let forecastRange = DewPointConfiguration.forecastDateRange(for: requestDate)
-            let (current, hourly) = try await WeatherService.shared.weather(
+            let forecastRange = DewPointConfiguration.forecastDateRange(for: requestDate, calendar: calendar)
+            let (current, hourly, daily) = try await WeatherService.shared.weather(
                 for: location.clLocation,
                 including: .current,
-                .hourly(startDate: requestDate, endDate: forecastRange.upperBound)
+                .hourly(startDate: requestDate, endDate: forecastRange.upperBound),
+                .daily
             )
             let currentForecastPoint = DewPointForecastPoint(
                 date: current.date,
@@ -20,7 +29,7 @@ enum DewPointWeatherClient {
             )
 
             return DewPointReading(
-                location: location,
+                location: resolvedLocation,
                 dewPointCelsius: current.dewPoint.converted(to: .celsius).value,
                 temperatureCelsius: current.temperature.converted(to: .celsius).value,
                 humidity: current.humidity,
@@ -31,8 +40,20 @@ enum DewPointWeatherClient {
                 dailyForecast: dailyForecast(
                     from: hourly.forecast,
                     observedAt: current.date,
-                    currentPoint: currentForecastPoint
-                )
+                    currentPoint: currentForecastPoint,
+                    calendar: calendar
+                ),
+                apparentTemperatureCelsius: current.apparentTemperature.converted(to: .celsius).value,
+                dailyWeather: daily.forecast.filter { forecastRange.contains($0.date) }.map { day in
+                    WeatherForecastDay(
+                        date: day.date,
+                        lowTemperatureCelsius: day.lowTemperature.converted(to: .celsius).value,
+                        highTemperatureCelsius: day.highTemperature.converted(to: .celsius).value,
+                        condition: day.condition.description,
+                        symbolName: day.symbolName,
+                        precipitationChance: day.precipitationChance
+                    )
+                }
             )
         } catch {
             if error.isWeatherKitAuthenticationFailure {
@@ -45,9 +66,10 @@ enum DewPointWeatherClient {
     private static func dailyForecast(
         from hourlyForecast: [HourWeather],
         observedAt: Date,
-        currentPoint: DewPointForecastPoint
+        currentPoint: DewPointForecastPoint,
+        calendar: Calendar
     ) -> [DewPointForecastPoint] {
-        let forecastInterval = DewPointConfiguration.forecastDateRange(for: observedAt)
+        let forecastInterval = DewPointConfiguration.forecastDateRange(for: observedAt, calendar: calendar)
 
         let forecastPoints = hourlyForecast
             .filter { forecastInterval.contains($0.date) }
@@ -63,7 +85,7 @@ enum DewPointWeatherClient {
 
         return (forecastPoints + [currentPoint])
             .filter { forecastInterval.contains($0.date) }
-            .uniquedByHour()
+            .uniquedByHour(calendar: calendar)
             .sorted { $0.date < $1.date }
     }
 
@@ -71,8 +93,7 @@ enum DewPointWeatherClient {
 }
 
 private extension Array where Element == DewPointForecastPoint {
-    func uniquedByHour() -> [DewPointForecastPoint] {
-        let calendar = Calendar.current
+    func uniquedByHour(calendar: Calendar) -> [DewPointForecastPoint] {
 
         return reduce(into: [Date: DewPointForecastPoint]()) { partialResult, point in
             let key = calendar.startOfHour(for: point.date)
@@ -85,8 +106,7 @@ private extension Array where Element == DewPointForecastPoint {
 
 private extension Calendar {
     func startOfHour(for date: Date) -> Date {
-        let components = dateComponents([.year, .month, .day, .hour], from: date)
-        return self.date(from: components) ?? date
+        dateInterval(of: .hour, for: date)?.start ?? date
     }
 }
 

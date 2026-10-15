@@ -365,12 +365,23 @@ private struct SidebarLocationRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if let reading {
-                Text(DewPointFormatters.temperature(reading.dewPoint))
-                    .font(.system(.title3, design: .rounded, weight: .medium))
-                    .monospacedDigit()
-                    .fixedSize()
-                    .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
-                    .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+                VStack(alignment: .trailing, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: reading.symbolName)
+                            .font(.caption)
+                            .symbolRenderingMode(.multicolor)
+                            .accessibilityHidden(true)
+                        Text(DewPointFormatters.temperature(reading.temperature))
+                            .font(.system(.title3, design: .rounded, weight: .medium))
+                            .monospacedDigit()
+                            .accessibilityLabel("Temperature \(DewPointFormatters.temperature(reading.temperature))")
+                    }
+                    Text("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                }
+                .fixedSize()
             }
         }
         .padding(.vertical, 6)

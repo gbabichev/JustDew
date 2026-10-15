@@ -82,7 +82,7 @@ enum DewPointWidgetLoader {
             let names = await LocationSearchService.currentLocationNames(for: current)
             location = DewPointLocation(mode: .current, name: names.name, shortName: names.shortName,
                                         latitude: current.coordinate.latitude, longitude: current.coordinate.longitude,
-                                        savedAt: Date())
+                                        savedAt: Date(), timeZoneIdentifier: names.timeZoneIdentifier)
         } else {
             guard let saved = store.loadLocations().first(where: { $0.id == locationID }) else {
                 throw DewPointError.missingConfiguredLocation

@@ -34,7 +34,8 @@ enum LocationSearchService {
                 shortName: names.shortName,
                 latitude: mapItem.location.coordinate.latitude,
                 longitude: mapItem.location.coordinate.longitude,
-                savedAt: Date()
+                savedAt: Date(),
+                timeZoneIdentifier: mapItem.timeZone?.identifier
             )
             return seen.insert(location.id).inserted ? location : nil
         }
@@ -56,23 +57,31 @@ enum LocationSearchService {
         let names = displayNames(for: mapItem, fallback: fallback)
         return DewPointLocation(mode: .manual, name: names.name, shortName: names.shortName,
                                 latitude: mapItem.location.coordinate.latitude,
-                                longitude: mapItem.location.coordinate.longitude, savedAt: Date())
+                                longitude: mapItem.location.coordinate.longitude, savedAt: Date(),
+                                timeZoneIdentifier: mapItem.timeZone?.identifier)
     }
 
     static func currentLocationName(for location: CLLocation) async -> String {
         await currentLocationNames(for: location).name
     }
 
-    static func currentLocationNames(for location: CLLocation) async -> (name: String, shortName: String?) {
+    static func currentLocationNames(for location: CLLocation) async -> (name: String, shortName: String?, timeZoneIdentifier: String?) {
         do {
             if let request = MKReverseGeocodingRequest(location: location),
                let mapItem = try await request.mapItems.first {
-                return displayNames(for: mapItem, fallback: "Current Location")
+                let names = displayNames(for: mapItem, fallback: "Current Location")
+                return (names.name, names.shortName, mapItem.timeZone?.identifier)
             }
         } catch {
-            return ("Current Location", nil)
+            return ("Current Location", nil, nil)
         }
-        return ("Current Location", nil)
+        return ("Current Location", nil, nil)
+    }
+
+    static func timeZoneIdentifier(for location: CLLocation) async -> String? {
+        guard let request = MKReverseGeocodingRequest(location: location),
+              let items = try? await request.mapItems else { return nil }
+        return items.first?.timeZone?.identifier
     }
 
     private static func displayNames(for mapItem: MKMapItem, fallback: String) -> (name: String, shortName: String?) {
