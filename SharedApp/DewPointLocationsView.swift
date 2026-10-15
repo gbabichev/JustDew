@@ -6,10 +6,9 @@ struct DewPointAppView: View {
 
     var body: some View {
         #if os(macOS)
-        MacDewPointAppView(viewModel: viewModel)
-            .task { viewModel.loadInitialReading() }
+        DewPointAdaptiveAppView(viewModel: viewModel)
         #elseif os(iOS)
-        DewPointIOSPagesView(viewModel: viewModel)
+        DewPointAdaptiveAppView(viewModel: viewModel)
         #else
         NavigationStack {
             Group {
@@ -41,15 +40,17 @@ struct DewPointAppView: View {
 }
 
 #if os(iOS)
-private struct DewPointIOSPagesView: View {
+struct DewPointIOSPagesView: View {
     @ObservedObject var viewModel: DewPointViewModel
+    let usesSidebar: Bool
     @State private var showsLocations = false
     @State private var selectedID: String?
     @State private var pageLocations: [DewPointLocation]
     @State private var isLocationSheetActive = false
 
-    init(viewModel: DewPointViewModel) {
+    init(viewModel: DewPointViewModel, usesSidebar: Bool = false) {
         self.viewModel = viewModel
+        self.usesSidebar = usesSidebar
         _pageLocations = State(initialValue: viewModel.savedLocations)
         _selectedID = State(initialValue: viewModel.configuredLocation?.id)
     }
@@ -101,12 +102,24 @@ private struct DewPointIOSPagesView: View {
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
                     .navigationBarTitleDisplayMode(.large)
                     .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                isLocationSheetActive = true
-                                showsLocations = true
-                            } label: {
-                                Label("Locations", systemImage: "list.bullet")
+                        if usesSidebar {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button {
+                                    viewModel.refresh()
+                                } label: {
+                                    Label("Refresh", systemImage: "arrow.clockwise")
+                                }
+                                .disabled(viewModel.isLoading || viewModel.configuredLocation == nil)
+                                .keyboardShortcut("r", modifiers: .command)
+                            }
+                        } else {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    isLocationSheetActive = true
+                                    showsLocations = true
+                                } label: {
+                                    Label("Locations", systemImage: "list.bullet")
+                                }
                             }
                         }
                     }
@@ -127,9 +140,6 @@ private struct DewPointIOSPagesView: View {
                         }
                     }
             }
-        }
-        .task {
-            viewModel.loadInitialReading()
         }
         .onChange(of: selectedID) { _, id in
             guard !isLocationSheetActive, let id,
@@ -163,9 +173,10 @@ private struct DewPointIOSPagesView: View {
 
 #endif
 
-private struct DewPointLocationsList: View {
+struct DewPointLocationsList: View {
     @ObservedObject var viewModel: DewPointViewModel
     var onSelection: () -> Void = {}
+    var isSidebar = false
     @State private var query = ""
     @State private var search = LocationAutocomplete()
 
@@ -174,18 +185,45 @@ private struct DewPointLocationsList: View {
     }
 
     var body: some View {
-        List {
+        List(selection: sidebarSelection) {
             if trimmedQuery.isEmpty {
                 Section {
                     ForEach(viewModel.savedLocations) { location in
                         Button {
-                            viewModel.selectLocation(location)
+                            if !isSidebar || viewModel.configuredLocation?.id != location.id {
+                                viewModel.selectLocation(location)
+                            }
                             onSelection()
                         } label: {
+                            #if os(macOS)
+                            if isSidebar {
+                                SidebarLocationRow(location: location, reading: cachedReading(for: location))
+                            } else {
+                                SavedLocationRow(location: location,
+                                                 isSelected: viewModel.configuredLocation?.id == location.id)
+                            }
+                            #elseif os(iOS)
+                            if isSidebar {
+                                SidebarLocationRow(location: location, reading: cachedReading(for: location))
+                            } else {
+                                SavedLocationRow(location: location,
+                                                 isSelected: viewModel.configuredLocation?.id == location.id)
+                            }
+                            #else
                             SavedLocationRow(location: location,
                                              isSelected: viewModel.configuredLocation?.id == location.id)
+                            #endif
                         }
                         .disabled(viewModel.isLoading)
+                        .tag(location.id)
+                        #if os(iOS)
+                        .listRowBackground(isSidebar
+                            ? RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(viewModel.configuredLocation?.id == location.id
+                                    ? Color.accentColor.opacity(0.12) : Color.clear)
+                            : nil)
+                        .accessibilityAddTraits(viewModel.configuredLocation?.id == location.id ? .isSelected : [])
+                        #endif
                         #if os(macOS)
                         .contextMenu {
                             Button("Remove Location", role: .destructive) {
@@ -264,26 +302,87 @@ private struct DewPointLocationsList: View {
             }
         }
         #if os(iOS)
-        .listStyle(.insetGrouped)
+        .modifier(DewPointLocationsListStyle(isSidebar: isSidebar))
         .scrollDismissesKeyboard(.interactively)
         #elseif os(macOS)
-        .listStyle(.inset)
+        .modifier(DewPointLocationsListStyle(isSidebar: isSidebar))
+        .buttonStyle(.plain)
         #endif
         #if os(iOS)
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "City or ZIP Code")
+        .searchable(text: $query, placement: isSidebar ? .automatic : .navigationBarDrawer(displayMode: .always), prompt: "City or ZIP Code")
         #else
         .searchable(text: $query, prompt: "City or ZIP Code")
         #endif
-        .onChange(of: query, initial: true) { _, value in
+        .onChange(of: query) { _, value in
             search.updateQuery(value)
         }
+        .onAppear { search.updateQuery(query) }
         .onDisappear { search.cancel() }
     }
+
+    private var sidebarSelection: Binding<String?>? {
+        #if os(macOS)
+        guard isSidebar else { return nil }
+        return Binding(
+            get: { viewModel.configuredLocation?.id },
+            set: { id in
+                guard !viewModel.isLoading, let id,
+                      id != viewModel.configuredLocation?.id,
+                      let location = viewModel.savedLocations.first(where: { $0.id == id }) else { return }
+                viewModel.selectLocation(location)
+                onSelection()
+            }
+        )
+        #else
+        nil
+        #endif
+    }
+
+    private func cachedReading(for location: DewPointLocation) -> DewPointReading? {
+        if viewModel.configuredLocation?.id == location.id { return viewModel.reading }
+        return DewPointStore().loadReading(for: location)
+    }
 }
+
+#if os(iOS) || os(macOS)
+private struct SidebarLocationRow: View {
+    let location: DewPointLocation
+    let reading: DewPointReading?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(location.compactDisplayName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                if location.mode == .current {
+                    Label("Current Location", systemImage: "location.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let reading {
+                Text(DewPointFormatters.temperature(reading.dewPoint))
+                    .font(.system(.title3, design: .rounded, weight: .medium))
+                    .monospacedDigit()
+                    .fixedSize()
+                    .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                    .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+            }
+        }
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+}
+#endif
 
 private struct SavedLocationRow: View {
     let location: DewPointLocation
     let isSelected: Bool
+    var reading: DewPointReading? = nil
 
     var body: some View {
         #if os(watchOS)
@@ -305,7 +404,14 @@ private struct SavedLocationRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if isSelected {
+            if let reading {
+                Text(DewPointFormatters.temperature(reading.dewPoint))
+                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .monospacedDigit()
+                    .fixedSize()
+                    .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                    .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+            } else if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.tint)
                     .accessibilityLabel("Selected")
@@ -313,6 +419,7 @@ private struct SavedLocationRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         #endif
     }
 }

@@ -29,7 +29,38 @@ struct DewPointWeatherContent: View {
     let errorMessage: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        ViewThatFits(in: .horizontal) {
+            if let reading, reading.hasFutureForecast {
+                HStack(alignment: .top, spacing: 24) {
+                    DewPointCurrentSection(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
+                        .frame(minWidth: 310, maxWidth: .infinity)
+                    DewPointForecastSection(reading: reading)
+                        .frame(minWidth: 310, maxWidth: .infinity)
+                }
+                .frame(minWidth: 700)
+            }
+            VStack(alignment: .leading, spacing: 24) {
+                DewPointCurrentSection(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
+                if let reading {
+                    DewPointForecastSection(reading: reading)
+                }
+            }
+        }
+        .frame(maxWidth: 1_100, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .top)
+        .padding(20)
+        // Leave room for the iOS page indicator without changing the viewport.
+        .padding(.bottom, 24)
+    }
+}
+
+private struct DewPointCurrentSection: View {
+    let reading: DewPointReading?
+    let isLoading: Bool
+    let errorMessage: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Dew Point")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -49,13 +80,7 @@ struct DewPointWeatherContent: View {
                     }
                 }
             }
-            if let reading {
-                DewPointForecastSection(reading: reading)
-            }
         }
-        .padding(20)
-        // Leave room for the iOS page indicator without changing the viewport.
-        .padding(.bottom, 24)
     }
 }
 
@@ -122,15 +147,8 @@ private struct DewPointCurrentWeatherView: View {
 private struct DewPointForecastSection: View {
     let reading: DewPointReading
 
-    private var hasFutureForecast: Bool {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: reading.observedAt)
-        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: start) else { return false }
-        return reading.dailyForecastPoints.contains { $0.date >= tomorrow }
-    }
-
     var body: some View {
-        if hasFutureForecast {
+        if reading.hasFutureForecast {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Forecast")
                     .font(.subheadline.weight(.medium))
@@ -165,4 +183,13 @@ private struct DewPointWeatherErrorView: View {
         }
     }
 }
+private extension DewPointReading {
+    var hasFutureForecast: Bool {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: observedAt)
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: start) else { return false }
+        return dailyForecastPoints.contains { $0.date >= tomorrow }
+    }
+}
+
 #endif
