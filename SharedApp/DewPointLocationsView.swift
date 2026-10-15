@@ -58,8 +58,11 @@ private struct DewPointIOSPagesView: View {
         Group {
             if pageLocations.isEmpty {
                 NavigationStack {
-                    DewPointLocationsList(viewModel: viewModel)
-                        .navigationTitle("JustDew")
+                    DewPointIOSWelcomeView(viewModel: viewModel) {
+                        isLocationSheetActive = true
+                        showsLocations = true
+                    }
+                    .navigationBarTitleDisplayMode(.inline)
                 }
                 .id("location-setup")
             } else {

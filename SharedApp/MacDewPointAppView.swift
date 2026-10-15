@@ -13,7 +13,7 @@ struct MacDewPointAppView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 28) {
-                            MacDewPointWelcomeView()
+                            DewPointWelcomeHeader()
                             MacLocationPicker(viewModel: viewModel)
                         }
                         .padding(24)
@@ -71,25 +71,6 @@ struct MacDewPointAppView: View {
                 .background(Color(nsColor: .windowBackgroundColor))
             }
         }
-    }
-}
-
-private struct MacDewPointWelcomeView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "drop.degreesign.fill")
-                .font(.system(size: 44, weight: .medium))
-                .foregroundStyle(.cyan)
-                .padding(18)
-                .background(.cyan.opacity(0.08), in: RoundedRectangle(cornerRadius: 24))
-            Text("Welcome to JustDew")
-                .font(.title2.weight(.semibold))
-            Text("Choose a location to see its dew point,\ncomfort level, and forecast.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 

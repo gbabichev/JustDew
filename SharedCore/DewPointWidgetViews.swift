@@ -72,7 +72,10 @@ struct JustDewWidgetEntryView: View {
     }
 
     private var widgetPadding: EdgeInsets {
-        switch family {
+        if isLockScreenSquare {
+            return EdgeInsets()
+        }
+        return switch family {
         #if os(iOS)
         case .systemSmall:
             EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
@@ -93,8 +96,25 @@ struct JustDewWidgetEntryView: View {
         }
     }
 
+    private var isLockScreenSquare: Bool {
+        #if os(iOS)
+        family == .systemSmall && renderingMode == .vibrant
+        #else
+        false
+        #endif
+    }
+
     @ViewBuilder
     private func content(for reading: DewPointReading) -> some View {
+        if isLockScreenSquare {
+            DewPointLockScreenSquareContent(reading: reading)
+        } else {
+            standardContent(for: reading)
+        }
+    }
+
+    @ViewBuilder
+    private func standardContent(for reading: DewPointReading) -> some View {
         switch family {
         #if os(iOS)
         case .accessoryInline:
@@ -259,12 +279,41 @@ struct JustDewWidgetEntryView: View {
         #if os(macOS)
         renderingMode == .fullColor
         #else
-        true
+        renderingMode != .vibrant
         #endif
     }
 
     private func comfortColor(for reading: DewPointReading) -> Color {
         DewPointComfortScale.color(for: reading.dewPointCelsius)
+    }
+}
+
+private struct DewPointLockScreenSquareContent: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Dew Point", systemImage: "drop.degreesign.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(DewPointFormatters.temperature(reading.dewPoint))
+                .font(.system(size: 44, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            DewPointWidgetLocationText(location: reading.location)
+                .font(.caption)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 0)
+            DewPointDayTimelineView(reading: reading, showsLabels: false,
+                                   trackHeight: 5, markerSize: 10,
+                                   usesComfortColor: false, monochromeColor: .secondary)
+            Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
     }
 }
 
