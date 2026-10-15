@@ -96,11 +96,12 @@ struct JustDewWidgetEntryView: View {
         switch family {
         #if os(iOS)
         case .accessoryInline:
-            Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+            DewPointInlineWidgetText(reading: reading)
                 .foregroundStyle(primaryTextColor)
         case .accessoryCircular:
             VStack(spacing: 2) {
-                Image(systemName: "drop.degreesign.fill")
+                Image(systemName: reading.location.mode == .current ? "location.fill" : "drop.degreesign.fill")
+                    .accessibilityLabel(reading.location.mode == .current ? "Current Location" : "Dew Point")
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.caption.bold())
                     .minimumScaleFactor(0.7)
@@ -138,7 +139,7 @@ struct JustDewWidgetEntryView: View {
                     monochromeColor: secondaryTextColor
                 )
 
-                Text(reading.location.widgetDisplayName)
+                DewPointWidgetLocationText(location: reading.location)
                     .font(.caption)
                     .foregroundStyle(secondaryTextColor)
                     .lineLimit(1)
@@ -183,7 +184,7 @@ struct JustDewWidgetEntryView: View {
                     usesComfortColor: showsComfortColor,
                     monochromeColor: secondaryTextColor
                 )
-                Text(reading.location.widgetDisplayName)
+                DewPointWidgetLocationText(location: reading.location)
                     .font(.caption2)
                     .foregroundStyle(secondaryTextColor)
                     .lineLimit(2)
@@ -285,7 +286,7 @@ private struct DewPointAccessoryRectangularView: View {
             )
 
             HStack(spacing: 6) {
-                Text(reading.location.widgetDisplayName)
+                DewPointWidgetLocationText(location: reading.location)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
@@ -347,7 +348,7 @@ struct JustDewWatchEntryView: View {
     private func content(for reading: DewPointReading) -> some View {
         switch family {
         case .accessoryInline:
-            Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+            DewPointInlineWidgetText(reading: reading)
         case .accessoryCircular:
             circularGaugeContent(for: reading)
         case .accessoryCorner:
@@ -380,8 +381,9 @@ struct JustDewWatchEntryView: View {
 
     private func circularGaugeContent(for reading: DewPointReading) -> some View {
         Gauge(value: DewPointComfortScale.progress(for: reading.dewPointCelsius), in: 0...1) {
-            Image(systemName: "drop.degreesign.fill")
+            Image(systemName: reading.location.mode == .current ? "location.fill" : "drop.degreesign.fill")
                 .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                .accessibilityLabel(reading.location.mode == .current ? "Current Location" : "Dew Point")
         } currentValueLabel: {
             Text(DewPointFormatters.temperatureValue(reading.dewPoint))
                 .font(.system(size: 23, weight: .semibold, design: .rounded))
@@ -403,3 +405,25 @@ struct JustDewWatchEntryView: View {
     }
 }
 #endif
+
+private struct DewPointWidgetLocationText: View {
+    let location: DewPointLocation
+
+    var body: some View {
+        if location.mode == .current {
+            Text("\(Image(systemName: "location.fill")) \(location.widgetDisplayName)")
+                .accessibilityLabel("Current Location, \(location.widgetDisplayName)")
+        } else {
+            Text(location.widgetDisplayName)
+        }
+    }
+}
+
+private struct DewPointInlineWidgetText: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        let source = reading.location.mode == .current ? Text("\(Image(systemName: "location.fill")) ") : Text("")
+        Text("\(source)Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+    }
+}

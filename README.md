@@ -61,16 +61,17 @@ On iPhone and iPad, swipe between saved location pages. On Mac and Apple Watch,
 choose a location from the Locations list. Swipe to delete a saved location on
 mobile devices, or use its context menu on Mac.
 
-The widget gallery includes **Dew Point · Location**, **Dew Point · Always Dark**,
-and **Dew Point · Location · Always Dark**. The dedicated Location · Always Dark
-widget is available in small and medium sizes.
-Edit any of these widgets to choose Current Location or a city saved in the app on that
-device. The Location widget also offers an Always Dark switch. Each widget keeps
-its own location selection when you browse other cities in the app. Existing
-Dew Point widgets retain their original behavior of following the app selection.
+**Dew Point** and **Dew Point · Always Dark** always follow your current location.
+Browsing a saved city in the app does not change them.
+
+Use **Dew Point · Location** or **Dew Point · Location · Always Dark** to pin a
+widget to a city saved on that device. Both offer small and medium sizes; the
+Location widget also supports Lock Screen sizes and an Always Dark switch.
+Edit a location widget to choose its location. Each widget keeps its own choice.
 System tinting and Lock Screen rendering still control widget presentation.
 
-On Apple Watch, add **Dew Point · Location** to your watch face or Smart Stack,
+On Apple Watch, the standard **Dew Point** complication always follows Current
+Location. Add **Dew Point · Location** to your watch face or Smart Stack,
 then configure its Location to choose a city saved in the Watch app. Each
 complication keeps its own selection when you browse other locations in the app.
 Locations are saved separately on each device.
@@ -88,6 +89,14 @@ swiftc -module-cache-path /tmp/JustDewSwiftModuleCache \
 ```
 
 ## Changelog
+
+### 1.1 (Upcoming)
+
+- Primary Dew Point widgets, Always Dark widgets, and standard Watch complications
+  now follow Current Location instead of the last city viewed in the app.
+- To keep a widget on a saved city, use a Location widget or complication.
+- Widgets without location access show their last cached Current Location reading
+  when available; they do not substitute the app's selected city.
 
 ### 1.0.0
 

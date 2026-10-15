@@ -68,32 +68,12 @@ enum DewPointWidgetLoader {
         }
     }
 
+    // Primary widgets always follow the device, independently of the app's selected page.
     static func loadReading() async throws -> DewPointReading {
-        let store = DewPointStore()
-        guard var location = store.loadLocation() else {
-            throw DewPointError.missingConfiguredLocation
-        }
-
-        if location.mode == .current, let updatedLocation = try? await currentWidgetLocation() {
-            let names = await LocationSearchService.currentLocationNames(for: updatedLocation)
-            let resolvedNames = currentLocationNames(names, fallingBackTo: location)
-            location = DewPointLocation(
-                mode: .current,
-                name: resolvedNames.name,
-                shortName: resolvedNames.shortName,
-                latitude: updatedLocation.coordinate.latitude,
-                longitude: updatedLocation.coordinate.longitude,
-                savedAt: Date()
-            )
-            store.saveLocation(location)
-        }
-
-        let reading = try await DewPointWeatherClient.reading(for: location)
-        store.saveReading(reading)
-        return reading
+        try await loadReading(locationID: "current")
     }
 
-    // Configurable widgets never change the app's selected location or legacy cache.
+    // Widget refreshes only update the per-location cache, never the app selection.
     static func loadReading(locationID: String) async throws -> DewPointReading {
         let store = DewPointStore()
         let location: DewPointLocation
@@ -114,8 +94,7 @@ enum DewPointWidgetLoader {
         return reading
     }
 
-    static func cachedReading(locationID: String) -> DewPointReading? {
-        let store = DewPointStore()
+    static func cachedReading(locationID: String, store: DewPointStore = DewPointStore()) -> DewPointReading? {
         if let location = store.loadLocations().first(where: { $0.id == locationID }) {
             return store.loadReading(for: location)
         }
@@ -136,23 +115,4 @@ enum DewPointWidgetLoader {
         )
     }
 
-    private static func currentLocationNames(
-        _ names: (name: String, shortName: String?),
-        fallingBackTo existingLocation: DewPointLocation
-    ) -> (name: String, shortName: String?) {
-        let resolvedLocation = DewPointLocation(
-            mode: .current,
-            name: names.name,
-            shortName: names.shortName,
-            latitude: existingLocation.latitude,
-            longitude: existingLocation.longitude,
-            savedAt: existingLocation.savedAt
-        )
-
-        guard !resolvedLocation.hasSpecificDisplayName, existingLocation.hasSpecificDisplayName else {
-            return names
-        }
-
-        return (existingLocation.name, existingLocation.shortName)
-    }
 }

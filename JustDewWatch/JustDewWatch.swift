@@ -37,7 +37,7 @@ struct WatchDewPointProvider: TimelineProvider {
             let reading = try await DewPointWidgetLoader.loadReading()
             return WatchDewPointEntry(date: Date(), reading: reading, message: nil)
         } catch {
-            let cachedReading = DewPointStore().loadReading()
+            let cachedReading = DewPointWidgetLoader.cachedReading(locationID: "current")
             return WatchDewPointEntry(date: Date(), reading: cachedReading, message: error.dewPointDisplayMessage)
         }
     }
@@ -49,7 +49,7 @@ struct JustDewWatch: Widget {
             JustDewWatchEntryView(entry: entry)
         }
         .configurationDisplayName("Dew Point")
-        .description("Shows the current dew point.")
+        .description("Shows the dew point at your current location, wherever you go.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
     }
 }

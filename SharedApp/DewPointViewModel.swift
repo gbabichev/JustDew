@@ -38,7 +38,6 @@ final class DewPointViewModel: ObservableObject {
         errorMessage = nil
         store.saveLocation(location)
         if let reading { store.saveReading(reading) }
-        reloadWidgets()
         loadInitialReading()
     }
 
