@@ -62,6 +62,16 @@ struct JustDewApp: App {
         .windowStyle(.titleBar)
         .defaultSize(width: 400, height: 700)
         .windowResizability(.contentSize)
+        .commands { JustDewAboutCommands() }
+        #endif
+
+        #if os(macOS)
+        Window("About JustDew", id: "about") {
+            AboutView()
+        }
+        .windowStyle(.titleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
         #endif
     }
 }
