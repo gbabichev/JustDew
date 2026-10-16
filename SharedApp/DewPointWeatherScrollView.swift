@@ -248,7 +248,7 @@ private struct FoldedWeatherPane: View {
                 if let reading {
                     let forecast = WeatherDashboardForecast(reading: reading)
                     FoldedMetricCards(reading: reading, forecast: forecast, metric: metric,
-                                      showsCardsSideBySide: showsCardsSideBySide)
+                                      showsCardsSideBySide: showsCardsSideBySide, linkedScroll: $linkedScroll)
                     WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
                 } else if isLoading {
                     ProgressView("Loading weather…")
@@ -304,6 +304,7 @@ private struct FoldedMetricCards: View {
     let forecast: WeatherDashboardForecast
     let metric: WeatherForecastMetric
     let showsCardsSideBySide: Bool
+    @Binding var linkedScroll: FoldedLinkedScroll
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -316,12 +317,42 @@ private struct FoldedMetricCards: View {
                     .frame(maxWidth: .infinity)
             }
             .fixedSize(horizontal: false, vertical: true)
+        } else if !dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 14) {
+                FoldedAlignedCurrentCard(reading: reading, today: forecast.days.first?.weather,
+                                         metric: metric, heights: $linkedScroll.currentCardHeights)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric,
+                                    compact: true, dense: true)
+            }
         } else {
             VStack(spacing: 16) {
                 FoldedCurrentMetricCard(reading: reading, today: forecast.days.first?.weather, metric: metric)
                 WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
             }
         }
+    }
+}
+
+private struct FoldedAlignedCurrentCard: View {
+    let reading: DewPointReading
+    let today: WeatherForecastDay?
+    let metric: WeatherForecastMetric
+    @Binding var heights: [WeatherForecastMetric: CGFloat]
+
+    var body: some View {
+        LandscapeCurrentCard(reading: reading, today: today, metric: metric)
+            .frame(height: heights.values.max())
+            .background {
+                // Measure the natural size independently of the shared height so
+                // both cards can shrink again after a resize or a text-size change.
+                LandscapeCurrentCard(reading: reading, today: today, metric: metric)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .hidden()
+                    .accessibilityHidden(true)
+                    .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
+                        heights[metric] = height
+                    }
+            }
     }
 }
 
@@ -350,6 +381,7 @@ private struct FoldedLinkedScroll {
     var offset: CGFloat = 0
     var contentHeights: [WeatherForecastMetric: CGFloat] = [:]
     var visibleHeights: [WeatherForecastMetric: CGFloat] = [:]
+    var currentCardHeights: [WeatherForecastMetric: CGFloat] = [:]
 
     // Give both panes the same travel distance, even when one has less content
     // or less visible space because of its page controls or the device's pose.
