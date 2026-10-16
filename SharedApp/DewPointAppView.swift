@@ -27,12 +27,20 @@ struct DewPointLocationPage: View {
                 errorMessage: viewModel.errorMessage,
                 refresh: { [viewModel] in await viewModel.refreshNow() }
             )
+            #if DEBUG
+            .modifier(DewPointPageContentTrace(page: location, reading: displayedReading,
+                source: viewModel.configuredLocation?.id == location.id ? "viewModel" : "cache"))
+            #endif
         } else {
             DewPointWeatherContent(
                 reading: displayedReading,
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage
             )
+            #if DEBUG
+            .modifier(DewPointPageContentTrace(page: location, reading: displayedReading,
+                source: viewModel.configuredLocation?.id == location.id ? "viewModel" : "cache"))
+            #endif
         }
         #endif
     }

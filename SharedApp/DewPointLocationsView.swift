@@ -45,6 +45,7 @@ struct DewPointAppView: View {
         // only when the system unit changes; the view model keeps the selected location.
         .id(temperatureUnitSymbol)
         .onChange(of: scenePhase) { _, phase in
+            DewPointStartupLog.event("scene.phase", "phase=\(phase) configured=\(DewPointStartupLog.location(viewModel.configuredLocation))")
             if phase == .active {
                 updateTemperaturePreference()
                 viewModel.loadInitialReading()
@@ -115,6 +116,7 @@ struct DewPointIOSPagesView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .sheet(isPresented: $showsLocations, onDismiss: {
+            DewPointStartupLog.event("locationsSheet.dismiss", "selected=\(DewPointStartupLog.selection(selectedID, in: pageLocations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation))")
             isLocationSheetActive = false
             synchronizePages()
         }) {
@@ -128,7 +130,11 @@ struct DewPointIOSPagesView: View {
                     }
             }
         }
-        .onChange(of: selectedID) { _, id in
+        .onAppear {
+            DewPointStartupLog.event("pages.appear", "selected=\(DewPointStartupLog.selection(selectedID, in: pageLocations)) title=\(DewPointStartupLog.location(displayedLocation)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation)) loading=\(viewModel.isLoading)")
+        }
+        .onChange(of: selectedID) { oldID, id in
+            DewPointStartupLog.event("pages.selection", "old=\(DewPointStartupLog.selection(oldID, in: pageLocations)) new=\(DewPointStartupLog.selection(id, in: pageLocations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation)) sheetActive=\(isLocationSheetActive) loading=\(viewModel.isLoading)")
             guard !isLocationSheetActive, let id,
                   id != viewModel.configuredLocation?.id,
                   let location = viewModel.savedLocations.first(where: { $0.id == id }) else { return }
@@ -137,6 +143,7 @@ struct DewPointIOSPagesView: View {
         .onChange(of: viewModel.configuredLocation?.id) { _, _ in synchronizePages() }
         .onChange(of: viewModel.savedLocations) { _, _ in synchronizePages() }
         .onChange(of: viewModel.isLoading) { _, isLoading in
+            DewPointStartupLog.event("pages.loading", "loading=\(isLoading) selected=\(DewPointStartupLog.selection(selectedID, in: pageLocations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation))")
             if !isLoading { synchronizePages() }
         }
     }
@@ -148,6 +155,7 @@ struct DewPointIOSPagesView: View {
     private func synchronizePages() {
         // Keep page membership stable while the location sheet and keyboard
         // dismiss, then apply the saved locations and selection together.
+        DewPointStartupLog.event("pages.synchronize", "selected=\(DewPointStartupLog.selection(selectedID, in: pageLocations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation)) deferred=\(isLocationSheetActive || viewModel.isLoading) pages=[\(DewPointStartupLog.pages(viewModel.savedLocations))]")
         guard !isLocationSheetActive, !viewModel.isLoading else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true

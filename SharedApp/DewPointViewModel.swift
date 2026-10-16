@@ -27,14 +27,17 @@ final class DewPointViewModel: ObservableObject {
         configuredLocation = savedLocation
         locationInputMode = savedLocation?.mode ?? .current
         authorizationStatus = locationProvider.authorizationStatus
+        DewPointStartupLog.event("model.restore", "configured=\(DewPointStartupLog.location(configuredLocation)) reading=\(DewPointStartupLog.reading(reading)) pages=[\(DewPointStartupLog.pages(savedLocations))]")
     }
 
     func selectLocation(_ location: DewPointLocation) {
+        DewPointStartupLog.event("model.select.request", "target=\(DewPointStartupLog.location(location)) loading=\(isLoading) previous=\(DewPointStartupLog.location(configuredLocation))")
         guard !isLoading else { return }
         configuredLocation = location
         locationInputMode = location.mode
         manualQuery = ""
         reading = store.loadReading(for: location)
+        DewPointStartupLog.event("model.select.cache", "target=\(DewPointStartupLog.location(location)) reading=\(DewPointStartupLog.reading(reading))")
         errorMessage = nil
         store.saveLocation(location)
         if let reading { store.saveReading(reading) }
@@ -76,13 +79,17 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func loadInitialReading() {
+        DewPointStartupLog.event("model.loadInitial", "configured=\(DewPointStartupLog.location(configuredLocation)) reading=\(DewPointStartupLog.reading(reading)) loading=\(isLoading)")
         guard let configuredLocation else { return }
         // A widget can refresh the shared cache while the app is suspended.
         if let cached = store.loadReading(for: configuredLocation),
            cached.fetchedAt > (reading?.fetchedAt ?? .distantPast) {
             reading = cached
+            DewPointStartupLog.event("model.cache.adopt", "reading=\(DewPointStartupLog.reading(cached))")
         }
-        guard reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading) else { return }
+        let needsRefresh = reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading)
+        DewPointStartupLog.event("model.refresh.decision", "needsRefresh=\(needsRefresh) configured=\(DewPointStartupLog.location(configuredLocation))")
+        guard needsRefresh else { return }
         refresh()
     }
 
@@ -248,11 +255,14 @@ final class DewPointViewModel: ObservableObject {
     }
 
     private func fetchReadingValue(for location: DewPointLocation) async throws {
+        DewPointStartupLog.event("fetch.begin", "target=\(DewPointStartupLog.location(location))")
         let reading = try await DewPointWeatherClient.reading(for: location)
+        DewPointStartupLog.event("fetch.received", "configuredBeforeApply=\(DewPointStartupLog.location(configuredLocation)) reading=\(DewPointStartupLog.reading(reading))")
         store.saveReading(reading)
         let storedReading = store.loadReading(for: reading.location) ?? reading
         self.reading = storedReading
         configuredLocation = storedReading.location
+        DewPointStartupLog.event("fetch.applied", "configured=\(DewPointStartupLog.location(configuredLocation)) reading=\(DewPointStartupLog.reading(self.reading))")
         if let index = savedLocations.firstIndex(where: { $0.id == storedReading.location.id }),
            savedLocations[index] != storedReading.location {
             savedLocations[index] = storedReading.location
@@ -264,14 +274,17 @@ final class DewPointViewModel: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
+        DewPointStartupLog.event("loading.begin", "configured=\(DewPointStartupLog.location(configuredLocation))")
         defer {
             isLoading = false
             authorizationStatus = locationProvider.authorizationStatus
+            DewPointStartupLog.event("loading.end", "configured=\(DewPointStartupLog.location(configuredLocation)) reading=\(DewPointStartupLog.reading(reading))")
         }
 
         do {
             try await operation()
         } catch {
+            DewPointStartupLog.event("loading.error", "domain=\((error as NSError).domain) code=\((error as NSError).code)")
             errorMessage = error.dewPointDisplayMessage
         }
     }

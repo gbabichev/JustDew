@@ -53,6 +53,7 @@ private struct DewPointHingeResponsivePager: View {
             .ignoresSafeArea(.container, edges: edges)
         }
         .onHingeChange { _, context in
+            DewPointStartupLog.event("pager.hinge", "status=\(String(describing: context.hinge?.status)) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
             hingeStatus = context.hinge?.status
         }
     }
@@ -84,25 +85,67 @@ private struct DewPointWeatherPager: View {
     let locations: [DewPointLocation]
     @Binding var selectedID: String?
 
+    @State private var restoredLayout: PagerLayout?
+
     var body: some View {
         ScrollView {
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 0) {
-                    ForEach(locations) { location in
-                        DewPointLocationPage(viewModel: viewModel, location: location, scrollsVertically: false)
-                            .containerRelativeFrame(.horizontal)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .id(location.id)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 0) {
+                        ForEach(locations) { location in
+                            DewPointLocationPage(viewModel: viewModel, location: location, scrollsVertically: false)
+                                .containerRelativeFrame(.horizontal)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .id(location.id)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $selectedID, anchor: .leading)
+                .scrollIndicators(.hidden)
+                .contentMargins(.horizontal, 0, for: .scrollContent)
+                .fixedSize(horizontal: false, vertical: true)
+                .clipped()
+                .onScrollGeometryChange(for: PagerLayout.self) { geometry in
+                    PagerLayout(viewportWidth: geometry.containerSize.width,
+                                contentWidth: geometry.contentSize.width)
+                } action: { _, layout in
+                    // Startup first reports an empty, provisional layout. Scroll
+                    // only once all page frames exist, and re-align after resizing.
+                    guard layout.viewportWidth > 0,
+                          abs(layout.contentWidth - layout.viewportWidth * CGFloat(locations.count)) < 1,
+                          restoredLayout != layout,
+                          let target = selectedID,
+                          locations.contains(where: { $0.id == target }) else { return }
+                    restoredLayout = layout
+                    DewPointStartupLog.event("pager.restore.request", "target=\(DewPointStartupLog.selection(target, in: locations)) viewportWidth=\(layout.viewportWidth) contentWidth=\(layout.contentWidth)")
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        proxy.scrollTo(target, anchor: .leading)
                     }
                 }
-                .scrollTargetLayout()
+                #if DEBUG
+                .onAppear {
+                    DewPointStartupLog.event("pager.appear", "selected=\(DewPointStartupLog.selection(selectedID, in: locations)) restorePending=\(restoredLayout == nil) configured=\(DewPointStartupLog.location(viewModel.configuredLocation)) pages=[\(DewPointStartupLog.pages(locations))]")
+                }
+                .onScrollTargetVisibilityChange(idType: String.self, threshold: 0.5) { ids in
+                    let visible = ids.map { DewPointStartupLog.selection($0, in: locations) }.joined(separator: ", ")
+                    DewPointStartupLog.event("pager.visible", "visible=[\(visible)] selected=\(DewPointStartupLog.selection(selectedID, in: locations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation))")
+                }
+                .onScrollGeometryChange(for: PagerTraceGeometry.self) { geometry in
+                    PagerTraceGeometry(offsetBucket: Int((geometry.contentOffset.x / 64).rounded()) * 64,
+                                       viewportWidth: Int(geometry.containerSize.width.rounded()),
+                                       contentWidth: Int(geometry.contentSize.width.rounded()))
+                } action: { _, geometry in
+                    DewPointStartupLog.event("pager.geometry", "offsetX≈\(geometry.offsetBucket) viewportWidth=\(geometry.viewportWidth) contentWidth=\(geometry.contentWidth) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
+                }
+                .onScrollPhaseChange { old, phase, context in
+                    DewPointStartupLog.event("pager.phase", "\(old)->\(phase) offsetX=\(context.geometry.contentOffset.x) viewportWidth=\(context.geometry.containerSize.width) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
+                }
+                #endif
             }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $selectedID)
-            .scrollIndicators(.hidden)
-            .contentMargins(.horizontal, 0, for: .scrollContent)
-            .fixedSize(horizontal: false, vertical: true)
-            .clipped()
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
         .refreshable { await viewModel.refreshNow() }
@@ -113,4 +156,17 @@ private struct DewPointWeatherPager: View {
         }
     }
 }
+
+private struct PagerLayout: Equatable {
+    let viewportWidth: CGFloat
+    let contentWidth: CGFloat
+}
+
+#if DEBUG
+private struct PagerTraceGeometry: Equatable {
+    let offsetBucket: Int
+    let viewportWidth: Int
+    let contentWidth: Int
+}
+#endif
 #endif
