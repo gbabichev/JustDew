@@ -25,29 +25,51 @@ private struct DewPointHingeResponsivePager: View {
     let locations: [DewPointLocation]
     @Binding var selectedID: String?
     @State private var hingeStatus: DeviceHinge.Status?
+    @Environment(\.layoutDirection) private var layoutDirection
 
     var body: some View {
-        GeometryReader { geometry in
-            let division = geometry.reservedRegions(kind: .division).first
-            // Active geometry also protects the initial frame before the hinge callback arrives.
-            if let division, hingeStatus == nil || hingeStatus == .partiallyOpen {
-                DewPointFoldedWeatherDashboard(
-                    reading: displayedReading,
-                    isLoading: viewModel.isLoading,
-                    errorMessage: viewModel.errorMessage,
-                    axis: division.frame.height >= division.frame.width ? .horizontal : .vertical,
-                    locations: locations,
-                    selectedID: $selectedID,
-                    refresh: { [viewModel] in await viewModel.refreshNow() }
-                )
-            } else {
-                DewPointWeatherPager(viewModel: viewModel, locations: locations, selectedID: $selectedID)
-                    .environment(\.weatherDashboardViewport, geometry.size)
+        GeometryReader { safeGeometry in
+            let edges = reclaimedEdges(in: safeGeometry)
+            GeometryReader { geometry in
+                Group {
+                    let division = geometry.reservedRegions(kind: .division).first
+                    // Active geometry also protects the initial frame before the hinge callback arrives.
+                    if let division, hingeStatus == nil || hingeStatus == .partiallyOpen {
+                        DewPointFoldedWeatherDashboard(
+                            reading: displayedReading,
+                            isLoading: viewModel.isLoading,
+                            errorMessage: viewModel.errorMessage,
+                            axis: division.frame.height >= division.frame.width ? .horizontal : .vertical,
+                            locations: locations,
+                            selectedID: $selectedID,
+                            refresh: { [viewModel] in await viewModel.refreshNow() }
+                        )
+                    } else {
+                        DewPointWeatherPager(viewModel: viewModel, locations: locations, selectedID: $selectedID)
+                            .environment(\.weatherDashboardViewport, geometry.size)
+                    }
+                }
             }
+            .ignoresSafeArea(.container, edges: edges)
         }
         .onHingeChange { _, context in
             hingeStatus = context.hinge?.status
         }
+    }
+
+    private func reclaimedEdges(in geometry: GeometryProxy) -> Edge.Set {
+        guard let hingeStatus else { return [] }
+        let isOuterDisplay = hingeStatus == .closed
+        let isInnerLandscape = geometry.size.width > geometry.size.height
+            && (hingeStatus == .fullyOpen || hingeStatus == .partiallyOpen)
+            && !geometry.reservedRegions(kind: .division, options: .includeInactive).isEmpty
+        guard isOuterDisplay || isInnerLandscape else { return [] }
+        // Duo's controls remain on the physical right, including in RTL layouts.
+        // Only extend the controls edge; do not ignore both horizontal insets.
+        if layoutDirection == .leftToRight {
+            return geometry.safeAreaInsets.trailing > 0 ? .trailing : []
+        }
+        return geometry.safeAreaInsets.leading > 0 ? .leading : []
     }
 
     private var displayedReading: DewPointReading? {

@@ -81,17 +81,7 @@ struct DewPointIOSPagesView: View {
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
                     .navigationBarTitleDisplayMode(.large)
                     .toolbar {
-                        if usesSidebar {
-                            ToolbarItem(placement: .primaryAction) {
-                                Button {
-                                    viewModel.refresh()
-                                } label: {
-                                    Label("Refresh", systemImage: "arrow.clockwise")
-                                }
-                                .disabled(viewModel.isLoading || viewModel.configuredLocation == nil)
-                                .keyboardShortcut("r", modifiers: .command)
-                            }
-                        } else {
+                        if !usesSidebar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button {
                                     isLocationSheetActive = true
