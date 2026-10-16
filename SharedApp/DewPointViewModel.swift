@@ -65,11 +65,13 @@ final class DewPointViewModel: ObservableObject {
     }
 
     private func remember(_ location: DewPointLocation) {
-        if let index = savedLocations.firstIndex(where: { $0.id == location.id }) {
-            savedLocations[index] = location
+        var locations = savedLocations
+        if let index = locations.firstIndex(where: { $0.id == location.id }) {
+            locations[index] = location
         } else {
-            savedLocations.append(location)
+            locations.append(location)
         }
+        savedLocations = DewPointStore.orderedLocations(locations)
         store.saveLocations(savedLocations)
     }
 

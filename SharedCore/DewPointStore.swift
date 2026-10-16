@@ -17,14 +17,18 @@ struct DewPointStore {
 
     func loadLocations() -> [DewPointLocation] {
         if let locations = decode([DewPointLocation].self, forKey: Key.locations) {
-            return locations
+            return Self.orderedLocations(locations)
         }
         // Preserve the location configured before multiple locations were supported.
         return loadLocation().map { [$0] } ?? []
     }
 
     func saveLocations(_ locations: [DewPointLocation]) {
-        encode(locations, forKey: Key.locations)
+        encode(Self.orderedLocations(locations), forKey: Key.locations)
+    }
+
+    static func orderedLocations(_ locations: [DewPointLocation]) -> [DewPointLocation] {
+        locations.filter { $0.mode == .current } + locations.filter { $0.mode != .current }
     }
 
     func loadReading(for location: DewPointLocation) -> DewPointReading? {

@@ -32,6 +32,18 @@ struct DewPointStoreTests {
         precondition(store.loadReading(for: second)?.dewPointCelsius == 22)
         precondition(store.loadLocations() == [first, second])
 
+        let current = DewPointLocation(mode: .current, name: "Current Location", latitude: 40.7,
+                                       longitude: -74, savedAt: now)
+        // Normalize existing installations as well as newly saved lists, without sorting cities.
+        defaults.set(try JSONEncoder().encode([second, current, first]), forKey: "dewPoint.locations")
+        precondition(store.loadLocations() == [current, second, first])
+        store.saveLocations([second, first, current])
+        let persisted = try JSONDecoder().decode([DewPointLocation].self,
+            from: defaults.data(forKey: "dewPoint.locations")!)
+        precondition(persisted == [current, second, first])
+        precondition(DewPointStore.orderedLocations([second, first]) == [second, first])
+        store.saveLocations([first, second])
+
         // The final supported day must survive cache merging; day eleven must not.
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: now)
