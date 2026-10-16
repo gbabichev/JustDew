@@ -146,8 +146,10 @@ struct DewPointLocationsList: View {
     @ObservedObject var viewModel: DewPointViewModel
     var onSelection: () -> Void = {}
     var isSidebar = false
+    var onSearchQueryChange: (String) -> Void = { _ in }
     @State private var query = ""
     @State private var search = LocationAutocomplete()
+    @State private var selectedSidebarLocationID: String?
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -159,10 +161,19 @@ struct DewPointLocationsList: View {
                 Section {
                     ForEach(viewModel.savedLocations) { location in
                         Button {
+                            #if os(macOS)
+                            if isSidebar {
+                                selectedSidebarLocationID = location.id
+                            } else {
+                                viewModel.selectLocation(location)
+                                onSelection()
+                            }
+                            #else
                             if !isSidebar || viewModel.configuredLocation?.id != location.id {
                                 viewModel.selectLocation(location)
                             }
                             onSelection()
+                            #endif
                         } label: {
                             #if os(macOS)
                             if isSidebar {
@@ -284,8 +295,24 @@ struct DewPointLocationsList: View {
         #endif
         .onChange(of: query) { _, value in
             search.updateQuery(value)
+            onSearchQueryChange(value)
         }
-        .onAppear { search.updateQuery(query) }
+        .onChange(of: selectedSidebarLocationID) { _, id in
+            #if os(macOS)
+            guard isSidebar, !viewModel.isLoading, let id,
+                  id != viewModel.configuredLocation?.id,
+                  let location = viewModel.savedLocations.first(where: { $0.id == id }) else { return }
+            viewModel.selectLocation(location)
+            onSelection()
+            #endif
+        }
+        .onChange(of: viewModel.configuredLocation?.id) { _, id in
+            if isSidebar { selectedSidebarLocationID = id }
+        }
+        .onAppear {
+            search.updateQuery(query)
+            if isSidebar { selectedSidebarLocationID = viewModel.configuredLocation?.id }
+        }
         .onDisappear { search.cancel() }
     }
 
@@ -293,13 +320,10 @@ struct DewPointLocationsList: View {
         #if os(macOS)
         guard isSidebar else { return nil }
         return Binding(
-            get: { viewModel.configuredLocation?.id },
+            get: { selectedSidebarLocationID },
             set: { id in
-                guard !viewModel.isLoading, let id,
-                      id != viewModel.configuredLocation?.id,
-                      let location = viewModel.savedLocations.first(where: { $0.id == id }) else { return }
-                viewModel.selectLocation(location)
-                onSelection()
+                guard !viewModel.isLoading else { return }
+                selectedSidebarLocationID = id
             }
         )
         #else

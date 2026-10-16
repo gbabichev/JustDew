@@ -25,6 +25,7 @@ private struct DewPointSplitView: View {
     @ObservedObject var viewModel: DewPointViewModel
     let showsSidebar: Bool
     @State private var columnVisibility: NavigationSplitViewVisibility
+    @State private var hasSearchQuery = false
 
     init(viewModel: DewPointViewModel, showsSidebar: Bool) {
         self.viewModel = viewModel
@@ -34,7 +35,12 @@ private struct DewPointSplitView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            DewPointLocationsList(viewModel: viewModel, isSidebar: true)
+            DewPointLocationsList(viewModel: viewModel, isSidebar: true, onSearchQueryChange: { query in
+                #if os(macOS)
+                hasSearchQuery = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                if hasSearchQuery { columnVisibility = .all }
+                #endif
+            })
                 .navigationTitle("Locations")
                 .navigationSplitViewColumnWidth(min: 230, ideal: 270, max: 320)
         } detail: {
@@ -72,7 +78,11 @@ private struct DewPointSplitView: View {
         .navigationSplitViewStyle(.balanced)
         #endif
         .onChange(of: showsSidebar) { _, showsSidebar in
+            #if os(macOS)
+            columnVisibility = showsSidebar || hasSearchQuery ? .all : .detailOnly
+            #else
             columnVisibility = showsSidebar ? .all : .detailOnly
+            #endif
         }
     }
 }
