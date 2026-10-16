@@ -1,31 +1,34 @@
 import Foundation
 
 enum DewPointFormatters {
-    static func temperature(_ measurement: Measurement<UnitTemperature>) -> String {
+    static func temperature(_ measurement: Measurement<UnitTemperature>, locale: Locale = .autoupdatingCurrent) -> String {
         let formatter = MeasurementFormatter()
+        formatter.locale = locale
         formatter.numberFormatter.maximumFractionDigits = 0
         formatter.numberFormatter.minimumFractionDigits = 0
         formatter.unitOptions = .providedUnit
-        return formatter.string(from: measurement.converted(to: preferredTemperatureUnit))
+        return formatter.string(from: measurement.converted(to: UnitTemperature(forLocale: locale, usage: .weather)))
     }
 
-    static func temperatureValue(_ measurement: Measurement<UnitTemperature>) -> String {
+    static func temperatureValue(_ measurement: Measurement<UnitTemperature>, locale: Locale = .autoupdatingCurrent) -> String {
         let formatter = NumberFormatter()
+        formatter.locale = locale
         formatter.maximumFractionDigits = 0
         formatter.minimumFractionDigits = 0
-        let value = measurement.converted(to: preferredTemperatureUnit).value
+        let value = measurement.converted(to: UnitTemperature(forLocale: locale, usage: .weather)).value
         return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value.rounded()))"
     }
 
     static func temperatureRange(
         low: Measurement<UnitTemperature>,
-        high: Measurement<UnitTemperature>
+        high: Measurement<UnitTemperature>,
+        locale: Locale = .autoupdatingCurrent
     ) -> String {
-        let lowValue = temperatureValue(low)
-        let highValue = temperatureValue(high)
-        guard lowValue != highValue else { return temperature(high) }
+        let lowValue = temperatureValue(low, locale: locale)
+        let highValue = temperatureValue(high, locale: locale)
+        guard lowValue != highValue else { return temperature(high, locale: locale) }
 
-        return "\(lowValue)-\(temperature(high))"
+        return "\(lowValue)-\(temperature(high, locale: locale))"
     }
 
     static func percent(_ value: Double) -> String {
@@ -76,21 +79,5 @@ enum DewPointFormatters {
         formatter.timeZone = calendar.timeZone
         formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "EEE", options: 0, locale: .current)
         return formatter.string(from: date)
-    }
-
-    private static var preferredTemperatureUnit: UnitTemperature {
-        let regionCode: String?
-        if #available(iOS 16, macOS 13, watchOS 9, *) {
-            regionCode = Locale.current.region?.identifier
-        } else {
-            regionCode = Locale.current.regionCode
-        }
-
-        switch regionCode {
-        case "US", "BS", "BZ", "KY", "PW":
-            return .fahrenheit
-        default:
-            return .celsius
-        }
     }
 }

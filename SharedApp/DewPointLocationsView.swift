@@ -1,9 +1,11 @@
 import SwiftUI
+import WidgetKit
 
 struct DewPointAppView: View {
     @StateObject private var viewModel = DewPointViewModel()
     @State private var showsLocations = false
     @Environment(\.scenePhase) private var scenePhase
+    @State private var temperatureUnitSymbol = UnitTemperature(forLocale: .autoupdatingCurrent, usage: .weather).symbol
 
     var body: some View {
         Group {
@@ -39,9 +41,25 @@ struct DewPointAppView: View {
             .task { viewModel.loadInitialReading() }
             #endif
         }
+        // Temperature labels are preformatted strings. Recreate their views
+        // only when the system unit changes; the view model keeps the selected location.
+        .id(temperatureUnitSymbol)
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { viewModel.loadInitialReading() }
+            if phase == .active {
+                updateTemperaturePreference()
+                viewModel.loadInitialReading()
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSLocale.currentLocaleDidChangeNotification)) { _ in
+            updateTemperaturePreference()
+        }
+    }
+
+    private func updateTemperaturePreference() {
+        let symbol = UnitTemperature(forLocale: .autoupdatingCurrent, usage: .weather).symbol
+        guard symbol != temperatureUnitSymbol else { return }
+        temperatureUnitSymbol = symbol
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 
