@@ -31,28 +31,32 @@ struct WeatherDetailsPresentation: ViewModifier {
     }
 }
 
+#if os(iOS)
 private struct HourlyWeatherDetailsView: View {
     let reading: DewPointReading
     @Environment(\.dismiss) private var dismiss
+
+    private var cityName: String {
+        reading.location.compactDisplayName.split(separator: ",", maxSplits: 1).first.map(String.init)
+            ?? reading.location.compactDisplayName
+    }
 
     var body: some View {
         NavigationStack {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 let forecast = HourlyWeatherForecast(reading: reading, referenceDate: context.date)
                 List {
-                    Section {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(reading.location.compactDisplayName).font(.headline)
-                            Text("Next 24 hours · local time")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }
                     if forecast.hasDetails {
                         ForEach(forecast.days) { day in
                             Section {
-                                ForEach(day.hours) { hour in
+                                ForEach(day.hours.enumerated(), id: \.element.id) { index, hour in
                                     HourlyWeatherDetailRow(hour: hour, calendar: reading.forecastCalendar,
                                                           referenceDate: context.date)
+                                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                        .listRowSeparator(.hidden)
+                                        .listRowBackground(index.isMultiple(of: 2)
+                                            ? Color(uiColor: .secondarySystemGroupedBackground)
+                                            : Color(uiColor: .systemGroupedBackground))
                                 }
                             } header: {
                                 Text(DewPointFormatters.forecastDayLabel(day.date, relativeTo: context.date,
@@ -71,11 +75,11 @@ private struct HourlyWeatherDetailsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
+                .listStyle(.insetGrouped)
             }
-            .navigationTitle("Hourly Weather")
-            #if os(iOS)
+            .navigationTitle(Text("\(cityName) Weather"))
+            .navigationSubtitle("Next 24 hours · local time")
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -92,7 +96,7 @@ private struct HourlyWeatherDetailRow: View {
     let referenceDate: Date
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 if hour.start <= referenceDate && referenceDate < hour.end {
                     Text("Now").font(.headline)
@@ -115,7 +119,6 @@ private struct HourlyWeatherDetailRow: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 4)
         .accessibilityElement(children: .contain)
     }
 }
@@ -129,18 +132,12 @@ private struct HourlyWeatherMetrics: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
             : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
         layout {
-            HourlyWeatherMetric(title: "Precipitation", symbol: "cloud.rain",
+            HourlyWeatherMetric(title: "Precipitation",
                 value: weather.precipitationChance.isFinite && (0...1).contains(weather.precipitationChance)
                     ? DewPointFormatters.percent(weather.precipitationChance) : "—")
             VStack(alignment: .leading, spacing: 3) {
-                HourlyWeatherMetric(title: "Wind", symbol: "wind",
-                                    value: DewPointFormatters.windSpeed(weather.windSpeedMetersPerSecond))
-                if weather.windSpeedMetersPerSecond > 0,
-                   let direction = Wind.CompassDirection(rawValue: weather.windDirection) {
-                    Text("From \(direction.abbreviation)")
-                        .accessibilityLabel("Wind from \(direction.description)")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
+                HourlyWeatherMetric(title: "Wind", value: windValue)
+                    .accessibilityValue(windAccessibilityValue)
                 if let gust = weather.windGustMetersPerSecond, gust.isFinite, gust > weather.windSpeedMetersPerSecond {
                     Text("Gusts \(DewPointFormatters.windSpeed(gust))")
                         .font(.caption2).foregroundStyle(.secondary)
@@ -148,7 +145,7 @@ private struct HourlyWeatherMetrics: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
-                HourlyWeatherMetric(title: "UV Index", symbol: "sun.max",
+                HourlyWeatherMetric(title: "UV Index",
                                     value: weather.uvIndex >= 0 ? weather.uvIndex.formatted() : "—")
                 if weather.uvIndex >= 0, let category = UVIndex.ExposureCategory(rawValue: weather.uvCategory) {
                     Text(category.description).font(.caption2).foregroundStyle(.secondary)
@@ -157,21 +154,42 @@ private struct HourlyWeatherMetrics: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    private var windValue: String {
+        let speed = DewPointFormatters.windSpeed(weather.windSpeedMetersPerSecond)
+        guard weather.windSpeedMetersPerSecond > 0,
+              let direction = Wind.CompassDirection(rawValue: weather.windDirection) else { return speed }
+        return "\(speed) \(direction.abbreviation)"
+    }
+
+    private var windAccessibilityValue: String {
+        let speed = DewPointFormatters.windSpeed(weather.windSpeedMetersPerSecond)
+        guard weather.windSpeedMetersPerSecond > 0,
+              let direction = Wind.CompassDirection(rawValue: weather.windDirection) else { return speed }
+        return String(localized: "\(speed), from \(direction.description)")
+    }
 }
 
 private struct HourlyWeatherMetric: View {
     let title: LocalizedStringKey
-    let symbol: String
     let value: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(title, systemImage: symbol)
-                .font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.semibold)).monospacedDigit()
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 }
+#endif
 #endif
