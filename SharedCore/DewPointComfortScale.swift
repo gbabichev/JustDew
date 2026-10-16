@@ -1,6 +1,10 @@
 import SwiftUI
 
 enum DewPointComfortScale {
+    static let lowerBoundCelsius = 10.0
+    static let upperBoundCelsius = 24.0
+    static let midpointCelsius = (lowerBoundCelsius + upperBoundCelsius) / 2
+
     private static let cool = RGBColor(red: 0.16, green: 0.46, blue: 0.86)
     private static let medium = RGBColor(red: 0.96, green: 0.82, blue: 0.14)
     private static let gross = RGBColor(red: 0.88, green: 0.16, blue: 0.14)
@@ -16,7 +20,7 @@ enum DewPointComfortScale {
     ]
 
     static func progress(for dewPointCelsius: Double) -> Double {
-        ((dewPointCelsius - 10) / 14).clamped(to: 0...1)
+        ((dewPointCelsius - lowerBoundCelsius) / (upperBoundCelsius - lowerBoundCelsius)).clamped(to: 0...1)
     }
 
     static func color(for dewPointCelsius: Double) -> Color {

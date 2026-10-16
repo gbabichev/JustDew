@@ -108,14 +108,25 @@ private struct LandscapeCurrentCard: View {
     var body: some View {
         WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point Now" : "Weather Now",
                              symbol: metric == .dewPoint ? "drop.degreesign" : "thermometer.medium",
-                             fillsHeight: true) {
+                             fillsHeight: true, showsDewPointInfo: metric == .dewPoint) {
             HStack(alignment: .center, spacing: 12) {
-                Text(DewPointFormatters.temperature(metric == .dewPoint ? reading.dewPoint : reading.temperature))
-                    .font(.system(size: readingSize, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(metric == .dewPoint ? DewPointComfortScale.color(for: reading.dewPointCelsius) : .primary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                if metric == .dewPoint {
+                    DewPointExplanationButton {
+                        Text(DewPointFormatters.temperature(reading.dewPoint))
+                            .font(.system(size: readingSize, weight: .semibold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+                } else {
+                    Text(DewPointFormatters.temperature(reading.temperature))
+                        .font(.system(size: readingSize, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
                 Spacer(minLength: 0)
                 if metric == .dewPoint {
                     Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
@@ -406,6 +417,7 @@ private struct WeatherDashboardCard<Content: View>: View {
     let symbol: String
     var fillsHeight = false
     var compact = false
+    var showsDewPointInfo = false
     @ViewBuilder var content: Content
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -415,15 +427,27 @@ private struct WeatherDashboardCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: compactSpacing ? 6 : 10) {
-            Label {
-                Text(title)
-                    .font(.headline.weight(.bold))
-            } icon: {
-                Image(systemName: symbol)
-                    .foregroundStyle(.tint)
+            HStack(spacing: 4) {
+                Label {
+                    Text(title)
+                        .font(.headline.weight(.bold))
+                } icon: {
+                    Image(systemName: symbol)
+                        .foregroundStyle(.tint)
+                }
+                .foregroundStyle(.primary)
+                .accessibilityAddTraits(.isHeader)
+                if showsDewPointInfo {
+                    DewPointExplanationButton {
+                        Image(systemName: "info.circle")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: 28, minHeight: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("About dew point and comfort colors")
+                }
             }
-            .foregroundStyle(.primary)
-            .accessibilityAddTraits(.isHeader)
             content
         }
         .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
@@ -502,14 +526,16 @@ private struct DewPointNowCard: View {
     @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
 
     var body: some View {
-        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight, compact: compact) {
-            Text(DewPointFormatters.temperature(reading.dewPoint))
-                .font(.system(size: readingSize, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-                .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
-                .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight, compact: compact, showsDewPointInfo: true) {
+            DewPointExplanationButton {
+                Text(DewPointFormatters.temperature(reading.dewPoint))
+                    .font(.system(size: readingSize, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+                    .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+            }
+            .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
             Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
