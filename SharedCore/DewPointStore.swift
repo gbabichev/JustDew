@@ -40,6 +40,15 @@ struct DewPointStore {
         encode(merged, forKey: "dewPoint.reading.\(reading.location.id)")
     }
 
+    func freshReading(for location: DewPointLocation, now: Date = Date()) -> DewPointReading? {
+        guard let reading = loadReading(for: location),
+              isSameLocation(reading.location, location),
+              reading.dailyWeather != nil else { return nil }
+        let age = now.timeIntervalSince(reading.fetchedAt)
+        guard age >= 0, age < DewPointConfiguration.refreshInterval else { return nil }
+        return reading
+    }
+
     func loadLocation() -> DewPointLocation? {
         decode(DewPointLocation.self, forKey: Key.location)
     }

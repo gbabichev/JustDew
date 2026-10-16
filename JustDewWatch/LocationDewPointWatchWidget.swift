@@ -40,7 +40,7 @@ struct LocationDewPointWatchWidget: Widget {
                                provider: LocationDewPointWatchProvider()) { entry in
             JustDewWatchEntryView(entry: entry)
         }
-        .configurationDisplayName("Saved Location")
+        .configurationDisplayName("Dew Point · Saved Location")
         .description("Keep the dew point for a saved city on your watch face or in the Smart Stack.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline, .accessoryCorner])
     }

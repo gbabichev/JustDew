@@ -33,6 +33,23 @@ struct DewPointWidgetCacheTests {
         store.saveLocations([])
         precondition(DewPointWidgetLoader.cachedReading(locationID: city.id, store: store) == nil)
         precondition(DewPointWidgetLoader.cachedReading(locationID: "current", store: store)?.location == current)
+        // App and widgets may reuse a recent, complete snapshot for the same place.
+        let now = Date()
+        var snapshot = reading(current, dew: 18)
+        snapshot.fetchedAt = now
+        snapshot.dailyWeather = [WeatherForecastDay(date: now, lowTemperatureCelsius: 15,
+            highTemperatureCelsius: 25, condition: "Clear", symbolName: "sun.max", precipitationChance: 0)]
+        store.saveCachedReading(snapshot)
+        precondition(store.freshReading(for: current, now: now)?.dewPointCelsius == 18)
+        precondition(store.freshReading(for: current, now: now.addingTimeInterval(1_801)) == nil)
+        precondition(store.freshReading(for: current, now: now.addingTimeInterval(-1)) == nil)
+        var moved = current
+        moved.latitude += 1
+        precondition(store.freshReading(for: moved, now: now) == nil,
+                     "The Current Location ID must not reuse fresh weather from a different city")
+        snapshot.dailyWeather = nil
+        store.saveCachedReading(snapshot)
+        precondition(store.freshReading(for: current, now: now) == nil, "Upgrade incomplete legacy snapshots")
         print("DewPointWidgetCache tests passed")
     }
 }

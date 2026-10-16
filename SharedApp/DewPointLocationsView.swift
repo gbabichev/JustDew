@@ -3,39 +3,45 @@ import SwiftUI
 struct DewPointAppView: View {
     @StateObject private var viewModel = DewPointViewModel()
     @State private var showsLocations = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        #if os(macOS)
-        DewPointAdaptiveAppView(viewModel: viewModel)
-        #elseif os(iOS)
-        DewPointAdaptiveAppView(viewModel: viewModel)
-        #else
-        NavigationStack {
-            Group {
-                if viewModel.savedLocations.isEmpty {
-                    DewPointLocationsList(viewModel: viewModel)
-                } else if let location = viewModel.configuredLocation {
-                    DewPointLocationPage(viewModel: viewModel, location: location)
-                }
-            }
-            .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
-            .toolbar {
-                ToolbarItem {
-                    Button {
-                        showsLocations = true
-                    } label: {
-                        Label("Locations", systemImage: "list.bullet")
+        Group {
+            #if os(macOS)
+            DewPointAdaptiveAppView(viewModel: viewModel)
+            #elseif os(iOS)
+            DewPointAdaptiveAppView(viewModel: viewModel)
+            #else
+            NavigationStack {
+                Group {
+                    if viewModel.savedLocations.isEmpty {
+                        DewPointLocationsList(viewModel: viewModel)
+                    } else if let location = viewModel.configuredLocation {
+                        DewPointLocationPage(viewModel: viewModel, location: location)
                     }
                 }
+                .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
+                .toolbar {
+                    ToolbarItem {
+                        Button {
+                            showsLocations = true
+                        } label: {
+                            Label("Locations", systemImage: "list.bullet")
+                        }
+                    }
+                }
+                // Quickboard needs to present text entry without a modal sheet in flight.
+                .navigationDestination(isPresented: $showsLocations) {
+                    DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
+                        .navigationTitle("Locations")
+                }
             }
-            // Quickboard needs to present text entry without a modal sheet in flight.
-            .navigationDestination(isPresented: $showsLocations) {
-                DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
-                    .navigationTitle("Locations")
-            }
+            .task { viewModel.loadInitialReading() }
+            #endif
         }
-        .task { viewModel.loadInitialReading() }
-        #endif
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { viewModel.loadInitialReading() }
+        }
     }
 }
 

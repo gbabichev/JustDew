@@ -313,22 +313,16 @@ private func timelineGradientStops(
         return CGFloat(min(max(progress, 0), 1))
     }
 
-    var stops: [Gradient.Stop] = []
-    let firstLocation = location(firstPoint.date)
-    if firstLocation > 0 {
-        stops.append(Gradient.Stop(color: inactiveColor, location: 0))
-        stops.append(Gradient.Stop(color: inactiveColor, location: max(firstLocation - 0.0001, 0)))
-    }
-    stops += sortedPoints.map { point in
-        Gradient.Stop(color: color(point), location: location(point.date))
-    }
-    let lastLocation = location(lastPoint.date.addingTimeInterval(3_600))
-    stops.append(Gradient.Stop(color: color(lastPoint), location: lastLocation))
-    if lastLocation < 1 {
-        stops.append(Gradient.Stop(color: inactiveColor, location: min(lastLocation + 0.0001, 1)))
-        stops.append(Gradient.Stop(color: inactiveColor, location: 1))
-    }
-    return stops.sorted { $0.location < $1.location }
+    // Extend the endpoint colors to keep the original continuous, full-day bar.
+    // Axis values still require a nearby sample; extending a color isn't historical data.
+    return (
+        [Gradient.Stop(color: color(firstPoint), location: 0)]
+        + sortedPoints.map { point in
+            Gradient.Stop(color: color(point), location: location(point.date))
+        }
+        + [Gradient.Stop(color: color(lastPoint), location: 1)]
+    )
+    .sorted { $0.location < $1.location }
 }
 
 enum DayTimelineMetric: Equatable {

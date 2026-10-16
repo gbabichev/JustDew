@@ -74,7 +74,12 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func loadInitialReading() {
-        guard configuredLocation != nil else { return }
+        guard let configuredLocation else { return }
+        // A widget can refresh the shared cache while the app is suspended.
+        if let cached = store.loadReading(for: configuredLocation),
+           cached.fetchedAt > (reading?.fetchedAt ?? .distantPast) {
+            reading = cached
+        }
         guard reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading) else { return }
         refresh()
     }

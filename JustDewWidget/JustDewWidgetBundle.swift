@@ -15,5 +15,13 @@ struct JustDewWidgetBundle: WidgetBundle {
         SavedLocationDewPointWidget()
         AlwaysDarkDewPointWidget()
         AlwaysDarkLocationDewPointWidget()
+        JustWeatherWidget()
+        SavedLocationWeatherWidget()
+        AlwaysDarkWeatherWidget()
+        AlwaysDarkLocationWeatherWidget()
+        CombinedWeatherWidget()
+        SavedLocationCombinedWeatherWidget()
+        AlwaysDarkCombinedWeatherWidget()
+        AlwaysDarkLocationCombinedWeatherWidget()
     }
 }

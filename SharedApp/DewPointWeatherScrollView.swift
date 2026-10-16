@@ -35,31 +35,29 @@ struct DewPointWeatherContent: View {
                 let forecast = WeatherDashboardForecast(reading: reading)
                 ViewThatFits(in: .horizontal) {
                     if !dynamicTypeSize.isAccessibilitySize {
-                        HStack(alignment: .top, spacing: 16) {
-                            WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
-                                .frame(minWidth: 280, maxWidth: .infinity)
-                            DewPointNowCard(reading: reading)
-                                .frame(minWidth: 280, maxWidth: .infinity)
-                        }
-                        .frame(minWidth: 660)
-                    }
-                    VStack(spacing: 16) {
-                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
-                        DewPointNowCard(reading: reading)
-                    }
-                }
-                ViewThatFits(in: .horizontal) {
-                    if !dynamicTypeSize.isAccessibilitySize {
-                        HStack(alignment: .top, spacing: 16) {
-                            WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
-                                .frame(minWidth: 320, maxWidth: .infinity)
-                            WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
-                                .frame(minWidth: 320, maxWidth: .infinity)
+                        // Both rows share one fit decision so forecasts stay in their metric's column.
+                        VStack(spacing: 16) {
+                            HStack(alignment: .top, spacing: 16) {
+                                WeatherNowCard(reading: reading, today: forecast.days.first?.weather, fillsHeight: true)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                                DewPointNowCard(reading: reading, fillsHeight: true)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                            }
+                            // Size the row to its taller card, then let both backgrounds fill it.
+                            .fixedSize(horizontal: false, vertical: true)
+                            HStack(alignment: .top, spacing: 16) {
+                                WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                                WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                            }
                         }
                         .frame(minWidth: 720)
                     }
                     VStack(spacing: 16) {
+                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
+                        DewPointNowCard(reading: reading)
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
                     }
                 }
@@ -90,6 +88,7 @@ struct DewPointWeatherContent: View {
 private struct WeatherDashboardCard<Content: View>: View {
     let title: LocalizedStringKey
     let symbol: String
+    var fillsHeight = false
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -105,7 +104,7 @@ private struct WeatherDashboardCard<Content: View>: View {
             .accessibilityAddTraits(.isHeader)
             content
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
         .padding(14)
         .background {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -121,10 +120,11 @@ private struct WeatherDashboardCard<Content: View>: View {
 private struct WeatherNowCard: View {
     let reading: DewPointReading
     let today: WeatherForecastDay?
+    var fillsHeight = false
     @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = 36
 
     var body: some View {
-        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium") {
+        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight) {
             HStack(alignment: .top) {
                 Text(DewPointFormatters.temperature(reading.temperature))
                     .font(.system(size: readingSize, weight: .semibold, design: .rounded))
@@ -161,6 +161,7 @@ private struct WeatherNowCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+            if fillsHeight { Spacer(minLength: 0) }
             DewPointDayTimelineView(reading: reading, referenceDate: Date(), metric: .temperature)
                 .accessibilityHint("Color shows temperature through the day.")
         }
@@ -173,10 +174,11 @@ private struct WeatherNowCard: View {
 
 private struct DewPointNowCard: View {
     let reading: DewPointReading
+    var fillsHeight = false
     @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = 36
 
     var body: some View {
-        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign") {
+        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight) {
             Text(DewPointFormatters.temperature(reading.dewPoint))
                 .font(.system(size: readingSize, weight: .semibold, design: .rounded))
                 .monospacedDigit()
@@ -187,6 +189,7 @@ private struct DewPointNowCard: View {
             Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            if fillsHeight { Spacer(minLength: 0) }
             DewPointDayTimelineView(reading: reading, referenceDate: Date())
                 .accessibilityHint("Color shows dew point comfort through the day.")
         }

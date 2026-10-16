@@ -25,10 +25,12 @@ struct JustDewWidgetEntryView: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
 
     let entry: DewPointWidgetEntry
+    let metric: DayTimelineMetric
     private let familyOverride: WidgetFamily?
 
-    init(entry: DewPointWidgetEntry, family: WidgetFamily? = nil) {
+    init(entry: DewPointWidgetEntry, family: WidgetFamily? = nil, metric: DayTimelineMetric = .dewPoint) {
         self.entry = entry
+        self.metric = metric
         familyOverride = family
     }
 
@@ -107,7 +109,7 @@ struct JustDewWidgetEntryView: View {
     @ViewBuilder
     private func content(for reading: DewPointReading) -> some View {
         if isLockScreenSquare {
-            DewPointLockScreenSquareContent(reading: reading)
+            DewPointLockScreenSquareContent(reading: reading, metric: metric)
         } else {
             standardContent(for: reading)
         }
@@ -118,19 +120,19 @@ struct JustDewWidgetEntryView: View {
         switch family {
         #if os(iOS)
         case .accessoryInline:
-            DewPointInlineWidgetText(reading: reading)
+            DewPointInlineWidgetText(reading: reading, metric: metric)
                 .foregroundStyle(primaryTextColor)
         case .accessoryCircular:
             VStack(spacing: 2) {
-                Image(systemName: reading.location.mode == .current ? "location.fill" : "drop.degreesign.fill")
-                    .accessibilityLabel(reading.location.mode == .current ? "Current Location" : "Dew Point")
-                Text(DewPointFormatters.temperature(reading.dewPoint))
+                Image(systemName: metric == .temperature ? reading.symbolName : (reading.location.mode == .current ? "location.fill" : metric.widgetSymbol))
+                    .accessibilityLabel(reading.location.mode == .current ? Text("Current Location") : Text(metric.widgetTitle))
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.caption.bold())
                     .minimumScaleFactor(0.7)
             }
             .foregroundStyle(primaryTextColor)
         case .accessoryRectangular:
-            DewPointAccessoryRectangularView(reading: reading)
+            DewPointAccessoryRectangularView(reading: reading, metric: metric)
         #endif
         case .systemLarge, .systemExtraLarge:
             DewPointLargeWidgetContent(
@@ -139,15 +141,16 @@ struct JustDewWidgetEntryView: View {
                 secondaryColor: secondaryTextColor,
                 valueColor: dewPointValueColor(for: reading),
                 accentColor: comfortAccentColor(for: reading),
-                usesComfortColor: showsComfortColor
+                usesComfortColor: showsComfortColor,
+                metric: metric
             )
         case .systemMedium:
             VStack(alignment: .leading, spacing: 5) {
                 HStack {
                     HStack(spacing: 6) {
-                        Image(systemName: "drop.degreesign.fill")
+                        Image(systemName: metric.widgetSymbol)
                             .foregroundStyle(comfortAccentColor(for: reading))
-                        Text("Dew Point")
+                        Text(metric.widgetTitle)
                             .foregroundStyle(secondaryTextColor)
                     }
                     Spacer()
@@ -156,7 +159,7 @@ struct JustDewWidgetEntryView: View {
                 }
                 .font(.caption)
 
-                Text(DewPointFormatters.temperature(reading.dewPoint))
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.system(size: 40, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dewPointValueColor(for: reading))
@@ -167,7 +170,8 @@ struct JustDewWidgetEntryView: View {
                     trackHeight: 7,
                     markerSize: 14,
                     usesComfortColor: showsComfortColor,
-                    monochromeColor: secondaryTextColor
+                    monochromeColor: secondaryTextColor,
+                    metric: metric
                 )
 
                 DewPointWidgetLocationText(location: reading.location)
@@ -176,7 +180,11 @@ struct JustDewWidgetEntryView: View {
                     .lineLimit(1)
 
                 HStack {
-                    Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    if metric == .dewPoint {
+                        Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    } else {
+                        Text(reading.condition).lineLimit(1)
+                    }
                     Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                     Spacer()
                     Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
@@ -189,18 +197,22 @@ struct JustDewWidgetEntryView: View {
         default:
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 5) {
-                    Image(systemName: "drop.degreesign.fill")
+                    Image(systemName: metric.widgetSymbol)
                         .foregroundStyle(comfortAccentColor(for: reading))
-                    Text("Dew Point")
+                    Text(metric.widgetTitle)
                         .foregroundStyle(secondaryTextColor)
                 }
                 .font(.caption)
-                Text(DewPointFormatters.temperature(reading.dewPoint))
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.system(size: 32, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(dewPointValueColor(for: reading))
                 HStack(spacing: 8) {
-                    Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
+                    if metric == .dewPoint {
+                        Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
+                    } else {
+                        Text(reading.condition)
+                    }
                     Label(DewPointFormatters.percent(reading.humidity), systemImage: "humidity.fill")
                 }
                 .font(.caption2)
@@ -213,7 +225,8 @@ struct JustDewWidgetEntryView: View {
                     trackHeight: 5,
                     markerSize: 10,
                     usesComfortColor: showsComfortColor,
-                    monochromeColor: secondaryTextColor
+                    monochromeColor: secondaryTextColor,
+                    metric: metric
                 )
                 DewPointWidgetLocationText(location: reading.location)
                     .font(.caption2)
@@ -230,7 +243,7 @@ struct JustDewWidgetEntryView: View {
 
     private var unavailableContent: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: "drop.degreesign")
+            Image(systemName: metric.widgetSymbol)
                 .font(.title3)
             Text(entry.message ?? "Choose Location")
                 .font(.caption)
@@ -284,19 +297,21 @@ struct JustDewWidgetEntryView: View {
     }
 
     private func comfortColor(for reading: DewPointReading) -> Color {
-        DewPointComfortScale.color(for: reading.dewPointCelsius)
+        metric.color(forCelsius: metric.currentValue(in: reading).value)
     }
 }
 
 private struct DewPointLockScreenSquareContent: View {
     let reading: DewPointReading
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Dew Point", systemImage: "drop.degreesign.fill")
+            Label(metric.widgetTitle, systemImage: metric.widgetSymbol)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(DewPointFormatters.temperature(reading.dewPoint))
+            Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                 .font(.system(size: 44, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
@@ -308,7 +323,7 @@ private struct DewPointLockScreenSquareContent: View {
             Spacer(minLength: 0)
             DewPointDayTimelineView(reading: reading, showsLabels: false,
                                    trackHeight: 5, markerSize: 10,
-                                   usesComfortColor: false, monochromeColor: .secondary)
+                                   usesComfortColor: false, monochromeColor: .secondary, metric: metric)
             Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -325,16 +340,18 @@ private struct DewPointLargeWidgetContent: View {
     let accentColor: Color
     let usesComfortColor: Bool
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             DewPointLargeWidgetCurrentConditions(
                 reading: reading, secondaryColor: secondaryColor,
                 valueColor: valueColor, accentColor: accentColor,
-                usesComfortColor: usesComfortColor
+                usesComfortColor: usesComfortColor, metric: metric
             )
             Divider().overlay(secondaryColor.opacity(0.2))
             DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
-                                       secondaryColor: secondaryColor, usesComfortColor: usesComfortColor)
+                                       secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric)
             Spacer(minLength: 0)
             Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
                 .font(.caption2)
@@ -351,10 +368,12 @@ private struct DewPointLargeWidgetCurrentConditions: View {
     let accentColor: Color
     let usesComfortColor: Bool
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Label("Dew Point", systemImage: "drop.degreesign.fill")
+                Label(metric.widgetTitle, systemImage: metric.widgetSymbol)
                     .foregroundStyle(accentColor)
                 Spacer(minLength: 8)
                 Image(systemName: reading.symbolName)
@@ -362,7 +381,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
             }
             .font(.caption)
             HStack(alignment: .center) {
-                Text(DewPointFormatters.temperature(reading.dewPoint))
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.system(size: 40, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
@@ -370,7 +389,11 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    if metric == .dewPoint {
+                        Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    } else {
+                        Text(reading.condition).lineLimit(1)
+                    }
                     Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 }
                 .font(.caption2)
@@ -384,7 +407,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 .lineLimit(1)
             DewPointDayTimelineView(reading: reading, showsLabels: false,
                                    trackHeight: 5, markerSize: 10,
-                                   usesComfortColor: usesComfortColor, monochromeColor: secondaryColor)
+                                   usesComfortColor: usesComfortColor, monochromeColor: secondaryColor, metric: metric)
         }
     }
 }
@@ -402,12 +425,17 @@ private struct DewPointLargeWidgetForecast: View {
         return reading.dailyForecastPoints.contains { $0.date >= tomorrow }
     }
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Dew Point Forecast")
+            Text(metric.widgetForecastTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(secondaryColor)
-            if hasForecast {
+            if metric == .temperature {
+                WeatherWidgetForecastRows(reading: reading, primaryColor: textColor,
+                                          secondaryColor: secondaryColor, usesColor: usesComfortColor)
+            } else if hasForecast {
                 DewPointForecastView(reading: reading, trackHeight: 5, maximumDayCount: 7,
                                      rowSpacing: 6, usesComfortColor: usesComfortColor,
                                      monochromeColor: textColor)
@@ -427,14 +455,16 @@ private struct DewPointAccessoryRectangularView: View {
     let reading: DewPointReading
     var usesComfortColor = false
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("Dew Point")
+                Text(metric.widgetTitle)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
-                Text(DewPointFormatters.temperature(reading.dewPoint))
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.headline.monospacedDigit())
             }
             .lineLimit(1)
@@ -446,7 +476,8 @@ private struct DewPointAccessoryRectangularView: View {
                 trackHeight: 3,
                 markerSize: 7,
                 usesComfortColor: usesComfortColor,
-                monochromeColor: .primary
+                monochromeColor: .primary,
+                metric: metric
             )
 
             HStack(spacing: 6) {
@@ -486,10 +517,12 @@ struct JustDewWatchEntryView: View {
     @Environment(\.showsWidgetLabel) private var showsWidgetLabel
 
     let entry: WatchDewPointEntry
+    let metric: DayTimelineMetric
     private let familyOverride: WidgetFamily?
 
-    init(entry: WatchDewPointEntry, family: WidgetFamily? = nil) {
+    init(entry: WatchDewPointEntry, family: WidgetFamily? = nil, metric: DayTimelineMetric = .dewPoint) {
         self.entry = entry
+        self.metric = metric
         familyOverride = family
     }
 
@@ -512,7 +545,7 @@ struct JustDewWatchEntryView: View {
     private func content(for reading: DewPointReading) -> some View {
         switch family {
         case .accessoryInline:
-            DewPointInlineWidgetText(reading: reading)
+            DewPointInlineWidgetText(reading: reading, metric: metric)
         case .accessoryCircular:
             circularGaugeContent(for: reading)
         case .accessoryCorner:
@@ -522,16 +555,16 @@ struct JustDewWatchEntryView: View {
                 circularGaugeContent(for: reading)
             }
         default:
-            DewPointAccessoryRectangularView(reading: reading, usesComfortColor: true)
+            DewPointAccessoryRectangularView(reading: reading, usesComfortColor: true, metric: metric)
         }
     }
 
     private func cornerGaugeContent(for reading: DewPointReading) -> some View {
-        Text("\(DewPointFormatters.temperatureValue(reading.dewPoint))\u{00B0}")
+        Text("\(DewPointFormatters.temperatureValue(metric.currentValue(in: reading)))\u{00B0}")
             .widgetCurvesContent()
             .widgetLabel {
-                Gauge(value: DewPointComfortScale.progress(for: reading.dewPointCelsius), in: 0...1) {
-                    Text("Dew Point")
+                Gauge(value: metric.widgetProgress(for: reading), in: 0...1) {
+                    Text(metric.widgetTitle)
                 } currentValueLabel: {
                     Text("")
                 } minimumValueLabel: {
@@ -539,28 +572,28 @@ struct JustDewWatchEntryView: View {
                 } maximumValueLabel: {
                     Text("")
                 }
-                .tint(Gradient(colors: DewPointComfortScale.gradientColors))
+                .tint(Gradient(colors: metric.widgetGradientColors))
             }
     }
 
     private func circularGaugeContent(for reading: DewPointReading) -> some View {
-        Gauge(value: DewPointComfortScale.progress(for: reading.dewPointCelsius), in: 0...1) {
-            Image(systemName: "drop.degreesign.fill")
-                .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
-                .accessibilityLabel("Dew Point")
+        Gauge(value: metric.widgetProgress(for: reading), in: 0...1) {
+            Image(systemName: metric.widgetSymbol)
+                .foregroundStyle(metric.color(forCelsius: metric.currentValue(in: reading).value))
+                .accessibilityLabel(Text(metric.widgetTitle))
         } currentValueLabel: {
-            Text(DewPointFormatters.temperatureValue(reading.dewPoint))
+            Text(DewPointFormatters.temperatureValue(metric.currentValue(in: reading)))
                 .font(.system(size: 23, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.75)
         }
         .gaugeStyle(.accessoryCircular)
-        .tint(Gradient(colors: DewPointComfortScale.gradientColors))
+        .tint(Gradient(colors: metric.widgetGradientColors))
     }
 
     private var unavailableContent: some View {
         VStack(spacing: 3) {
-            Image(systemName: "drop.degreesign")
+            Image(systemName: metric.widgetSymbol)
             Text(entry.message ?? "Choose Location")
                 .font(.caption2)
                 .multilineTextAlignment(.center)
@@ -570,7 +603,7 @@ struct JustDewWatchEntryView: View {
 }
 #endif
 
-private struct DewPointWidgetLocationText: View {
+struct DewPointWidgetLocationText: View {
     let location: DewPointLocation
 
     var body: some View {
@@ -586,8 +619,33 @@ private struct DewPointWidgetLocationText: View {
 private struct DewPointInlineWidgetText: View {
     let reading: DewPointReading
 
+    var metric: DayTimelineMetric = .dewPoint
+
     var body: some View {
         let source = reading.location.mode == .current ? Text("\(Image(systemName: "location.fill")) ") : Text("")
-        Text("\(source)Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+        if metric == .temperature {
+            Text("\(source)\(Image(systemName: reading.symbolName)) \(DewPointFormatters.temperature(reading.temperature)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+        } else {
+            Text("\(source)Dew \(DewPointFormatters.temperature(reading.dewPoint)) \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+        }
+    }
+}
+
+extension DayTimelineMetric {
+    var widgetTitle: LocalizedStringKey { self == .dewPoint ? "Dew Point" : "Weather" }
+    var widgetForecastTitle: LocalizedStringKey { self == .dewPoint ? "Dew Point Forecast" : "Weather Forecast" }
+    var widgetSymbol: String { self == .dewPoint ? "drop.degreesign.fill" : "thermometer.medium" }
+    var widgetGradientColors: [Color] {
+        self == .dewPoint ? DewPointComfortScale.gradientColors : [.blue, .cyan, .yellow, .orange, .red]
+    }
+
+    func widgetProgress(for reading: DewPointReading) -> Double {
+        if self == .dewPoint { return DewPointComfortScale.progress(for: reading.dewPointCelsius) }
+        let today = reading.dailyWeather?.first {
+            reading.forecastCalendar.isDate($0.date, inSameDayAs: reading.observedAt)
+        }
+        let low = today?.lowTemperatureCelsius ?? -10
+        let high = today?.highTemperatureCelsius ?? 40
+        return min(max((reading.temperatureCelsius - low) / max(high - low, 1), 0), 1)
     }
 }

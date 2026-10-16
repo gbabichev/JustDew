@@ -40,7 +40,6 @@ private struct DewPointSplitView: View {
         } detail: {
             #if os(iOS)
             DewPointIOSPagesView(viewModel: viewModel, usesSidebar: true)
-                .backgroundExtensionEffect()
             #else
             NavigationStack {
                 Group {

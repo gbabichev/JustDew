@@ -61,3 +61,61 @@ struct WatchLocationDewPointIntent: WidgetConfigurationIntent {
     var location: DewPointLocationEntity?
 }
 #endif
+
+// New configurations reuse stable location entities without changing shipped dew point intents.
+protocol WeatherLocationWidgetOptions: WidgetConfigurationIntent {
+    var location: DewPointLocationEntity? { get }
+    var alwaysDark: Bool { get }
+}
+
+struct WeatherWidgetIntent: WeatherLocationWidgetOptions {
+    static let title: LocalizedStringResource = "Weather Options"
+    static let description = IntentDescription("Choose Current Location or a city saved in JustDew.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+
+    @Parameter(title: "Always Dark", default: false)
+    var alwaysDark: Bool
+}
+
+struct DarkWeatherWidgetIntent: WeatherLocationWidgetOptions {
+    static let title: LocalizedStringResource = "Dark Weather Options"
+    static let description = IntentDescription("Choose a location for your always dark weather widget.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+
+    var alwaysDark: Bool { true }
+}
+
+struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
+    static let title: LocalizedStringResource = "Weather and Dew Point Options"
+    static let description = IntentDescription("Choose a location to see its weather and dew point together.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+
+    @Parameter(title: "Always Dark", default: false)
+    var alwaysDark: Bool
+}
+
+struct DarkCombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
+    static let title: LocalizedStringResource = "Dark Weather and Dew Point Options"
+    static let description = IntentDescription("Choose a location for your always dark combined widget.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+
+    var alwaysDark: Bool { true }
+}
+
+#if os(watchOS)
+struct WatchLocationWeatherIntent: WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Weather Location"
+    static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
+
+    @Parameter(title: "Location")
+    var location: DewPointLocationEntity?
+}
+#endif

@@ -18,7 +18,8 @@ enum DewPointWeatherClient {
             let (current, hourly, daily) = try await WeatherService.shared.weather(
                 for: location.clLocation,
                 including: .current,
-                .hourly(startDate: requestDate, endDate: forecastRange.upperBound),
+                // Include earlier hours today so both timelines can show the full local day.
+                .hourly(startDate: forecastRange.lowerBound, endDate: forecastRange.upperBound),
                 .daily
             )
             let currentForecastPoint = DewPointForecastPoint(

@@ -31,7 +31,9 @@ enum DewPointWidgetLoader {
             symbolName: "sun.max.fill",
             observedAt: Date(),
             fetchedAt: Date(),
-            dailyForecast: sampleDailyForecast()
+            dailyForecast: sampleDailyForecast(),
+            apparentTemperatureCelsius: 21,
+            dailyWeather: sampleWeatherForecast()
         )
     }
 
@@ -54,7 +56,7 @@ enum DewPointWidgetLoader {
         return dailyDewPoints.enumerated().flatMap { dayIndex, dewPoints in
             dewPoints.enumerated().compactMap { hourIndex, dewPointCelsius in
                 guard let dayStart = calendar.date(byAdding: .day, value: dayIndex, to: start),
-                      let date = calendar.date(byAdding: .hour, value: hourIndex * 3, to: dayStart) else {
+                      let date = calendar.date(byAdding: .hour, value: hourIndex * (dayIndex == 0 ? 2 : 3), to: dayStart) else {
                     return nil
                 }
 
@@ -65,6 +67,20 @@ enum DewPointWidgetLoader {
                     humidity: 0.48 + Double(hourIndex) * 0.02
                 )
             }
+        }
+    }
+
+    private static func sampleWeatherForecast() -> [WeatherForecastDay] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        return (0..<DewPointConfiguration.forecastDayCount).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
+            let rainy = offset % 4 == 3
+            return WeatherForecastDay(date: date, lowTemperatureCelsius: 13 + Double(offset % 4),
+                                      highTemperatureCelsius: 23 + Double(offset % 5),
+                                      condition: rainy ? "Rain" : "Partly Cloudy",
+                                      symbolName: rainy ? "cloud.rain.fill" : "cloud.sun.fill",
+                                      precipitationChance: rainy ? 0.65 : 0.1)
         }
     }
 
@@ -89,9 +105,11 @@ enum DewPointWidgetLoader {
             }
             location = saved
         }
+        // Reuse the app's recent snapshot rather than immediately fetching a different one.
+        if let cached = store.freshReading(for: location) { return cached }
         let reading = try await DewPointWeatherClient.reading(for: location)
         store.saveCachedReading(reading)
-        return reading
+        return store.loadReading(for: location) ?? reading
     }
 
     static func cachedReading(locationID: String, store: DewPointStore = DewPointStore()) -> DewPointReading? {
