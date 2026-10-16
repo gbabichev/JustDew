@@ -31,6 +31,17 @@ enum DewPointFormatters {
         return "\(lowValue)-\(temperature(high, locale: locale))"
     }
 
+    static func windSpeed(_ metersPerSecond: Double, locale: Locale = .autoupdatingCurrent) -> String {
+        guard metersPerSecond.isFinite, metersPerSecond >= 0 else { return "—" }
+        let formatter = MeasurementFormatter()
+        formatter.locale = locale
+        formatter.numberFormatter.maximumFractionDigits = 0
+        formatter.numberFormatter.minimumFractionDigits = 0
+        formatter.unitOptions = .providedUnit
+        let speed = Measurement(value: metersPerSecond, unit: UnitSpeed.metersPerSecond)
+        return formatter.string(from: speed.converted(to: UnitSpeed(forLocale: locale, usage: .wind)))
+    }
+
     static func percent(_ value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .percent

@@ -129,6 +129,7 @@ struct DewPointForecastPoint: Codable, Equatable, Sendable, Identifiable {
     var dewPointCelsius: Double
     var temperatureCelsius: Double
     var humidity: Double
+    var weather: DewPointHourlyWeather? = nil
 
     var id: Date {
         date

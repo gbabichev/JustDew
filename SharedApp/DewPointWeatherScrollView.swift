@@ -108,7 +108,7 @@ private struct LandscapeCurrentCard: View {
     var body: some View {
         WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point Now" : "Weather Now",
                              symbol: metric == .dewPoint ? "drop.degreesign" : "thermometer.medium",
-                             fillsHeight: true, showsDewPointInfo: metric == .dewPoint) {
+                             fillsHeight: true, showsDewPointInfo: metric == .dewPoint, showsWeatherDetails: metric == .temperature) {
             HStack(alignment: .center, spacing: 12) {
                 if metric == .dewPoint {
                     DewPointExplanationButton {
@@ -163,6 +163,7 @@ private struct LandscapeCurrentCard: View {
                 DewPointComfortHours(reading: reading, compact: true)
             }
         }
+        .modifier(WeatherDetailsPresentation(reading: metric == .temperature ? reading : nil))
     }
 
     private func temperature(_ value: Double) -> String {
@@ -418,6 +419,7 @@ private struct WeatherDashboardCard<Content: View>: View {
     var fillsHeight = false
     var compact = false
     var showsDewPointInfo = false
+    var showsWeatherDetails = false
     @ViewBuilder var content: Content
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -447,6 +449,12 @@ private struct WeatherDashboardCard<Content: View>: View {
                     }
                     .accessibilityLabel("About dew point and comfort colors")
                 }
+                if showsWeatherDetails {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
             }
             content
         }
@@ -471,7 +479,7 @@ private struct WeatherNowCard: View {
     @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
 
     var body: some View {
-        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, compact: compact) {
+        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, compact: compact, showsWeatherDetails: true) {
             HStack(alignment: .top) {
                 Text(DewPointFormatters.temperature(reading.temperature))
                     .font(.system(size: readingSize, weight: .semibold, design: .rounded))
@@ -512,6 +520,7 @@ private struct WeatherNowCard: View {
             DewPointDayTimelineView(reading: reading, referenceDate: Date(), metric: .temperature)
                 .accessibilityHint("Color shows temperature through the day.")
         }
+        .modifier(WeatherDetailsPresentation(reading: reading))
     }
 
     private func temperature(_ value: Double) -> String {

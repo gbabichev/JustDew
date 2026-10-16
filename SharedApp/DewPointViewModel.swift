@@ -284,6 +284,8 @@ final class DewPointViewModel: ObservableObject {
     private func shouldRefreshForecast(_ reading: DewPointReading?) -> Bool {
         guard let reading else { return true }
         guard reading.dailyWeather != nil else { return true }
+        // Refresh caches written before hourly weather details were stored.
+        guard reading.dailyForecastPoints.contains(where: { $0.weather != nil }) else { return true }
         let calendar = reading.forecastCalendar
         let start = calendar.startOfDay(for: Date())
         guard let lastDayStart = calendar.date(byAdding: .day, value: DewPointConfiguration.forecastDayCount - 1, to: start) else {

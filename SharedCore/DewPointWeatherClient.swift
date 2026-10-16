@@ -22,11 +22,15 @@ enum DewPointWeatherClient {
                 .hourly(startDate: forecastRange.lowerBound, endDate: forecastRange.upperBound),
                 .daily
             )
+            let currentHour = hourly.forecast.first {
+                $0.date <= current.date && current.date < $0.date.addingTimeInterval(3_600)
+            }
             let currentForecastPoint = DewPointForecastPoint(
                 date: current.date,
                 dewPointCelsius: current.dewPoint.converted(to: .celsius).value,
                 temperatureCelsius: current.temperature.converted(to: .celsius).value,
-                humidity: current.humidity
+                humidity: current.humidity,
+                weather: currentHour.map { hourlyDetails(for: $0) }
             )
 
             return DewPointReading(
@@ -64,6 +68,19 @@ enum DewPointWeatherClient {
         }
     }
 
+    private static func hourlyDetails(for hour: HourWeather) -> DewPointHourlyWeather {
+        DewPointHourlyWeather(
+            precipitationChance: hour.precipitationChance,
+            windSpeedMetersPerSecond: hour.wind.speed.converted(to: .metersPerSecond).value,
+            windGustMetersPerSecond: hour.wind.gust?.converted(to: .metersPerSecond).value,
+            windDirection: hour.wind.compassDirection.rawValue,
+            uvIndex: hour.uvIndex.value,
+            uvCategory: hour.uvIndex.category.rawValue,
+            condition: hour.condition.description,
+            symbolName: hour.symbolName
+        )
+    }
+
     private static func dailyForecast(
         from hourlyForecast: [HourWeather],
         observedAt: Date,
@@ -80,7 +97,8 @@ enum DewPointWeatherClient {
                     date: hour.date,
                     dewPointCelsius: hour.dewPoint.converted(to: .celsius).value,
                     temperatureCelsius: hour.temperature.converted(to: .celsius).value,
-                    humidity: hour.humidity
+                    humidity: hour.humidity,
+                    weather: hourlyDetails(for: hour)
                 )
             }
 
