@@ -110,7 +110,7 @@ struct CombinedWeatherWidget: Widget {
         }
         .configurationDisplayName("Weather + Dew Point")
         .description("Temperature, conditions, and dew point together for your current location.")
-        .supportedFamilies(WeatherWidgetFamilies.home)
+        .supportedFamilies(WeatherWidgetFamilies.all)
         .contentMarginsDisabled()
     }
 }
@@ -123,7 +123,7 @@ struct SavedLocationCombinedWeatherWidget: Widget {
         }
         .configurationDisplayName("Weather + Dew Point · Location")
         .description("Choose a saved city to see its weather and dew point together.")
-        .supportedFamilies(WeatherWidgetFamilies.home)
+        .supportedFamilies(WeatherWidgetFamilies.all)
         .contentMarginsDisabled()
     }
 }

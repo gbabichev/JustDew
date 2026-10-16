@@ -97,6 +97,23 @@ struct CombinedWidgetPreviewHost: PreviewProvider {
                 CombinedWeatherWidgetEntryView(entry: DewPointWidgetEntry(date: .now,
                     reading: DewPointWidgetLoader.sampleReading, message: nil, alwaysDark: true), family: .systemSmall)
             }.previewDisplayName("Combined Always Dark")
+            #if os(iOS)
+            WidgetPreviewTile(width: 62, height: 62) {
+                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryCircular)
+            }.previewDisplayName("Combined Lock Screen Circular")
+            WidgetPreviewTile(width: 160, height: 60) {
+                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryRectangular)
+            }.previewDisplayName("Combined Lock Screen Rectangular")
+            WidgetPreviewTile(width: 150, height: 48) {
+                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryRectangular)
+            }.previewDisplayName("Combined Compact Lock Screen Rectangular")
+            WidgetPreviewTile(width: 260, height: 26) {
+                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryInline)
+            }.previewDisplayName("Combined Lock Screen Inline")
+            WidgetPreviewTile(width: 172, height: 72) {
+                CombinedWeatherWidgetEntryView(entry: .previewNeedsLocation, family: .accessoryRectangular)
+            }.previewDisplayName("Combined Lock Screen Needs Location")
+            #endif
             WidgetPreviewTile(width: 160, height: 160) {
                 CombinedWeatherWidgetEntryView(entry: .previewNeedsLocation, family: .systemSmall)
             }.previewDisplayName("Combined Needs Location")
