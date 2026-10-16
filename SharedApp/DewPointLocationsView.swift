@@ -329,6 +329,9 @@ private struct SidebarLocationRow: View {
     let reading: DewPointReading?
 
     var body: some View {
+        #if os(iOS)
+        IOSSidebarLocationRow(location: location, reading: reading)
+        #else
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(location.compactDisplayName)
@@ -365,8 +368,80 @@ private struct SidebarLocationRow: View {
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
+        #endif
     }
 }
+
+#if os(iOS)
+private struct IOSSidebarLocationRow: View {
+    let location: DewPointLocation
+    let reading: DewPointReading?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // Give the name the row's full width instead of competing with two readings.
+            Text(location.compactDisplayName)
+                .font(.body.weight(.medium))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .truncationMode(.tail)
+            if location.mode == .current {
+                Label("Current Location", systemImage: "location.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+            }
+            if let reading {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        SidebarDewPointValue(reading: reading)
+                        Spacer(minLength: 0)
+                        SidebarWeatherValue(reading: reading)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        SidebarDewPointValue(reading: reading)
+                        SidebarWeatherValue(reading: reading)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct SidebarDewPointValue: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        Text("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+            .font(.caption)
+            .monospacedDigit()
+            .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+            .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+private struct SidebarWeatherValue: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: reading.symbolName)
+                .symbolRenderingMode(.multicolor)
+                .accessibilityHidden(true)
+            Text(DewPointFormatters.temperature(reading.temperature))
+                .monospacedDigit()
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: true, vertical: false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Temperature \(DewPointFormatters.temperature(reading.temperature))")
+    }
+}
+#endif
 #endif
 
 private struct SavedLocationRow: View {
