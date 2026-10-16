@@ -42,6 +42,7 @@ private struct DewPointHingeResponsivePager: View {
                 )
             } else {
                 DewPointWeatherPager(viewModel: viewModel, locations: locations, selectedID: $selectedID)
+                    .environment(\.weatherDashboardViewport, geometry.size)
             }
         }
         .onHingeChange { _, context in
