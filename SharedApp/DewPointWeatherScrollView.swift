@@ -38,27 +38,27 @@ struct DewPointWeatherContent: View {
                         // Both rows share one fit decision so forecasts stay in their metric's column.
                         VStack(spacing: 16) {
                             HStack(alignment: .top, spacing: 16) {
-                                WeatherNowCard(reading: reading, today: forecast.days.first?.weather, fillsHeight: true)
-                                    .frame(minWidth: 320, maxWidth: .infinity)
                                 DewPointNowCard(reading: reading, fillsHeight: true)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                                WeatherNowCard(reading: reading, today: forecast.days.first?.weather, fillsHeight: true)
                                     .frame(minWidth: 320, maxWidth: .infinity)
                             }
                             // Size the row to its taller card, then let both backgrounds fill it.
                             .fixedSize(horizontal: false, vertical: true)
                             HStack(alignment: .top, spacing: 16) {
-                                WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
-                                    .frame(minWidth: 320, maxWidth: .infinity)
                                 WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
+                                    .frame(minWidth: 320, maxWidth: .infinity)
+                                WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
                                     .frame(minWidth: 320, maxWidth: .infinity)
                             }
                         }
                         .frame(minWidth: 720)
                     }
                     VStack(spacing: 16) {
-                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
                         DewPointNowCard(reading: reading)
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
+                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
+                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
                     }
                 }
                 WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
@@ -84,6 +84,181 @@ struct DewPointWeatherContent: View {
         .padding(.bottom, 16)
     }
 }
+
+#if os(iOS)
+@available(iOS 27.1, *)
+struct DewPointFoldedWeatherDashboard: View {
+    let reading: DewPointReading?
+    let isLoading: Bool
+    let errorMessage: String?
+    let axis: Axis
+    let locations: [DewPointLocation]
+    @Binding var selectedID: String?
+    let refresh: @MainActor @Sendable () async -> Void
+
+    @State private var linkedScroll = FoldedLinkedScroll()
+
+    var body: some View {
+        // The system split arrangement places each pane in the usable region on
+        // its side of the fold, including asymmetric toolbar and sidebar insets.
+        ArrangementView {
+            FoldedWeatherPane(reading: reading, metric: .dewPoint, showsCardsSideBySide: axis == .vertical,
+                              scrollOverflowEdges: axis == .horizontal ? .vertical : .top, linkedScroll: $linkedScroll,
+                              isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    DewPointPageControl(locationIDs: locations.map(\.id), selectedID: $selectedID)
+                        .disabled(isLoading)
+                        .padding(.vertical, 6)
+                }
+                .splitArrangementLayoutRatio(0.5)
+        } secondary: {
+            FoldedWeatherPane(reading: reading, metric: .temperature, showsCardsSideBySide: axis == .vertical,
+                              scrollOverflowEdges: axis == .horizontal ? .vertical : .bottom, linkedScroll: $linkedScroll,
+                              isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
+        }
+        .arrangementViewStyle(.split.axes(axis == .horizontal ? .horizontal : .vertical))
+        .simultaneousGesture(DragGesture(minimumDistance: 30).onEnded { value in
+            guard abs(value.translation.width) > 60,
+                  abs(value.translation.width) > abs(value.translation.height) * 1.5,
+                  let index = locations.firstIndex(where: { $0.id == selectedID }) else { return }
+            let next = index + (value.translation.width < 0 ? 1 : -1)
+            if locations.indices.contains(next) { selectedID = locations[next].id }
+        })
+    }
+}
+
+private struct FoldedWeatherPane: View {
+    let reading: DewPointReading?
+    let metric: WeatherForecastMetric
+    let showsCardsSideBySide: Bool
+    let scrollOverflowEdges: Edge.Set
+    @Binding var linkedScroll: FoldedLinkedScroll
+    let isLoading: Bool
+    let errorMessage: String?
+    let refresh: @MainActor @Sendable () async -> Void
+
+    @State private var position = ScrollPosition(edge: .top)
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if let reading {
+                    let forecast = WeatherDashboardForecast(reading: reading)
+                    FoldedMetricCards(reading: reading, forecast: forecast, metric: metric,
+                                      showsCardsSideBySide: showsCardsSideBySide)
+                    WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
+                } else if isLoading {
+                    ProgressView("Loading weather…")
+                } else {
+                    ContentUnavailableView("No Weather", systemImage: "cloud.sun")
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .padding(14)
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
+                linkedScroll.contentHeights[metric] = height
+            }
+            .frame(minHeight: linkedScroll.minimumContentHeight(for: metric), alignment: .top)
+        }
+        .scrollPosition($position)
+        .onScrollPhaseChange { _, phase in
+            if phase == .tracking || phase == .interacting { linkedScroll.driver = metric }
+        }
+        .onScrollGeometryChange(for: FoldedScrollGeometry.self, of: { geometry in
+            FoldedScrollGeometry(offset: max(0, geometry.contentOffset.y + geometry.contentInsets.top),
+                                 visibleHeight: max(0, geometry.containerSize.height
+                                     - geometry.contentInsets.top - geometry.contentInsets.bottom))
+        }) { _, geometry in
+            linkedScroll.visibleHeights[metric] = geometry.visibleHeight
+            if linkedScroll.driver == metric, abs(linkedScroll.offset - geometry.offset) > 0.5 {
+                linkedScroll.offset = geometry.offset
+            }
+        }
+        .onChange(of: linkedScroll.offset) { _, offset in
+            guard linkedScroll.driver != metric else { return }
+            if offset == 0 { position.scrollTo(edge: .top) }
+            else { position.scrollTo(y: offset) }
+        }
+        .onChange(of: reading?.location.id) { _, _ in
+            position.scrollTo(edge: .top)
+            linkedScroll.offset = 0
+            linkedScroll.driver = nil
+        }
+        .scrollEdgeEffectStyle(.soft, for: .top)
+        .refreshable { await refresh() }
+        .scrollClipDisabled()
+        .mask {
+            // Allow scrolling beneath the outer screen edges, but never across the fold.
+            Rectangle()
+                .ignoresSafeArea(.container, edges: scrollOverflowEdges)
+        }
+    }
+}
+
+private struct FoldedMetricCards: View {
+    let reading: DewPointReading
+    let forecast: WeatherDashboardForecast
+    let metric: WeatherForecastMetric
+    let showsCardsSideBySide: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if showsCardsSideBySide && !dynamicTypeSize.isAccessibilitySize {
+            HStack(alignment: .top, spacing: 16) {
+                FoldedCurrentMetricCard(reading: reading, today: forecast.days.first?.weather,
+                                        metric: metric, fillsHeight: true)
+                    .frame(maxWidth: .infinity)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
+                    .frame(maxWidth: .infinity)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            VStack(spacing: 16) {
+                FoldedCurrentMetricCard(reading: reading, today: forecast.days.first?.weather, metric: metric)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
+            }
+        }
+    }
+}
+
+private struct FoldedCurrentMetricCard: View {
+    let reading: DewPointReading
+    let today: WeatherForecastDay?
+    let metric: WeatherForecastMetric
+    var fillsHeight = false
+
+    var body: some View {
+        if metric == .dewPoint {
+            DewPointNowCard(reading: reading, fillsHeight: fillsHeight)
+        } else {
+            WeatherNowCard(reading: reading, today: today, fillsHeight: fillsHeight)
+        }
+    }
+}
+
+private struct FoldedScrollGeometry: Equatable {
+    let offset: CGFloat
+    let visibleHeight: CGFloat
+}
+
+private struct FoldedLinkedScroll {
+    var driver: WeatherForecastMetric?
+    var offset: CGFloat = 0
+    var contentHeights: [WeatherForecastMetric: CGFloat] = [:]
+    var visibleHeights: [WeatherForecastMetric: CGFloat] = [:]
+
+    // Give both panes the same travel distance, even when one has less content
+    // or less visible space because of its page controls or the device's pose.
+    func minimumContentHeight(for metric: WeatherForecastMetric) -> CGFloat {
+        let travel = contentHeights.map { key, height in
+            max(0, height - (visibleHeights[key] ?? height))
+        }.max() ?? 0
+        return travel + (visibleHeights[metric] ?? 0)
+    }
+}
+
+#endif
 
 private struct WeatherDashboardCard<Content: View>: View {
     let title: LocalizedStringKey
@@ -196,7 +371,7 @@ private struct DewPointNowCard: View {
     }
 }
 
-private enum WeatherForecastMetric: Equatable {
+private enum WeatherForecastMetric: Hashable {
     case temperature, dewPoint
 
     var title: LocalizedStringKey {

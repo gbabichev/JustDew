@@ -76,34 +76,7 @@ struct DewPointIOSPagesView: View {
                 // Keep one navigation container at the display edge so its
                 // toolbar can adapt independently of the sliding weather pages.
                 NavigationStack {
-                    ScrollView {
-                        ScrollView(.horizontal) {
-                            HStack(alignment: .top, spacing: 0) {
-                                ForEach(pageLocations) { location in
-                                    DewPointLocationPage(viewModel: viewModel, location: location, scrollsVertically: false)
-                                        .containerRelativeFrame(.horizontal)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .id(location.id)
-                                }
-                            }
-                            .scrollTargetLayout()
-                        }
-                        .scrollTargetBehavior(.paging)
-                        .scrollPosition(id: $selectedID)
-                        .scrollIndicators(.hidden)
-                        .contentMargins(.horizontal, 0, for: .scrollContent)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .clipped()
-                    }
-                    .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-                    .scrollEdgeEffectStyle(.soft, for: .top)
-                    .refreshable { await viewModel.refreshNow() }
-                    .allowsHitTesting(!viewModel.isLoading)
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        DewPointPageControl(locationIDs: pageLocations.map(\.id), selectedID: $selectedID)
-                            .disabled(viewModel.isLoading)
-                            .padding(.vertical, 6)
-                    }
+                    DewPointHingeAwarePager(viewModel: viewModel, locations: pageLocations, selectedID: $selectedID)
                     .navigationTitle(displayedLocation?.compactDisplayName ?? "JustDew")
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
                     .navigationBarTitleDisplayMode(.large)

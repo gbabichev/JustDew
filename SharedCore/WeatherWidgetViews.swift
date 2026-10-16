@@ -17,8 +17,8 @@ struct WeatherWidgetForecastRows: View {
             if combined {
                 HStack(spacing: 8) {
                     Text("Day").frame(width: 36, alignment: .leading)
-                    Text("Weather").frame(maxWidth: .infinity)
                     Text("Dew Point").frame(maxWidth: .infinity)
+                    Text("Weather").frame(maxWidth: .infinity)
                 }
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(secondaryColor)
@@ -38,15 +38,15 @@ struct WeatherWidgetForecastRows: View {
                                 .foregroundStyle(secondaryColor)
                                 .frame(width: 16)
                         }
-                        WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
-                                            high: day.weather?.highTemperatureCelsius,
-                                            scale: forecast.temperatureScale, metric: .temperature,
-                                            primaryColor: primaryColor, usesColor: usesColor)
                         if combined {
                             WidgetForecastRange(low: day.lowDewPointCelsius, high: day.highDewPointCelsius,
                                                 scale: forecast.dewPointScale, metric: .dewPoint,
                                                 primaryColor: primaryColor, usesColor: usesColor)
                         }
+                        WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
+                                            high: day.weather?.highTemperatureCelsius,
+                                            scale: forecast.temperatureScale, metric: .temperature,
+                                            primaryColor: primaryColor, usesColor: usesColor)
                     }
                 }
             } else {
@@ -154,9 +154,9 @@ struct CombinedWeatherWidgetEntryView: View {
                             .accessibilityLabel(reading.condition)
                     }
                     HStack(alignment: .top, spacing: isSmall ? 10 : 18) {
-                        CombinedWidgetMetric(reading: reading, metric: .temperature,
-                                             usesColor: usesColor, isSmall: isSmall)
                         CombinedWidgetMetric(reading: reading, metric: .dewPoint,
+                                             usesColor: usesColor, isSmall: isSmall)
+                        CombinedWidgetMetric(reading: reading, metric: .temperature,
                                              usesColor: usesColor, isSmall: isSmall)
                     }
                     if family == .systemLarge || family == .systemExtraLarge {
