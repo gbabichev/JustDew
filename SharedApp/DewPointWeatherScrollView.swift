@@ -1,6 +1,16 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
+private enum WeatherDashboardPlatformStyle {
+    #if os(macOS)
+    static let compact = true
+    static let readingSize: CGFloat = 32
+    #else
+    static let compact = false
+    static let readingSize: CGFloat = 36
+    #endif
+}
+
 extension EnvironmentValues {
     @Entry var weatherDashboardViewport: CGSize? = nil
 }
@@ -35,11 +45,7 @@ struct DewPointWeatherContent: View {
     @Environment(\.weatherDashboardViewport) private var viewport
 
     private var compactSingleColumn: Bool {
-        #if os(iOS)
         !dynamicTypeSize.isAccessibilitySize
-        #else
-        false
-        #endif
     }
 
     private var heightConstrained: Bool {
@@ -49,7 +55,7 @@ struct DewPointWeatherContent: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: heightConstrained ? 14 : 16) {
+        VStack(alignment: .leading, spacing: WeatherDashboardPlatformStyle.compact ? 12 : (heightConstrained ? 14 : 16)) {
             if let reading {
                 let forecast = WeatherDashboardForecast(reading: reading)
                 ViewThatFits(in: .horizontal) {
@@ -69,7 +75,7 @@ struct DewPointWeatherContent: View {
                                             compact: compactSingleColumn, roomy: compactSingleColumn)
                     }
                 }
-                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: heightConstrained)
+                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: heightConstrained || WeatherDashboardPlatformStyle.compact)
             } else {
                 VStack(spacing: 12) {
                     if isLoading {
@@ -88,8 +94,8 @@ struct DewPointWeatherContent: View {
         }
         .frame(maxWidth: 1_100, alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .top)
-        .padding(heightConstrained ? 12 : 14)
-        .padding(.bottom, heightConstrained ? 4 : 16)
+        .padding(heightConstrained || WeatherDashboardPlatformStyle.compact ? 12 : 14)
+        .padding(.bottom, heightConstrained ? 4 : (WeatherDashboardPlatformStyle.compact ? 12 : 16))
     }
 }
 
@@ -97,7 +103,7 @@ private struct LandscapeCurrentCard: View {
     let reading: DewPointReading
     let today: WeatherForecastDay?
     let metric: WeatherForecastMetric
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
 
     var body: some View {
         WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point Now" : "Weather Now",
@@ -155,8 +161,8 @@ private struct WeatherDashboardColumns: View {
 
     var body: some View {
         // Both rows share one fit decision, including the narrower portrait layout.
-        VStack(spacing: heightConstrained ? 14 : 16) {
-            HStack(alignment: .top, spacing: 16) {
+        VStack(spacing: WeatherDashboardPlatformStyle.compact ? 12 : (heightConstrained ? 14 : 16)) {
+            HStack(alignment: .top, spacing: WeatherDashboardPlatformStyle.compact ? 12 : 16) {
                 if heightConstrained {
                     LandscapeCurrentCard(reading: reading, today: forecast.days.first?.weather, metric: .dewPoint)
                         .frame(maxWidth: .infinity)
@@ -171,7 +177,7 @@ private struct WeatherDashboardColumns: View {
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: WeatherDashboardPlatformStyle.compact ? 12 : 16) {
                 WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint, compact: compact || heightConstrained, roomy: !heightConstrained, dense: heightConstrained)
                     .frame(minWidth: compact ? 260 : 320, maxWidth: .infinity)
                 WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature, compact: compact || heightConstrained, roomy: !heightConstrained, dense: heightConstrained)
@@ -363,9 +369,14 @@ private struct WeatherDashboardCard<Content: View>: View {
     var fillsHeight = false
     var compact = false
     @ViewBuilder var content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var compactSpacing: Bool {
+        compact || (WeatherDashboardPlatformStyle.compact && !dynamicTypeSize.isAccessibilitySize)
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 6 : 10) {
+        VStack(alignment: .leading, spacing: compactSpacing ? 6 : 10) {
             Label {
                 Text(title)
                     .font(.headline.weight(.bold))
@@ -378,7 +389,7 @@ private struct WeatherDashboardCard<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
-        .padding(compact ? 12 : 14)
+        .padding(compactSpacing ? 12 : 14)
         .background {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 #if os(iOS)
@@ -395,7 +406,7 @@ private struct WeatherNowCard: View {
     let today: WeatherForecastDay?
     var fillsHeight = false
     var compact = false
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
 
     var body: some View {
         WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, compact: compact) {
@@ -450,7 +461,7 @@ private struct DewPointNowCard: View {
     let reading: DewPointReading
     var fillsHeight = false
     var compact = false
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
 
     var body: some View {
         WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight, compact: compact) {
@@ -504,16 +515,21 @@ private struct WeatherForecastCard: View {
     var compact = false
     var roomy = false
     var dense = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var compactMac: Bool {
+        WeatherDashboardPlatformStyle.compact && !dynamicTypeSize.isAccessibilitySize
+    }
 
     var body: some View {
         WeatherDashboardCard(title: metric.title, symbol: metric.symbol, compact: compact && !roomy && !dense) {
             if forecast.days.contains(where: { metric.low($0) != nil && metric.high($0) != nil }) {
-                VStack(spacing: dense ? 3 : (compact && !roomy ? 3 : 6)) {
+                VStack(spacing: compactMac ? 4 : (dense ? 3 : (compact && !roomy ? 3 : 6))) {
                     ForEach(forecast.days) { day in
                         WeatherForecastRow(
                             day: day, reading: reading, metric: metric,
                             scale: metric == .temperature ? forecast.temperatureScale : forecast.dewPointScale,
-                            compact: compact, minimumHeight: dense ? 20 : (roomy && compact ? 24 : nil)
+                            compact: compact || compactMac, minimumHeight: compactMac ? 22 : (dense ? 20 : (roomy && compact ? 24 : nil))
                         )
                     }
                 }
@@ -522,7 +538,7 @@ private struct WeatherForecastCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if !compact {
+                if !compact && !compactMac {
                     Text("Bars compare daily lows and highs across these ten days.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
