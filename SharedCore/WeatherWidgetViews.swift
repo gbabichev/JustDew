@@ -141,44 +141,49 @@ struct CombinedWeatherWidgetEntryView: View {
     var body: some View {
         Group {
             if let reading = entry.reading {
-                VStack(alignment: .leading, spacing: isSmall ? 5 : 7) {
-                    HStack(spacing: 6) {
-                        DewPointWidgetLocationText(location: reading.location)
-                            .font(.caption.weight(.medium))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        Spacer(minLength: 0)
-                        Image(systemName: reading.symbolName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(reading.condition)
-                    }
+                VStack(alignment: .leading, spacing: 5) {
                     HStack(alignment: .top, spacing: isSmall ? 10 : 18) {
                         CombinedWidgetMetric(reading: reading, metric: .dewPoint,
                                              usesColor: usesColor, isSmall: isSmall)
                         CombinedWidgetMetric(reading: reading, metric: .temperature,
                                              usesColor: usesColor, isSmall: isSmall)
                     }
-                    if family == .systemLarge || family == .systemExtraLarge {
-                        Divider()
-                        WeatherWidgetForecastRows(reading: reading, primaryColor: .primary,
-                                                  secondaryColor: .secondary, usesColor: usesColor, combined: true)
-                    } else {
+                    DewPointWidgetLocationText(location: reading.location)
+                        .font(isSmall ? .caption2 : .caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                    if isSmall {
                         Text(reading.condition)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
-                    Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))")
+                        Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    } else {
+                        HStack {
+                            Text(reading.condition).lineLimit(1)
+                            Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                            Spacer(minLength: 0)
+                            Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))")
+                                .lineLimit(1)
+                        }
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    }
+                    if family == .systemLarge || family == .systemExtraLarge {
+                        Divider()
+                        WeatherWidgetForecastRows(reading: reading, primaryColor: .primary,
+                                                  secondaryColor: .secondary, usesColor: usesColor, combined: true)
+                    }
+                    Spacer(minLength: 0)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    Label("Weather + Dew Point", systemImage: "cloud.sun")
+                    Label("Dew Point + Weather", systemImage: "drop.degreesign.fill")
                         .font(.caption.weight(.semibold))
                     Text(entry.message ?? "Choose Location")
                         .font(.caption)
@@ -186,7 +191,7 @@ struct CombinedWeatherWidgetEntryView: View {
                 }
             }
         }
-        .padding(isSmall ? 12 : 16)
+        .padding(DewPointWidgetLayout.padding(for: family))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .containerBackground(for: .widget) {
             if entry.alwaysDark {
@@ -206,14 +211,26 @@ private struct CombinedWidgetMetric: View {
     let isSmall: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(metric.widgetTitle)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+        VStack(alignment: .leading, spacing: isSmall ? 6 : 5) {
+            HStack(spacing: isSmall ? 4 : 6) {
+                if !isSmall {
+                    Image(systemName: metric.widgetSymbol)
+                        .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
+                }
+                Text(metric.widgetTitle)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                if metric == .temperature && !isSmall {
+                    Spacer(minLength: 0)
+                    Image(systemName: reading.symbolName)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(reading.condition)
+                }
+            }
+            .font(isSmall ? .caption2 : .caption)
             Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                .font(.system(size: isSmall ? 26 : 34, weight: .semibold, design: .rounded))
+                .font(.system(size: isSmall ? 28 : 40, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .primary)
                 .lineLimit(1)
@@ -221,7 +238,7 @@ private struct CombinedWidgetMetric: View {
                 .accessibilityLabel(Text(metric.widgetTitle))
                 .accessibilityValue(DewPointFormatters.temperature(metric.currentValue(in: reading)))
             DewPointDayTimelineView(reading: reading, showsLabels: false,
-                                   trackHeight: isSmall ? 3 : 5, markerSize: isSmall ? 7 : 10,
+                                   trackHeight: isSmall ? 5 : 7, markerSize: isSmall ? 10 : 14,
                                    usesComfortColor: usesColor, monochromeColor: .secondary, metric: metric)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

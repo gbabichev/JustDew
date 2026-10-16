@@ -19,6 +19,30 @@ extension DewPointWidgetEntry {
     }
 }
 
+enum DewPointWidgetLayout {
+    static func padding(for family: WidgetFamily) -> EdgeInsets {
+        return switch family {
+        #if os(iOS)
+        case .systemSmall:
+            EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
+        case .systemMedium:
+            EdgeInsets(top: 25, leading: 20, bottom: 16, trailing: 20)
+        case .systemLarge, .systemExtraLarge:
+            EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
+        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
+            EdgeInsets()
+        #endif
+        #if os(macOS)
+        default:
+            EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18)
+        #else
+        default:
+            EdgeInsets()
+        #endif
+        }
+    }
+}
+
 struct JustDewWidgetEntryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.widgetFamily) private var environmentFamily
@@ -77,25 +101,7 @@ struct JustDewWidgetEntryView: View {
         if isLockScreenSquare {
             return EdgeInsets()
         }
-        return switch family {
-        #if os(iOS)
-        case .systemSmall:
-            EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
-        case .systemMedium:
-            EdgeInsets(top: 25, leading: 20, bottom: 16, trailing: 20)
-        case .systemLarge, .systemExtraLarge:
-            EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
-        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
-            EdgeInsets()
-        #endif
-        #if os(macOS)
-        default:
-            EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18)
-        #else
-        default:
-            EdgeInsets()
-        #endif
-        }
+        return DewPointWidgetLayout.padding(for: family)
     }
 
     private var isLockScreenSquare: Bool {
