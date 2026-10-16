@@ -9,6 +9,8 @@ struct DewPointDayTimelineView: View {
     var monochromeColor: Color = .secondary
     var referenceDate: Date? = nil
     var metric: DayTimelineMetric = .dewPoint
+    @ScaledMetric(relativeTo: .caption2) private var axisLabelWidth: CGFloat = 48
+    @ScaledMetric(relativeTo: .caption2) private var axisLabelsHeight: CGFloat = 30
 
     private var forecastPoints: [DewPointForecastPoint] {
         reading.dailyForecastPoints
@@ -28,16 +30,26 @@ struct DewPointDayTimelineView: View {
                 timelineTrack
 
                 if showsLabels {
-                    HStack(alignment: .top, spacing: 8) {
-                        axisLabel(for: dayStart, alignment: .leading)
-                        axisLabel(for: midday, alignment: .center)
-                        axisLabel(for: lateEvening, alignment: .trailing)
+                    GeometryReader { geometry in
+                        let width = max(geometry.size.width, 1)
+                        let labelWidth = min(axisLabelWidth, width)
+                        let dates = axisDates(for: width)
+                        ForEach(dates, id: \.self) { date in
+                            axisLabel(for: date, alignment: dates.count == 1 ? .center : (date == dates.first ? .leading
+                                      : (date == dates.last ? .trailing : .center))
+                            )
+                                .frame(width: labelWidth)
+                                .position(x: min(max(xPosition(for: date, width: width), labelWidth / 2),
+                                                 width - labelWidth / 2),
+                                          y: geometry.size.height / 2)
+                        }
                     }
+                    .frame(height: axisLabelsHeight)
                     .font(.caption2)
                     .foregroundStyle(monochromeColor.opacity(0.75))
                 }
             }
-            .accessibilityElement(children: .ignore)
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(metric == .dewPoint ? Text("Today's dew point") : Text("Today's temperature"))
             .accessibilityValue("Now \(DewPointFormatters.temperature(metric.currentValue(in: reading)))")
         }
@@ -94,6 +106,7 @@ struct DewPointDayTimelineView: View {
                 Text("—")
             }
         }
+        .accessibilityElement(children: .combine)
         .frame(maxWidth: .infinity, alignment: frameAlignment(for: alignment))
     }
 
@@ -105,12 +118,22 @@ struct DewPointDayTimelineView: View {
         reading.forecastCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86_400)
     }
 
-    private var midday: Date {
-        reading.forecastCalendar.date(byAdding: .hour, value: 12, to: dayStart) ?? dayStart.addingTimeInterval(43_200)
-    }
-
-    private var lateEvening: Date {
-        reading.forecastCalendar.date(byAdding: .hour, value: 23, to: dayStart) ?? dayEnd.addingTimeInterval(-3_600)
+    private func axisDates(for width: CGFloat) -> [Date] {
+        let hours: [Int]
+        if width >= axisLabelWidth * 10 {
+            hours = [0, 4, 8, 12, 16, 20, 23]
+        } else if width >= axisLabelWidth * 6 {
+            hours = [0, 6, 12, 18, 23]
+        } else if width >= axisLabelWidth * 3 {
+            hours = [0, 12, 23]
+        } else if width >= axisLabelWidth * 2 {
+            hours = [0, 23]
+        } else {
+            hours = [12]
+        }
+        return hours.compactMap {
+            reading.forecastCalendar.date(bySettingHour: $0, minute: 0, second: 0, of: dayStart)
+        }
     }
 
     private var markerColor: Color {
