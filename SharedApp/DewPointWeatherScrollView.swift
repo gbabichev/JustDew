@@ -34,6 +34,14 @@ struct DewPointWeatherContent: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.weatherDashboardViewport) private var viewport
 
+    private var compactSingleColumn: Bool {
+        #if os(iOS)
+        !dynamicTypeSize.isAccessibilitySize
+        #else
+        false
+        #endif
+    }
+
     private var heightConstrained: Bool {
         guard let viewport else { return false }
         return viewport.width >= 700 && viewport.width > viewport.height
@@ -51,11 +59,14 @@ struct DewPointWeatherContent: View {
                     if !dynamicTypeSize.isAccessibilitySize {
                         WeatherDashboardColumns(reading: reading, forecast: forecast, compact: true, heightConstrained: heightConstrained)
                     }
-                    VStack(spacing: 16) {
-                        DewPointNowCard(reading: reading)
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
-                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
+                    VStack(spacing: compactSingleColumn ? 12 : 16) {
+                        DewPointNowCard(reading: reading, compact: compactSingleColumn)
+                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint,
+                                            compact: compactSingleColumn, roomy: compactSingleColumn)
+                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather,
+                                       compact: compactSingleColumn)
+                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature,
+                                            compact: compactSingleColumn, roomy: compactSingleColumn)
                     }
                 }
                 WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: heightConstrained)
