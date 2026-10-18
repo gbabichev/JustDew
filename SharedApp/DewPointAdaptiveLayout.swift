@@ -17,7 +17,7 @@ struct DewPointAdaptiveAppView: View {
                 #endif
             }
         }
-        .task { viewModel.loadInitialReading() }
+        .task { viewModel.refreshSavedLocationsIfNeeded() }
     }
 }
 

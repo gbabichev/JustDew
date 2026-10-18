@@ -53,7 +53,6 @@ private struct DewPointHingeResponsivePager: View {
             .ignoresSafeArea(.container, edges: edges)
         }
         .onHingeChange { _, context in
-            DewPointStartupLog.event("pager.hinge", "status=\(String(describing: context.hinge?.status)) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
             hingeStatus = context.hinge?.status
         }
     }
@@ -75,8 +74,7 @@ private struct DewPointHingeResponsivePager: View {
 
     private var displayedReading: DewPointReading? {
         guard let location = locations.first(where: { $0.id == selectedID }) ?? locations.first else { return nil }
-        return viewModel.configuredLocation?.id == location.id
-            ? viewModel.reading : DewPointStore().loadReading(for: location)
+        return viewModel.cachedReading(for: location)
     }
 }
 
@@ -119,32 +117,12 @@ private struct DewPointWeatherPager: View {
                           let target = selectedID,
                           locations.contains(where: { $0.id == target }) else { return }
                     restoredLayout = layout
-                    DewPointStartupLog.event("pager.restore.request", "target=\(DewPointStartupLog.selection(target, in: locations)) viewportWidth=\(layout.viewportWidth) contentWidth=\(layout.contentWidth)")
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
                         proxy.scrollTo(target, anchor: .leading)
                     }
                 }
-                #if DEBUG
-                .onAppear {
-                    DewPointStartupLog.event("pager.appear", "selected=\(DewPointStartupLog.selection(selectedID, in: locations)) restorePending=\(restoredLayout == nil) configured=\(DewPointStartupLog.location(viewModel.configuredLocation)) pages=[\(DewPointStartupLog.pages(locations))]")
-                }
-                .onScrollTargetVisibilityChange(idType: String.self, threshold: 0.5) { ids in
-                    let visible = ids.map { DewPointStartupLog.selection($0, in: locations) }.joined(separator: ", ")
-                    DewPointStartupLog.event("pager.visible", "visible=[\(visible)] selected=\(DewPointStartupLog.selection(selectedID, in: locations)) configured=\(DewPointStartupLog.location(viewModel.configuredLocation))")
-                }
-                .onScrollGeometryChange(for: PagerTraceGeometry.self) { geometry in
-                    PagerTraceGeometry(offsetBucket: Int((geometry.contentOffset.x / 64).rounded()) * 64,
-                                       viewportWidth: Int(geometry.containerSize.width.rounded()),
-                                       contentWidth: Int(geometry.contentSize.width.rounded()))
-                } action: { _, geometry in
-                    DewPointStartupLog.event("pager.geometry", "offsetX≈\(geometry.offsetBucket) viewportWidth=\(geometry.viewportWidth) contentWidth=\(geometry.contentWidth) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
-                }
-                .onScrollPhaseChange { old, phase, context in
-                    DewPointStartupLog.event("pager.phase", "\(old)->\(phase) offsetX=\(context.geometry.contentOffset.x) viewportWidth=\(context.geometry.containerSize.width) selected=\(DewPointStartupLog.selection(selectedID, in: locations))")
-                }
-                #endif
             }
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
@@ -162,11 +140,4 @@ private struct PagerLayout: Equatable {
     let contentWidth: CGFloat
 }
 
-#if DEBUG
-private struct PagerTraceGeometry: Equatable {
-    let offsetBucket: Int
-    let viewportWidth: Int
-    let contentWidth: Int
-}
-#endif
 #endif
