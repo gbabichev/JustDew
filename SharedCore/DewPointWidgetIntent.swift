@@ -35,6 +35,8 @@ struct DewPointLocationQuery: EntityStringQuery {
 
 struct DewPointWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Dew Point Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose Current Location or a location saved in JustDew.")
 
     @Parameter(title: "Location")
@@ -46,6 +48,8 @@ struct DewPointWidgetIntent: WidgetConfigurationIntent {
 
 struct DarkDewPointWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Dark Dew Point Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose a location for your always dark widget.")
 
     @Parameter(title: "Location")
@@ -55,6 +59,8 @@ struct DarkDewPointWidgetIntent: WidgetConfigurationIntent {
 #if os(watchOS)
 struct WatchLocationDewPointIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Dew Point Location"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
 
     @Parameter(title: "Location")
@@ -70,6 +76,8 @@ protocol WeatherLocationWidgetOptions: WidgetConfigurationIntent {
 
 struct WeatherWidgetIntent: WeatherLocationWidgetOptions {
     static let title: LocalizedStringResource = "Weather Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose Current Location or a city saved in JustDew.")
 
     @Parameter(title: "Location")
@@ -81,6 +89,8 @@ struct WeatherWidgetIntent: WeatherLocationWidgetOptions {
 
 struct DarkWeatherWidgetIntent: WeatherLocationWidgetOptions {
     static let title: LocalizedStringResource = "Dark Weather Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose a location for your always dark weather widget.")
 
     @Parameter(title: "Location")
@@ -91,6 +101,8 @@ struct DarkWeatherWidgetIntent: WeatherLocationWidgetOptions {
 
 struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
     static let title: LocalizedStringResource = "Weather and Dew Point Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose a location to see its weather and dew point together.")
 
     @Parameter(title: "Location")
@@ -102,6 +114,8 @@ struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
 
 struct DarkCombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
     static let title: LocalizedStringResource = "Dark Weather and Dew Point Options"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose a location for your always dark combined widget.")
 
     @Parameter(title: "Location")
@@ -113,6 +127,8 @@ struct DarkCombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
 #if os(watchOS)
 struct WatchLocationWeatherIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Weather Location"
+    // Used by App Intents metadata extraction.
+    // periphery:ignore
     static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
 
     @Parameter(title: "Location")

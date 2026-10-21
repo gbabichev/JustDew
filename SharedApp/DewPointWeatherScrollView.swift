@@ -217,6 +217,8 @@ struct DewPointFoldedWeatherDashboard: View {
     @Binding var selectedID: String?
     let refresh: @MainActor @Sendable () async -> Void
 
+    // Shared with the folded panes through $linkedScroll bindings.
+    // periphery:ignore
     @State private var linkedScroll = FoldedLinkedScroll()
 
     var body: some View {

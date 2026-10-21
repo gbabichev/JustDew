@@ -8,8 +8,6 @@ final class DewPointViewModel: ObservableObject {
     @Published var savedLocations: [DewPointLocation] = []
     @Published var reading: DewPointReading?
     @Published var configuredLocation: DewPointLocation?
-    @Published var manualQuery = ""
-    @Published var locationInputMode: DewPointLocationMode
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var authorizationStatus: CLAuthorizationStatus
@@ -42,15 +40,12 @@ final class DewPointViewModel: ObservableObject {
             reading = store.loadReading(for: savedLocation)
         }
         configuredLocation = savedLocation
-        locationInputMode = savedLocation?.mode ?? .current
         authorizationStatus = locationProvider.authorizationStatus
     }
 
     func selectLocation(_ location: DewPointLocation) {
         guard !isLoading else { return }
         configuredLocation = location
-        locationInputMode = location.mode
-        manualQuery = ""
         reading = store.loadReading(for: location)
         errorMessage = nil
         store.saveLocation(location)
@@ -75,7 +70,6 @@ final class DewPointViewModel: ObservableObject {
                 store.clearLocationAndReading()
                 self.configuredLocation = nil
                 reading = nil
-                locationInputMode = .manual
             }
         }
         reloadWidgets()
@@ -172,9 +166,6 @@ final class DewPointViewModel: ObservableObject {
     }
 
     func useCurrentLocation() {
-        if locationInputMode != .current {
-            locationInputMode = .current
-        }
         guard !isLoading, !isRequestingCurrentLocation else { return }
         isRequestingCurrentLocation = true
         Task {
@@ -184,50 +175,6 @@ final class DewPointViewModel: ObservableObject {
             await setCurrentLocation()
         }
     }
-
-    func useManualLocation() {
-        guard !isLoading else { return }
-        if locationInputMode != .manual {
-            locationInputMode = .manual
-        }
-        Task {
-            await setManualLocation()
-        }
-    }
-
-    func useCurrentLocationIfNeeded() {
-        guard locationInputMode == .current,
-              configuredLocation?.mode != .current,
-              !isLoading else {
-            return
-        }
-
-        useCurrentLocation()
-    }
-
-    func clearLocation() {
-        store.clearLocationAndReading()
-        savedLocations = []
-        configuredLocation = nil
-        reading = nil
-        manualQuery = ""
-        errorMessage = nil
-        reloadWidgets()
-    }
-
-    #if DEBUG
-    func debugResetLocationState() {
-        store.clearLocationAndReading()
-        savedLocations = []
-        configuredLocation = nil
-        reading = nil
-        manualQuery = ""
-        locationInputMode = .manual
-        errorMessage = nil
-        isRequestingCurrentLocation = false
-        reloadWidgets()
-    }
-    #endif
 
     private func refreshConfiguredLocation() async {
         guard let configuredLocation else {
@@ -250,7 +197,6 @@ final class DewPointViewModel: ObservableObject {
             remember(configuredLocation)
             reading = store.loadReading(for: configuredLocation)
             self.configuredLocation = configuredLocation
-            locationInputMode = .current
             try await fetchReadingValue(for: configuredLocation)
             reloadWidgets()
         }
@@ -295,21 +241,10 @@ final class DewPointViewModel: ObservableObject {
             remember(location)
             reading = store.loadReading(for: location)
             configuredLocation = location
-            locationInputMode = .manual
-            manualQuery = ""
             // Save the choice even if weather is temporarily unavailable.
             reloadWidgets()
             try await fetchReadingValue(for: location)
             reloadWidgets()
-        }
-    }
-
-    private func setManualLocation() async {
-        do {
-            let location = try await LocationSearchService.resolve(manualQuery)
-            await addLocation(location)
-        } catch {
-            errorMessage = error.dewPointDisplayMessage
         }
     }
 
