@@ -176,13 +176,16 @@ struct DewPointForecastView: View {
     var rowSpacing: CGFloat = 8
     var usesComfortColor = true
     var monochromeColor: Color = .secondary
+    var metric: DayTimelineMetric = .dewPoint
+    var includesToday = false
 
     private var forecastDays: [DewPointForecastDay] {
         let calendar = reading.forecastCalendar
         let todayStart = calendar.startOfDay(for: reading.observedAt)
 
-        let count = min(max(maximumDayCount, 0), DewPointConfiguration.forecastDayCount - 1)
-        return (1..<(count + 1)).compactMap { dayOffset in
+        let firstDayOffset = includesToday ? 0 : 1
+        let count = min(max(maximumDayCount, 0), DewPointConfiguration.forecastDayCount - firstDayOffset)
+        return (firstDayOffset..<(firstDayOffset + count)).compactMap { dayOffset in
             guard let dayStart = calendar.date(byAdding: .day, value: dayOffset, to: todayStart),
                   let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return nil
@@ -197,7 +200,8 @@ struct DewPointForecastView: View {
             return DewPointForecastDay(
                 dayStart: dayStart,
                 dayEnd: dayEnd,
-                points: points
+                points: points,
+                weather: reading.dailyWeather?.first { calendar.isDate($0.date, inSameDayAs: dayStart) }
             )
         }
     }
@@ -222,7 +226,7 @@ struct DewPointForecastView: View {
         }
         #else
         HStack(spacing: 10) {
-            Text(DewPointFormatters.weekdayLabel(day.dayStart, calendar: reading.forecastCalendar))
+            Text(DewPointFormatters.forecastDayLabel(day.dayStart, relativeTo: reading.observedAt, calendar: reading.forecastCalendar))
                 .font(.caption)
                 .foregroundStyle(monochromeColor)
                 .lineLimit(1)
@@ -239,7 +243,7 @@ struct DewPointForecastView: View {
 
     private func forecastDayHeader(for day: DewPointForecastDay) -> some View {
         HStack(spacing: 8) {
-            Text(DewPointFormatters.weekdayLabel(day.dayStart, calendar: reading.forecastCalendar))
+            Text(DewPointFormatters.forecastDayLabel(day.dayStart, relativeTo: reading.observedAt, calendar: reading.forecastCalendar))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
@@ -253,8 +257,8 @@ struct DewPointForecastView: View {
 
     private func rangeText(for day: DewPointForecastDay) -> some View {
         Text(DewPointFormatters.temperatureRange(
-            low: Measurement(value: day.lowDewPointCelsius, unit: .celsius),
-            high: Measurement(value: day.highDewPointCelsius, unit: .celsius)
+            low: Measurement(value: day.lowCelsius(for: metric), unit: .celsius),
+            high: Measurement(value: day.highCelsius(for: metric), unit: .celsius)
         ))
         .font(.caption2.weight(.semibold))
         .monospacedDigit()
@@ -276,7 +280,8 @@ struct DewPointForecastView: View {
                             start: day.dayStart,
                             end: day.dayEnd,
                             usesComfortColor: usesComfortColor,
-                            monochromeColor: monochromeColor
+                            monochromeColor: monochromeColor,
+                            metric: metric
                         ),
                         startPoint: .leading,
                         endPoint: .trailing
@@ -293,17 +298,20 @@ private struct DewPointForecastDay: Identifiable {
     var dayStart: Date
     var dayEnd: Date
     var points: [DewPointForecastPoint]
+    var weather: WeatherForecastDay?
 
     var id: Date {
         dayStart
     }
 
-    var lowDewPointCelsius: Double {
-        points.map(\.dewPointCelsius).min() ?? 0
+    func lowCelsius(for metric: DayTimelineMetric) -> Double {
+        if metric == .temperature, let weather { return weather.lowTemperatureCelsius }
+        return points.map { metric.forecastValue(in: $0).value }.min() ?? 0
     }
 
-    var highDewPointCelsius: Double {
-        points.map(\.dewPointCelsius).max() ?? lowDewPointCelsius
+    func highCelsius(for metric: DayTimelineMetric) -> Double {
+        if metric == .temperature, let weather { return weather.highTemperatureCelsius }
+        return points.map { metric.forecastValue(in: $0).value }.max() ?? lowCelsius(for: metric)
     }
 }
 

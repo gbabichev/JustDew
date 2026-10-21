@@ -118,45 +118,21 @@ private struct WatchDailyForecast: View {
     let metric: DayTimelineMetric
 
     var body: some View {
-        let forecast = WeatherDashboardForecast(reading: reading)
-        List(forecast.days) { day in
-            WatchDailyForecastRow(day: day, calendar: reading.forecastCalendar, metric: metric)
-        }
-        .navigationTitle(metric == .dewPoint ? Text("10-Day Dew Point") : Text("10-Day Weather"))
-    }
-}
-
-private struct WatchDailyForecastRow: View {
-    let day: WeatherDashboardDay
-    let calendar: Calendar
-    let metric: DayTimelineMetric
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(DewPointFormatters.forecastDayLabel(day.date, relativeTo: Date(), calendar: calendar))
-                .font(.headline)
-            if metric == .dewPoint {
-                if let low = day.lowDewPointCelsius, let high = day.highDewPointCelsius {
-                    WatchTemperatureExtremes(low: low, high: high)
-                    if day.hasPartialDewPoint {
-                        Text("Partial forecast").font(.caption2).foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("Forecast unavailable").font(.caption).foregroundStyle(.secondary)
-                }
-            } else if let weather = day.weather {
-                Label(weather.condition, systemImage: weather.symbolName)
-                    .font(.caption)
-                WatchTemperatureExtremes(low: weather.lowTemperatureCelsius, high: weather.highTemperatureCelsius)
-                Label("\(DewPointFormatters.percent(weather.precipitationChance)) rain chance", systemImage: "cloud.rain")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Forecast unavailable").font(.caption).foregroundStyle(.secondary)
+        Form {
+            Section {
+                DewPointForecastView(
+                    reading: reading,
+                    trackHeight: 5,
+                    maximumDayCount: DewPointConfiguration.forecastDayCount,
+                    rowSpacing: 8,
+                    metric: metric,
+                    includesToday: true
+                )
+                .padding(.vertical, 4)
             }
         }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
+        .formStyle(.grouped)
+        .navigationTitle(metric == .dewPoint ? Text("Dew Forecast") : Text("Weather Forecast"))
     }
 }
 
