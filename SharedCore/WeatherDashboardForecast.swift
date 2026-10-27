@@ -8,11 +8,24 @@ struct WeatherDashboardDay: Identifiable {
     let hasPartialDewPoint: Bool
 
     var id: Date { date }
+
+    var hasWeatherForecast: Bool {
+        guard let weather else { return false }
+        return weather.lowTemperatureCelsius.isFinite && weather.highTemperatureCelsius.isFinite
+            && weather.lowTemperatureCelsius <= weather.highTemperatureCelsius
+    }
+
+    var hasDewPointForecast: Bool {
+        guard let low = lowDewPointCelsius, let high = highDewPointCelsius else { return false }
+        return low.isFinite && high.isFinite && low <= high
+    }
 }
 
-/// Align both forecast cards to the same ten local calendar days.
+/// Keep a shared ten-day calendar, and expose only available rows for each forecast.
 struct WeatherDashboardForecast {
     let days: [WeatherDashboardDay]
+    let weatherDays: [WeatherDashboardDay]
+    let dewPointDays: [WeatherDashboardDay]
     let temperatureScale: WeatherRangeScale
     let dewPointScale: WeatherRangeScale
 
@@ -43,10 +56,12 @@ struct WeatherDashboardForecast {
             )
         }
         self.days = days
-        temperatureScale = WeatherRangeScale(values: days.flatMap {
+        weatherDays = days.filter(\.hasWeatherForecast)
+        dewPointDays = days.filter(\.hasDewPointForecast)
+        temperatureScale = WeatherRangeScale(values: weatherDays.flatMap {
             [$0.weather?.lowTemperatureCelsius, $0.weather?.highTemperatureCelsius].compactMap { $0 }
         })
-        dewPointScale = WeatherRangeScale(values: days.flatMap {
+        dewPointScale = WeatherRangeScale(values: dewPointDays.flatMap {
             [$0.lowDewPointCelsius, $0.highDewPointCelsius].compactMap { $0 }
         })
     }

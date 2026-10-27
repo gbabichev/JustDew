@@ -81,6 +81,46 @@ struct WeatherDashboardForecastTests {
         let nextDay = calendar.date(byAdding: .day, value: 1, to: observed)!
         precondition(WeatherDashboardForecast(reading: reading, referenceDate: nextDay).days[0].date == tomorrow,
                      "A stale reading must not label yesterday as Today")
+        // Early East Coast mornings can have hourly data for ten days, but only nine daily summaries.
+        let earlyMorning = ISO8601DateFormatter().date(from: "2026-10-27T10:14:00Z")!
+        let earlyStart = newYork.startOfDay(for: earlyMorning)
+        var early = reading
+        early.location.timeZoneIdentifier = newYork.timeZone.identifier
+        early.observedAt = earlyMorning
+        let dates = (0..<10).map { newYork.date(byAdding: .day, value: $0, to: earlyStart)! }
+        early.dailyForecast = dates.map {
+            DewPointForecastPoint(date: $0.addingTimeInterval(12 * 3600), dewPointCelsius: 10,
+                                  temperatureCelsius: 20, humidity: 0.5)
+        }
+        early.dailyWeather = dates.prefix(9).map {
+            WeatherForecastDay(date: $0, lowTemperatureCelsius: 10, highTemperatureCelsius: 20,
+                               condition: "Clear", symbolName: "sun.max", precipitationChance: 0)
+        }
+        let earlyForecast = WeatherDashboardForecast(reading: early, referenceDate: earlyMorning)
+        precondition(earlyForecast.weatherDays.map(\.date) == Array(dates.prefix(9)),
+                     "Do not display an unknown tenth weather row")
+        precondition(earlyForecast.dewPointDays.map(\.date) == dates,
+                     "Available dew point data must survive a missing daily weather summary")
+        precondition(earlyForecast.dewPointDays.allSatisfy(\.hasPartialDewPoint),
+                     "Partial numeric ranges are still real forecast data")
+
+        // As more data arrives, the previously missing day becomes visible automatically.
+        early.dailyWeather?.append(WeatherForecastDay(date: dates[9], lowTemperatureCelsius: 12,
+            highTemperatureCelsius: 22, condition: "Clear", symbolName: "sun.max", precipitationChance: 0))
+        let complete = WeatherDashboardForecast(reading: early, referenceDate: earlyMorning)
+        precondition(complete.weatherDays.map(\.date) == dates)
+
+        // Missing all data should produce an empty state, not ten placeholder rows.
+        early.dailyWeather = nil
+        early.dailyForecast = []
+        let empty = WeatherDashboardForecast(reading: early, referenceDate: earlyMorning)
+        precondition(empty.weatherDays.isEmpty && empty.dewPointDays.isEmpty)
+        // Invalid numeric ranges are unavailable too; they must not create blank bars.
+        early.dailyWeather = [WeatherForecastDay(date: dates[0], lowTemperatureCelsius: .nan,
+            highTemperatureCelsius: 20, condition: "Clear", symbolName: "sun.max", precipitationChance: 0)]
+        precondition(WeatherDashboardForecast(reading: early, referenceDate: earlyMorning).weatherDays.isEmpty)
+        early.dailyWeather?[0].lowTemperatureCelsius = 30
+        precondition(WeatherDashboardForecast(reading: early, referenceDate: earlyMorning).weatherDays.isEmpty)
         print("Weather dashboard forecast tests passed")
     }
 }

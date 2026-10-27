@@ -598,10 +598,11 @@ private struct WeatherForecastCard: View {
     }
 
     var body: some View {
+        let days = metric == .temperature ? forecast.weatherDays : forecast.dewPointDays
         WeatherDashboardCard(title: metric.title, symbol: metric.symbol, compact: compact && !roomy && !dense) {
-            if forecast.days.contains(where: { metric.low($0) != nil && metric.high($0) != nil }) {
+            if !days.isEmpty {
                 VStack(spacing: compactMac ? 4 : (dense ? 3 : (compact && !roomy ? 3 : 6))) {
-                    ForEach(forecast.days) { day in
+                    ForEach(days) { day in
                         WeatherForecastRow(
                             day: day, reading: reading, metric: metric,
                             scale: metric == .temperature ? forecast.temperatureScale : forecast.dewPointScale,
@@ -609,13 +610,13 @@ private struct WeatherForecastCard: View {
                         )
                     }
                 }
-                if metric == .dewPoint && forecast.days.contains(where: \.hasPartialDewPoint) {
+                if metric == .dewPoint && days.contains(where: \.hasPartialDewPoint) {
                     Text("* Range covers available hours only.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 if !compact && !compactMac {
-                    Text("Bars compare daily lows and highs across these ten days.")
+                    Text("Bars compare daily lows and highs across the available forecast.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -649,7 +650,7 @@ private struct WeatherForecastRow: View {
                 HStack {
                     Text(dayLabel).font(.body.weight(.medium))
                     Spacer(minLength: 8)
-                    if metric == .temperature { WeatherForecastCondition(weather: day.weather) }
+                    if metric == .temperature, let weather = day.weather { WeatherForecastCondition(weather: weather) }
                 }
                 WeatherForecastValues(day: day, metric: metric, scale: scale,
                                       current: currentValue, usesFixedColumns: false)
@@ -659,8 +660,8 @@ private struct WeatherForecastRow: View {
                         .font(.caption.weight(.medium))
                         .lineLimit(1)
                         .frame(width: compact ? 42 : 52, alignment: .leading)
-                    if metric == .temperature {
-                        WeatherForecastCondition(weather: day.weather, compact: compact)
+                    if metric == .temperature, let weather = day.weather {
+                        WeatherForecastCondition(weather: weather, compact: compact)
                             .frame(width: compact ? 54 : 30)
                     }
                     WeatherForecastValues(day: day, metric: metric, scale: scale,
@@ -694,16 +695,17 @@ private struct WeatherForecastRow: View {
 }
 
 private struct WeatherForecastCondition: View {
-    let weather: WeatherForecastDay?
+    let weather: WeatherForecastDay
     var compact = false
 
     var body: some View {
         let layout = compact ? AnyLayout(HStackLayout(spacing: 3)) : AnyLayout(VStackLayout(spacing: 2))
         layout {
-            Image(systemName: weather?.symbolName ?? "questionmark")
+            Image(systemName: weather.symbolName)
                 .font(.caption)
                 .symbolRenderingMode(.multicolor)
-            if let chance = weather?.precipitationChance, chance > 0 {
+            if weather.precipitationChance > 0 {
+                let chance = weather.precipitationChance
                 Text(DewPointFormatters.percent(chance))
                     .font(.caption2)
                     .foregroundStyle(.secondary)

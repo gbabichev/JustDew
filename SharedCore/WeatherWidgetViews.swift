@@ -12,9 +12,11 @@ struct WeatherWidgetForecastRows: View {
 
     var body: some View {
         let forecast = WeatherDashboardForecast(reading: reading)
-        let days = Array(forecast.days.dropFirst().prefix(7))
+        let days = Array(forecast.days.dropFirst().filter {
+            $0.hasWeatherForecast && (!combined || $0.hasDewPointForecast)
+        }.prefix(7))
         VStack(alignment: .leading, spacing: 6) {
-            if combined {
+            if combined && !days.isEmpty {
                 HStack(spacing: 8) {
                     Text("Day").frame(width: 36, alignment: .leading)
                     Text("Dew Point").frame(maxWidth: .infinity)
@@ -23,7 +25,7 @@ struct WeatherWidgetForecastRows: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(secondaryColor)
             }
-            if combined || days.contains(where: { $0.weather != nil }) {
+            if !days.isEmpty {
                 ForEach(days) { day in
                     HStack(spacing: combined ? 8 : 6) {
                         Text(DewPointFormatters.forecastDayLabel(day.date, relativeTo: reading.observedAt,
@@ -32,8 +34,8 @@ struct WeatherWidgetForecastRows: View {
                             .foregroundStyle(secondaryColor)
                             .lineLimit(1)
                             .frame(width: combined ? 36 : 46, alignment: .leading)
-                        if !combined {
-                            Image(systemName: day.weather?.symbolName ?? "questionmark")
+                        if !combined, let weather = day.weather {
+                            Image(systemName: weather.symbolName)
                                 .font(.caption2)
                                 .foregroundStyle(secondaryColor)
                                 .frame(width: 16)
