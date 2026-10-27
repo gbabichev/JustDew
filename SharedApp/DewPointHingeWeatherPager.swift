@@ -37,7 +37,7 @@ private struct DewPointHingeResponsivePager: View {
                     if let division, hingeStatus == nil || hingeStatus == .partiallyOpen {
                         DewPointFoldedWeatherDashboard(
                             reading: displayedReading,
-                            isLoading: viewModel.isLoading,
+                            isLoading: displayedLocation.map { viewModel.isLoadingReading(for: $0) } ?? viewModel.isLoading,
                             errorMessage: viewModel.errorMessage,
                             axis: division.frame.height >= division.frame.width ? .horizontal : .vertical,
                             locations: locations,
@@ -72,8 +72,12 @@ private struct DewPointHingeResponsivePager: View {
         return geometry.safeAreaInsets.leading > 0 ? .leading : []
     }
 
+    private var displayedLocation: DewPointLocation? {
+        locations.first(where: { $0.id == selectedID }) ?? locations.first
+    }
+
     private var displayedReading: DewPointReading? {
-        guard let location = locations.first(where: { $0.id == selectedID }) ?? locations.first else { return nil }
+        guard let location = displayedLocation else { return nil }
         return viewModel.cachedReading(for: location)
     }
 }

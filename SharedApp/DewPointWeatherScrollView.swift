@@ -230,7 +230,6 @@ struct DewPointFoldedWeatherDashboard: View {
                               isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     DewPointPageControl(locationIDs: locations.map(\.id), selectedID: $selectedID)
-                        .disabled(isLoading)
                         .padding(.vertical, 6)
                 }
                 .splitArrangementLayoutRatio(0.5)

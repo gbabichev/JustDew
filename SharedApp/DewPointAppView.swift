@@ -14,7 +14,7 @@ struct DewPointLocationPage: View {
         #if os(watchOS)
         WatchWeatherDashboard(
             reading: displayedReading,
-            isLoading: viewModel.isLoading,
+            isLoading: viewModel.isLoadingReading(for: location),
             errorMessage: viewModel.errorMessage,
             refresh: { [viewModel] in await viewModel.refreshNow() }
         )
@@ -22,14 +22,14 @@ struct DewPointLocationPage: View {
         if scrollsVertically {
             DewPointWeatherScrollView(
                 reading: displayedReading,
-                isLoading: viewModel.isLoading,
+                isLoading: viewModel.isLoadingReading(for: location),
                 errorMessage: viewModel.errorMessage,
                 refresh: { [viewModel] in await viewModel.refreshNow() }
             )
         } else {
             DewPointWeatherContent(
                 reading: displayedReading,
-                isLoading: viewModel.isLoading,
+                isLoading: viewModel.isLoadingReading(for: location),
                 errorMessage: viewModel.errorMessage
             )
         }

@@ -18,6 +18,8 @@ final class DewPointViewModel: ObservableObject {
     private let fetchWeather: @Sendable (DewPointLocation) async throws -> DewPointReading
     private var savedLocationsRefreshTask: Task<Void, Never>?
     private var hasRefreshedOnLaunch = false
+    private var weatherRequests: [String: Task<DewPointReading, Error>] = [:]
+    @Published private var refreshingLocationIDs: Set<String> = []
     private let locationProvider = OneShotLocationProvider()
     private var isRequestingCurrentLocation = false
 
@@ -105,36 +107,19 @@ final class DewPointViewModel: ObservableObject {
            cached.fetchedAt > (reading?.fetchedAt ?? .distantPast) {
             reading = cached
         }
+        let refreshStartedAt = Date()
         let task = Task {
             defer { savedLocationsRefreshTask = nil }
             let selectedID = configuredLocation?.id
-            if configuredLocation != nil,
-               force || shouldRefresh(reading) || shouldRefreshForecast(reading) {
-                await refreshNow()
-                // A failed selection refresh should not prevent the other cities updating.
-            }
-            let locations = savedLocations
-            for location in locations where location.id != selectedID {
+            let locations = savedLocations.sorted { $0.id == selectedID && $1.id != selectedID }
+            for location in locations {
+                guard savedLocations.contains(where: { $0.id == location.id }) else { continue }
                 let cached = cachedReadings[location.id]
-                guard force || shouldRefresh(cached) || shouldRefreshForecast(cached) else { continue }
-                do {
-                    let resolved = location.mode == .current
-                        ? try await resolvedCurrentLocation() : location
-                    let result = try await fetchWeather(resolved)
-                    // The user can remove or change locations while this request runs.
-                    guard savedLocations.contains(where: { $0.id == location.id }) else { continue }
-                    store.saveCachedReading(result)
-                    let cached = store.loadReading(for: resolved) ?? result
-                    cachedReadings[location.id] = cached
-                    if location != cached.location { remember(cached.location) }
-                    if configuredLocation?.id == location.id {
-                        reading = cached
-                        configuredLocation = cached.location
-                        store.saveReading(cached)
-                    }
-                } catch {
-                    // Keep the last successful reading and continue refreshing the rest.
-                }
+                // Selecting a city can already have refreshed it during this pass.
+                let needsRefresh = shouldRefresh(cached) || shouldRefreshForecast(cached)
+                    || (force && (cached?.fetchedAt ?? .distantPast) < refreshStartedAt)
+                guard needsRefresh else { continue }
+                await refreshSilently(for: location)
             }
             reloadWidgets()
         }
@@ -151,7 +136,48 @@ final class DewPointViewModel: ObservableObject {
         }
         let needsRefresh = reading == nil || shouldRefresh(reading) || shouldRefreshForecast(reading)
         guard needsRefresh else { return }
-        refresh()
+        let location = configuredLocation
+        Task {
+            await refreshSilently(for: location)
+            reloadWidgets()
+        }
+    }
+
+    /// Cached pages update silently; a page without data still explains that it is loading.
+    func isLoadingReading(for location: DewPointLocation) -> Bool {
+        isLoading || (cachedReading(for: location) == nil && refreshingLocationIDs.contains(location.id))
+    }
+
+    private func refreshSilently(for location: DewPointLocation) async {
+        do {
+            let result = try await weatherReading(for: location, resolveCurrentLocation: true)
+            applyReading(result, requestedLocationID: location.id)
+        } catch {
+            // Existing readings and timestamps stay visible on transient refresh failures.
+            if configuredLocation?.id == location.id, reading == nil {
+                errorMessage = error.dewPointDisplayMessage
+            }
+        }
+    }
+
+    /// Share requests between startup, page selection, and manual refresh.
+    private func weatherReading(
+        for location: DewPointLocation,
+        resolveCurrentLocation: Bool = false
+    ) async throws -> DewPointReading {
+        if let request = weatherRequests[location.id] { return try await request.value }
+        let request = Task {
+            let resolved = resolveCurrentLocation && location.mode == .current
+                ? try await resolvedCurrentLocation() : location
+            return try await fetchWeather(resolved)
+        }
+        weatherRequests[location.id] = request
+        refreshingLocationIDs.insert(location.id)
+        defer {
+            weatherRequests[location.id] = nil
+            refreshingLocationIDs.remove(location.id)
+        }
+        return try await request.value
     }
 
     func refresh() {
@@ -182,16 +208,12 @@ final class DewPointViewModel: ObservableObject {
             return
         }
 
-        if configuredLocation.mode == .current {
-            await setCurrentLocation(requestPermission: false)
-        } else {
-            await fetchReading(for: configuredLocation)
-        }
+        await fetchReading(for: configuredLocation)
     }
 
-    private func setCurrentLocation(requestPermission: Bool = true) async {
+    private func setCurrentLocation() async {
         await runLoadingOperation {
-            let configuredLocation = try await resolvedCurrentLocation(requestPermission: requestPermission)
+            let configuredLocation = try await resolvedCurrentLocation(requestPermission: true)
 
             store.saveLocation(configuredLocation)
             remember(configuredLocation)
@@ -250,22 +272,34 @@ final class DewPointViewModel: ObservableObject {
 
     private func fetchReading(for location: DewPointLocation) async {
         await runLoadingOperation {
-            try await fetchReadingValue(for: location)
+            try await fetchReadingValue(for: location, resolveCurrentLocation: true)
             reloadWidgets()
         }
     }
 
-    private func fetchReadingValue(for location: DewPointLocation) async throws {
-        let reading = try await fetchWeather(location)
-        store.saveReading(reading)
-        let storedReading = store.loadReading(for: reading.location) ?? reading
-        cachedReadings[storedReading.location.id] = storedReading
-        self.reading = storedReading
-        configuredLocation = storedReading.location
-        if let index = savedLocations.firstIndex(where: { $0.id == storedReading.location.id }),
+    private func fetchReadingValue(for location: DewPointLocation, resolveCurrentLocation: Bool = false) async throws {
+        let result = try await weatherReading(for: location, resolveCurrentLocation: resolveCurrentLocation)
+        applyReading(result, requestedLocationID: location.id)
+    }
+
+    private func applyReading(_ result: DewPointReading, requestedLocationID: String) {
+        // Background work must not re-add deleted cities or change the user's selection.
+        guard result.location.id == requestedLocationID,
+              savedLocations.contains(where: { $0.id == requestedLocationID }) else { return }
+        if let cached = cachedReadings[requestedLocationID], cached.fetchedAt > result.fetchedAt { return }
+        store.saveCachedReading(result)
+        let storedReading = store.loadReading(for: result.location) ?? result
+        cachedReadings[requestedLocationID] = storedReading
+        if let index = savedLocations.firstIndex(where: { $0.id == requestedLocationID }),
            savedLocations[index] != storedReading.location {
             savedLocations[index] = storedReading.location
             store.saveLocations(savedLocations)
+        }
+        if configuredLocation?.id == requestedLocationID {
+            reading = storedReading
+            configuredLocation = storedReading.location
+            errorMessage = nil
+            store.saveReading(storedReading)
         }
     }
 

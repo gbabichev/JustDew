@@ -2,7 +2,8 @@ import CoreLocation
 import Foundation
 import WeatherKit
 
-enum DewPointWeatherClient {
+nonisolated enum DewPointWeatherClient {
+    @concurrent
     static func reading(for location: DewPointLocation) async throws -> DewPointReading {
         do {
             var resolvedLocation = location
@@ -112,7 +113,7 @@ enum DewPointWeatherClient {
 }
 
 private extension Array where Element == DewPointForecastPoint {
-    func uniquedByHour(calendar: Calendar) -> [DewPointForecastPoint] {
+    nonisolated func uniquedByHour(calendar: Calendar) -> [DewPointForecastPoint] {
 
         return reduce(into: [Date: DewPointForecastPoint]()) { partialResult, point in
             let key = calendar.startOfHour(for: point.date)
@@ -124,13 +125,13 @@ private extension Array where Element == DewPointForecastPoint {
 }
 
 private extension Calendar {
-    func startOfHour(for date: Date) -> Date {
+    nonisolated func startOfHour(for date: Date) -> Date {
         dateInterval(of: .hour, for: date)?.start ?? date
     }
 }
 
 private extension Error {
-    var isWeatherKitAuthenticationFailure: Bool {
+    nonisolated var isWeatherKitAuthenticationFailure: Bool {
         let nsError = self as NSError
         let diagnosticText = [
             nsError.domain,
