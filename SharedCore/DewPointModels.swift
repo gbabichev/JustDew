@@ -108,6 +108,23 @@ struct DewPointReading: Codable, Equatable, Sendable {
         Measurement(value: temperatureCelsius, unit: .celsius)
     }
 
+    /// Daily range matching the displayed observation in the location's own time zone.
+    var observedDayWeather: WeatherForecastDay? {
+        dailyWeather?.first {
+            forecastCalendar.isDate($0.date, inSameDayAs: observedAt)
+                && $0.lowTemperatureCelsius.isFinite && $0.highTemperatureCelsius.isFinite
+                && $0.lowTemperatureCelsius <= $0.highTemperatureCelsius
+        }
+    }
+
+    var observedDayDewPointRange: ClosedRange<Double>? {
+        let values = dailyForecastPoints.filter {
+            forecastCalendar.isDate($0.date, inSameDayAs: observedAt)
+        }.map(\.dewPointCelsius).filter(\.isFinite)
+        guard let low = values.min(), let high = values.max() else { return nil }
+        return low...high
+    }
+
     var dailyForecastPoints: [DewPointForecastPoint] {
         dailyForecast ?? []
     }

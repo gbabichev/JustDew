@@ -253,12 +253,11 @@ private struct CombinedAccessoryWidgetContent: View {
                 .font(.caption.bold())
             default:
                 ViewThatFits(in: .vertical) {
-                    CombinedAccessoryRectangularContent(reading: reading, showsTimelines: true)
+                    CombinedAccessoryRectangularContent(reading: reading, compact: false)
                         .fixedSize(horizontal: false, vertical: true)
-                    CombinedAccessoryRectangularContent(reading: reading, showsTimelines: false)
+                    CombinedAccessoryRectangularContent(reading: reading, compact: true)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.vertical, 2)
             }
         } else {
             if family == .accessoryInline {
@@ -278,13 +277,13 @@ private struct CombinedAccessoryWidgetContent: View {
 
 private struct CombinedAccessoryRectangularContent: View {
     let reading: DewPointReading
-    let showsTimelines: Bool
+    let compact: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top, spacing: 10) {
-                CombinedAccessoryMetric(reading: reading, metric: .dewPoint, showsTimeline: showsTimelines)
-                CombinedAccessoryMetric(reading: reading, metric: .temperature, showsTimeline: showsTimelines)
+                CombinedAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact)
+                CombinedAccessoryMetric(reading: reading, metric: .temperature, compact: compact)
             }
             HStack(spacing: 4) {
                 DewPointWidgetLocationText(location: reading.location)
@@ -294,7 +293,7 @@ private struct CombinedAccessoryRectangularContent: View {
                 Image(systemName: reading.symbolName)
                     .accessibilityLabel(reading.condition)
             }
-            .font(.system(size: showsTimelines ? 10 : 9))
+            .font(.system(size: compact ? 8 : 9))
             .foregroundStyle(.secondary)
         }
     }
@@ -322,33 +321,43 @@ private struct CombinedAccessoryValue: View {
 private struct CombinedAccessoryMetric: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
-    let showsTimeline: Bool
+    let compact: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(metric.widgetTitle)
-                .font(.system(size: showsTimeline ? 10 : 9))
+                .font(.system(size: compact ? 8 : 9))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                .font(.system(size: showsTimeline ? 16 : 14, weight: .semibold))
+                .font(.system(size: compact ? 16 : 18, weight: .semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            if showsTimeline {
-                DewPointDayTimelineView(reading: reading, showsLabels: false,
-                                       trackHeight: 2, markerSize: 5,
-                                       usesComfortColor: false, monochromeColor: .secondary, metric: metric)
-                    .accessibilityHidden(true)
+            if let range = metric.widgetDayRange(for: reading) {
+                Text("L \(DewPointFormatters.temperatureValue(Measurement(value: range.lowerBound, unit: .celsius)))°  H \(DewPointFormatters.temperatureValue(Measurement(value: range.upperBound, unit: .celsius)))°")
+                    .font(.system(size: compact ? 8 : 9).monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(metric.widgetTitle))
-        .accessibilityValue(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+        .accessibilityValue(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: Text {
+        let current = DewPointFormatters.temperature(metric.currentValue(in: reading))
+        guard let range = metric.widgetDayRange(for: reading) else { return Text(current) }
+        let low = DewPointFormatters.temperature(Measurement(value: range.lowerBound, unit: .celsius))
+        let high = DewPointFormatters.temperature(Measurement(value: range.upperBound, unit: .celsius))
+        return Text("Now \(current). Low \(low), high \(high).")
     }
 }
+
 #endif
 
 private struct CombinedWidgetMetric: View {

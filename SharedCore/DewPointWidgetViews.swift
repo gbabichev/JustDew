@@ -476,15 +476,7 @@ private struct DewPointAccessoryRectangularView: View {
             .lineLimit(1)
             .minimumScaleFactor(0.8)
 
-            DewPointDayTimelineView(
-                reading: reading,
-                showsLabels: false,
-                trackHeight: 3,
-                markerSize: 7,
-                usesComfortColor: usesComfortColor,
-                monochromeColor: .primary,
-                metric: metric
-            )
+            DewPointAccessoryTimeline(reading: reading, usesComfortColor: usesComfortColor, metric: metric)
 
             HStack(spacing: 6) {
                 DewPointWidgetLocationText(location: reading.location)
@@ -499,6 +491,54 @@ private struct DewPointAccessoryRectangularView: View {
         }
     }
 }
+
+private struct DewPointAccessoryTimeline: View {
+    let reading: DewPointReading
+    let usesComfortColor: Bool
+    let metric: DayTimelineMetric
+
+    var body: some View {
+        let range = metric.widgetDayRange(for: reading)
+        HStack(spacing: 4) {
+            if let range {
+                Text("L \(DewPointFormatters.temperatureValue(Measurement(value: range.lowerBound, unit: .celsius)))°")
+                    .fixedSize()
+                    .accessibilityLabel("Low \(DewPointFormatters.temperature(Measurement(value: range.lowerBound, unit: .celsius)))")
+            }
+            if let range {
+                Gauge(value: WeatherRangeScale(values: [range.lowerBound, range.upperBound])
+                    .fraction(for: metric.currentValue(in: reading).value), in: 0...1) {
+                    EmptyView()
+                }
+                .gaugeStyle(.accessoryLinear)
+                .tint(Gradient(colors: usesComfortColor
+                    ? [metric.color(forCelsius: range.lowerBound),
+                       metric.color(forCelsius: range.upperBound)]
+                    : [.primary]))
+                .frame(maxWidth: .infinity)
+                .accessibilityHidden(true)
+            } else {
+                DewPointDayTimelineView(
+                    reading: reading,
+                    showsLabels: false,
+                    trackHeight: 3,
+                    markerSize: 7,
+                    usesComfortColor: usesComfortColor,
+                    monochromeColor: .primary,
+                    metric: metric
+                )
+            }
+            if let range {
+                Text("H \(DewPointFormatters.temperatureValue(Measurement(value: range.upperBound, unit: .celsius)))°")
+                    .fixedSize()
+                    .accessibilityLabel("High \(DewPointFormatters.temperature(Measurement(value: range.upperBound, unit: .celsius)))")
+            }
+        }
+        .font(.caption2.monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+}
+
 #endif
 
 #if os(watchOS)
@@ -645,11 +685,15 @@ extension DayTimelineMetric {
         self == .dewPoint ? DewPointComfortScale.gradientColors : [.blue, .cyan, .yellow, .orange, .red]
     }
 
+    func widgetDayRange(for reading: DewPointReading) -> ClosedRange<Double>? {
+        if self == .dewPoint { return reading.observedDayDewPointRange }
+        guard let today = reading.observedDayWeather else { return nil }
+        return today.lowTemperatureCelsius...today.highTemperatureCelsius
+    }
+
     func widgetProgress(for reading: DewPointReading) -> Double {
         if self == .dewPoint { return DewPointComfortScale.progress(for: reading.dewPointCelsius) }
-        let today = reading.dailyWeather?.first {
-            reading.forecastCalendar.isDate($0.date, inSameDayAs: reading.observedAt)
-        }
+        let today = reading.observedDayWeather
         let low = today?.lowTemperatureCelsius ?? -10
         let high = today?.highTemperatureCelsius ?? 40
         return min(max((reading.temperatureCelsius - low) / max(high - low, 1), 0), 1)
