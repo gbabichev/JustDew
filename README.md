@@ -92,6 +92,11 @@ Locations are saved separately on each device.
 
 ## Changelog
 
+### 2.0.1
+- Improved app start on slow internet connection.
+- Improved weather forecast showing ? if checking early in the morning.
+- Lock Screen widgets show low / high forecats for dew point / weather / combo.
+
 ### 2.0.0
 
 - A fresh design keeps dew point first while making room for current weather and both 10-day forecasts.
