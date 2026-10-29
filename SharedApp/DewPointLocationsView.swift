@@ -97,7 +97,7 @@ struct DewPointIOSPagesView: View {
                     DewPointHingeAwarePager(viewModel: viewModel, locations: pageLocations, selectedID: $selectedID)
                     .navigationTitle(displayedLocation?.compactDisplayName ?? "JustDew")
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
-                    .navigationBarTitleDisplayMode(.large)
+                    .navigationBarTitleDisplayMode(WeatherDashboardPlatformStyle.supportsCompactDashboard && !usesSidebar ? .inline : .large)
                     .toolbar {
                         if !usesSidebar {
                             ToolbarItem(placement: .topBarTrailing) {
@@ -385,6 +385,7 @@ private struct SidebarLocationRow: View {
                             .symbolRenderingMode(.multicolor)
                             .accessibilityHidden(true)
                         Text(DewPointFormatters.temperature(reading.temperature))
+                            .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
                             .font(.system(.title3, design: .rounded, weight: .medium))
                             .monospacedDigit()
                             .accessibilityLabel("Temperature \(DewPointFormatters.temperature(reading.temperature))")
@@ -463,6 +464,7 @@ private struct SidebarWeatherValue: View {
                 .symbolRenderingMode(.multicolor)
                 .accessibilityHidden(true)
             Text(DewPointFormatters.temperature(reading.temperature))
+                .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
                 .monospacedDigit()
         }
         .font(.caption)

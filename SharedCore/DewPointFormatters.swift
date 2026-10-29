@@ -69,6 +69,20 @@ enum DewPointFormatters {
         return formatter.string(from: date)
     }
 
+    static func timeZoneLabel(_ date: Date, timeZone: TimeZone) -> String {
+        timeZone.abbreviation(for: date) ?? timeZone.identifier
+    }
+
+    static func hourlyDetailsTime(_ date: Date, referenceDate: Date, timeZone: TimeZone) -> String {
+        let label = hourLabel(date, timeZone: timeZone)
+        let offset = timeZone.secondsFromGMT(for: date)
+        let crossesTransition = timeZone.secondsFromGMT(for: date.addingTimeInterval(-3_600)) != offset
+            || timeZone.secondsFromGMT(for: date.addingTimeInterval(3_600)) != offset
+        // Identify both occurrences of a repeated hour and hours outside the subtitle's offset.
+        guard crossesTransition || offset != timeZone.secondsFromGMT(for: referenceDate) else { return label }
+        return "\(label) \(timeZoneLabel(date, timeZone: timeZone))"
+    }
+
     static func weekdayLabel(_ date: Date, calendar: Calendar = .current) -> String {
         if calendar.isDateInTomorrow(date) {
             return "Tomorrow"

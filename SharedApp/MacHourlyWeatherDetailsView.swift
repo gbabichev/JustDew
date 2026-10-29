@@ -116,6 +116,7 @@ private struct MacHourlyConditionsCell: View {
                         .accessibilityHidden(true)
                 }
                 Text(DewPointFormatters.temperature(point.temperature))
+                    .foregroundStyle(WeatherTemperatureColors.color(forCelsius: point.temperatureCelsius))
                     .monospacedDigit()
             }
             if let weather = point.weather {

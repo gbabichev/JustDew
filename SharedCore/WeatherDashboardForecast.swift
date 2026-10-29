@@ -26,6 +26,7 @@ struct WeatherDashboardForecast {
     let days: [WeatherDashboardDay]
     let weatherDays: [WeatherDashboardDay]
     let dewPointDays: [WeatherDashboardDay]
+    let combinedDays: [WeatherDashboardDay]
     let temperatureScale: WeatherRangeScale
     let dewPointScale: WeatherRangeScale
 
@@ -58,6 +59,7 @@ struct WeatherDashboardForecast {
         self.days = days
         weatherDays = days.filter(\.hasWeatherForecast)
         dewPointDays = days.filter(\.hasDewPointForecast)
+        combinedDays = days.filter { $0.hasDewPointForecast || $0.hasWeatherForecast }
         temperatureScale = WeatherRangeScale(values: weatherDays.flatMap {
             [$0.weather?.lowTemperatureCelsius, $0.weather?.highTemperatureCelsius].compactMap { $0 }
         })

@@ -1,7 +1,13 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
-private enum WeatherDashboardPlatformStyle {
+enum WeatherDashboardPlatformStyle {
+    #if os(iOS)
+    static let supportsCompactDashboard = true
+    #else
+    static let supportsCompactDashboard = false
+    #endif
+
     #if os(macOS)
     static let compact = true
     static let readingSize: CGFloat = 32
@@ -65,17 +71,21 @@ struct DewPointWeatherContent: View {
                     if !dynamicTypeSize.isAccessibilitySize {
                         WeatherDashboardColumns(reading: reading, forecast: forecast, compact: true, heightConstrained: heightConstrained)
                     }
-                    VStack(spacing: compactSingleColumn ? 12 : 16) {
-                        DewPointNowCard(reading: reading, compact: compactSingleColumn)
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint,
-                                            compact: compactSingleColumn, roomy: compactSingleColumn)
-                        WeatherNowCard(reading: reading, today: forecast.days.first?.weather,
-                                       compact: compactSingleColumn)
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature,
-                                            compact: compactSingleColumn, roomy: compactSingleColumn)
+                    if WeatherDashboardPlatformStyle.supportsCompactDashboard && !dynamicTypeSize.isAccessibilitySize {
+                        CompactWeatherDashboard(reading: reading, forecast: forecast)
+                    } else {
+                        VStack(spacing: compactSingleColumn ? 12 : 16) {
+                            DewPointNowCard(reading: reading, compact: compactSingleColumn)
+                            WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint,
+                                                compact: compactSingleColumn, roomy: compactSingleColumn)
+                            WeatherNowCard(reading: reading, today: forecast.days.first?.weather,
+                                           compact: compactSingleColumn)
+                            WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature,
+                                                compact: compactSingleColumn, roomy: compactSingleColumn)
+                        }
                     }
                 }
-                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: heightConstrained || WeatherDashboardPlatformStyle.compact)
+                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: heightConstrained || WeatherDashboardPlatformStyle.compact || (WeatherDashboardPlatformStyle.supportsCompactDashboard && !dynamicTypeSize.isAccessibilitySize))
             } else {
                 VStack(spacing: 12) {
                     if isLoading {
@@ -122,6 +132,7 @@ private struct LandscapeCurrentCard: View {
                     .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
                 } else {
                     Text(DewPointFormatters.temperature(reading.temperature))
+                        .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
                         .font(.system(size: readingSize, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .lineLimit(1)
@@ -168,6 +179,192 @@ private struct LandscapeCurrentCard: View {
 
     private func temperature(_ value: Double) -> String {
         DewPointFormatters.temperature(Measurement(value: value, unit: .celsius))
+    }
+}
+
+private struct CompactWeatherDashboard: View {
+    let reading: DewPointReading
+    let forecast: WeatherDashboardForecast
+
+    var body: some View {
+        VStack(spacing: 10) {
+            CurrentConditionsStrip(reading: reading, today: forecast.days.first?.weather, metric: .dewPoint)
+            CurrentConditionsStrip(reading: reading, today: forecast.days.first?.weather, metric: .temperature)
+            CombinedDashboardForecastCard(reading: reading, forecast: forecast)
+        }
+    }
+}
+
+private struct CurrentConditionsStrip: View {
+    let reading: DewPointReading
+    let today: WeatherForecastDay?
+    let metric: WeatherForecastMetric
+
+    var body: some View {
+        WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point" : "Weather",
+                             symbol: metric == .dewPoint ? "drop.degreesign" : "thermometer.medium",
+                             compact: true, showsDewPointInfo: metric == .dewPoint,
+                             showsWeatherDetails: metric == .temperature) {
+            HStack(alignment: .center, spacing: 16) {
+                if metric == .dewPoint {
+                    DewPointExplanationButton {
+                        Text(DewPointFormatters.temperature(reading.dewPoint))
+                            .foregroundStyle(DewPointComfortScale.color(for: reading.dewPointCelsius))
+                    }
+                    .accessibilityLabel("Dew point \(DewPointFormatters.temperature(reading.dewPoint))")
+                } else {
+                    Text(DewPointFormatters.temperature(reading.temperature))
+                        .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    if metric == .dewPoint {
+                        Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
+                            .foregroundStyle(.secondary)
+                        DewPointComfortSummary(reading: reading, compact: true)
+                        DewPointComfortHours(reading: reading, compact: true, shortTitle: true)
+                    } else {
+                        HStack(spacing: 8) {
+                            Label(reading.condition, systemImage: reading.symbolName)
+                            if let apparent = reading.apparentTemperatureCelsius {
+                                Text("Feels like \(temperature(apparent))")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if let today {
+                            HStack(spacing: 10) {
+                                Label(temperature(today.highTemperatureCelsius), systemImage: "arrow.up")
+                                Label(temperature(today.lowTemperatureCelsius), systemImage: "arrow.down")
+                                Label(DewPointFormatters.percent(today.precipitationChance), systemImage: "cloud.rain")
+                                    .accessibilityLabel("Chance of precipitation \(DewPointFormatters.percent(today.precipitationChance))")
+                            }
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.system(.largeTitle, design: .rounded).weight(.semibold))
+            .monospacedDigit()
+            DewPointDayTimelineView(reading: reading, showsLabels: false, trackHeight: 5, markerSize: 10,
+                                   referenceDate: Date(), metric: metric == .dewPoint ? .dewPoint : .temperature)
+        }
+        .modifier(WeatherDetailsPresentation(reading: metric == .temperature ? reading : nil))
+    }
+
+    private func temperature(_ value: Double) -> String {
+        DewPointFormatters.temperature(Measurement(value: value, unit: .celsius))
+    }
+}
+
+private struct CombinedDashboardForecastCard: View {
+    let reading: DewPointReading
+    let forecast: WeatherDashboardForecast
+
+    var body: some View {
+        WeatherDashboardCard(title: "10-Day Forecast", symbol: "calendar", compact: true) {
+            if !forecast.combinedDays.isEmpty {
+                Grid(horizontalSpacing: 10, verticalSpacing: 4) {
+                    GridRow {
+                        Text("Day")
+                        Text("Dew Point").frame(maxWidth: .infinity)
+                        Text("Weather").frame(maxWidth: .infinity)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    ForEach(forecast.combinedDays) { day in
+                        CombinedDashboardForecastRow(day: day, reading: reading, forecast: forecast)
+                    }
+                }
+                if forecast.combinedDays.contains(where: \.hasPartialDewPoint) {
+                    Text("* Dew point range covers available hours only.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ContentUnavailableView("Forecast Unavailable", systemImage: "calendar",
+                                       description: Text("Refresh to load the latest forecast."))
+            }
+        }
+    }
+}
+
+private struct CombinedDashboardForecastRow: View {
+    let day: WeatherDashboardDay
+    let reading: DewPointReading
+    let forecast: WeatherDashboardForecast
+
+    private var label: String {
+        let name = DewPointFormatters.forecastDayLabel(day.date, relativeTo: Date(), calendar: reading.forecastCalendar)
+        return day.hasPartialDewPoint ? name + "*" : name
+    }
+
+    var body: some View {
+        GridRow {
+            Text(label)
+                .font(.caption.weight(.medium))
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(minHeight: 26, alignment: .leading)
+                .gridColumnAlignment(.leading)
+            CombinedDashboardForecastCell(day: day, reading: reading, metric: .dewPoint,
+                                          scale: forecast.dewPointScale)
+            CombinedDashboardForecastCell(day: day, reading: reading, metric: .temperature,
+                                          scale: forecast.temperatureScale)
+        }
+    }
+}
+
+private struct CombinedDashboardForecastCell: View {
+    let day: WeatherDashboardDay
+    let reading: DewPointReading
+    let metric: WeatherForecastMetric
+    let scale: WeatherRangeScale
+
+    private var isAvailable: Bool {
+        metric == .dewPoint ? day.hasDewPointForecast : day.hasWeatherForecast
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if isAvailable {
+                if metric == .temperature, let weather = day.weather {
+                    Image(systemName: weather.symbolName)
+                        .font(.caption2)
+                        .symbolRenderingMode(.multicolor)
+                        .accessibilityLabel(weather.condition)
+                }
+                WeatherForecastValues(day: day, metric: metric, scale: scale,
+                                      current: currentValue, usesFixedColumns: false)
+            } else {
+                Color.clear.frame(height: 8)
+                    .accessibilityElement()
+                    .accessibilityLabel(metric == .dewPoint ? Text("Dew point forecast unavailable") : Text("Weather forecast unavailable"))
+            }
+        }
+        .frame(minWidth: 0, maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(metric == .dewPoint ? Text("Dew Point") : Text("Weather"))
+        .accessibilityValue(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: Text {
+        guard isAvailable, let low = metric.low(day), let high = metric.high(day) else {
+            return Text("Forecast unavailable")
+        }
+        let lowText = DewPointFormatters.temperature(Measurement(value: low, unit: .celsius))
+        let highText = DewPointFormatters.temperature(Measurement(value: high, unit: .celsius))
+        if metric == .temperature, let weather = day.weather {
+            return Text("\(weather.condition). Low \(lowText), high \(highText). \(DewPointFormatters.percent(weather.precipitationChance)) chance of precipitation.")
+        }
+        if day.hasPartialDewPoint {
+            return Text("Low \(lowText), high \(highText). Available hours only.")
+        }
+        return Text("Low \(lowText), high \(highText).")
+    }
+
+    private var currentValue: Double? {
+        guard reading.forecastCalendar.isDate(day.date, inSameDayAs: reading.observedAt) else { return nil }
+        return metric == .dewPoint ? reading.dewPointCelsius : reading.temperatureCelsius
     }
 }
 
@@ -483,6 +680,7 @@ private struct WeatherNowCard: View {
         WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, compact: compact, showsWeatherDetails: true) {
             HStack(alignment: .top) {
                 Text(DewPointFormatters.temperature(reading.temperature))
+                    .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
                     .font(.system(size: readingSize, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .minimumScaleFactor(0.7)
@@ -650,7 +848,9 @@ private struct WeatherForecastRow: View {
                 HStack {
                     Text(dayLabel).font(.body.weight(.medium))
                     Spacer(minLength: 8)
-                    if metric == .temperature, let weather = day.weather { WeatherForecastCondition(weather: weather) }
+                    if metric == .temperature, let weather = day.weather {
+                        WeatherForecastCondition(weather: weather)
+                    }
                 }
                 WeatherForecastValues(day: day, metric: metric, scale: scale,
                                       current: currentValue, usesFixedColumns: false)

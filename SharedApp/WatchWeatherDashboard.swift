@@ -85,6 +85,7 @@ private struct WatchCurrentWeather: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(DewPointFormatters.temperature(reading.temperature))
+                    .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
                     .font(.system(size: 30, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                 Spacer(minLength: 4)

@@ -83,6 +83,22 @@ struct HourlyWeatherForecastTests {
         precondition(compact(DewPointFormatters.windSpeed(10, locale: Locale(identifier: "fr_FR"))) == "36km/h")
         precondition(DewPointFormatters.windSpeed(.nan) == "—")
         precondition(DewPointFormatters.windSpeed(-1) == "—")
+        let newYorkZone = TimeZone(identifier: "America/New_York")!
+        func date(_ value: String) -> Date { ISO8601DateFormatter().date(from: value)! }
+        let ordinary = date("2026-10-29T20:00:00Z")
+        precondition(DewPointFormatters.hourlyDetailsTime(ordinary, referenceDate: ordinary, timeZone: newYorkZone)
+            == DewPointFormatters.hourLabel(ordinary, timeZone: newYorkZone), "Ordinary rows don't repeat the subtitle's zone")
+        let beforeFall = date("2026-11-01T04:30:00Z")
+        let firstOne = date("2026-11-01T05:00:00Z")
+        let secondOne = date("2026-11-01T06:00:00Z")
+        precondition(DewPointFormatters.hourlyDetailsTime(firstOne, referenceDate: beforeFall, timeZone: newYorkZone).hasSuffix("EDT"))
+        precondition(DewPointFormatters.hourlyDetailsTime(secondOne, referenceDate: beforeFall, timeZone: newYorkZone).hasSuffix("EST"),
+                     "Both repeated 1 AM hours must be distinguishable")
+        let beforeSpring = date("2026-03-08T06:00:00Z")
+        let afterSpring = date("2026-03-08T07:00:00Z")
+        precondition(DewPointFormatters.hourlyDetailsTime(afterSpring, referenceDate: beforeSpring, timeZone: newYorkZone).hasSuffix("EDT"))
+        precondition(DewPointFormatters.timeZoneLabel(beforeFall, timeZone: newYorkZone) == "EDT")
+        precondition(DewPointFormatters.timeZoneLabel(secondOne, timeZone: newYorkZone) == "EST")
         print("Hourly weather detail tests passed")
     }
 }

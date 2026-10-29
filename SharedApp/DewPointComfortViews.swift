@@ -62,6 +62,7 @@ struct DewPointComfortSummary: View {
 struct DewPointComfortHours: View {
     let reading: DewPointReading
     var compact = false
+    var shortTitle = false
     @AppStorage(comfortLimitKey) private var storedLimit = DewPointComfortLimit.standard.rawValue
 
     var body: some View {
@@ -70,7 +71,7 @@ struct DewPointComfortHours: View {
             let analysis = DewPointComfortAnalysis(reading: reading, limit: limit, referenceDate: context.date)
             VStack(alignment: .leading, spacing: compact ? 3 : 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Comfortable hours today")
+                    (shortTitle ? Text("Comfort") : Text("Comfortable hours today"))
                         .font(.caption.weight(.semibold))
                         .accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 0)

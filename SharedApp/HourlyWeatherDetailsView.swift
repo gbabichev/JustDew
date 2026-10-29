@@ -35,6 +35,7 @@ struct WeatherDetailsPresentation: ViewModifier {
 private struct HourlyWeatherDetailsView: View {
     let reading: DewPointReading
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var cityName: String {
         reading.location.compactDisplayName.split(separator: ",", maxSplits: 1).first.map(String.init)
@@ -52,7 +53,10 @@ private struct HourlyWeatherDetailsView: View {
                                 ForEach(day.hours.enumerated(), id: \.element.id) { index, hour in
                                     HourlyWeatherDetailRow(hour: hour, calendar: reading.forecastCalendar,
                                                           referenceDate: context.date)
-                                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                        .listRowInsets(EdgeInsets(top: dynamicTypeSize.isAccessibilitySize ? 12 : 8,
+                                                                  leading: 16,
+                                                                  bottom: dynamicTypeSize.isAccessibilitySize ? 12 : 8,
+                                                                  trailing: 16))
                                         .listRowSeparator(.hidden)
                                         .listRowBackground(index.isMultiple(of: 2)
                                             ? Color(uiColor: .secondarySystemGroupedBackground)
@@ -76,9 +80,9 @@ private struct HourlyWeatherDetailsView: View {
                     .foregroundStyle(.secondary)
                 }
                 .listStyle(.insetGrouped)
+                .navigationSubtitle(Text("Next 24 hours · \(DewPointFormatters.timeZoneLabel(context.date, timeZone: reading.forecastCalendar.timeZone))"))
             }
             .navigationTitle(Text("\(cityName) Weather"))
-            .navigationSubtitle("Next 24 hours · local time")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -94,32 +98,55 @@ private struct HourlyWeatherDetailRow: View {
     let hour: HourlyWeatherForecast.Hour
     let calendar: Calendar
     let referenceDate: Date
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                if hour.start <= referenceDate && referenceDate < hour.end {
-                    Text("Now").font(.headline)
-                } else {
-                    Text("\(DewPointFormatters.hourLabel(hour.start, timeZone: calendar.timeZone)) \(calendar.timeZone.abbreviation(for: hour.start) ?? "")")
-                        .font(.headline)
-                }
-                Spacer(minLength: 8)
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+        layout {
+            HourlyWeatherTimeLabel(hour: hour, calendar: calendar, referenceDate: referenceDate)
+                .fixedSize(horizontal: true, vertical: false)
+            if let weather = hour.point.weather {
+                HourlyWeatherMetrics(weather: weather)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("Details unavailable for this hour")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            HStack(spacing: 6) {
                 if let weather = hour.point.weather {
                     Image(systemName: weather.symbolName)
                         .accessibilityLabel(weather.condition)
                 }
                 Text(DewPointFormatters.temperature(hour.point.temperature))
-                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(WeatherTemperatureColors.color(forCelsius: hour.point.temperatureCelsius))
+                    .monospacedDigit()
             }
-            if let weather = hour.point.weather {
-                HourlyWeatherMetrics(weather: weather)
-            } else {
-                Text("Details unavailable for this hour")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            .font(dynamicTypeSize.isAccessibilitySize ? .headline : .subheadline.weight(.semibold))
+            .fixedSize(horizontal: true, vertical: false)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+private struct HourlyWeatherTimeLabel: View {
+    let hour: HourlyWeatherForecast.Hour
+    let calendar: Calendar
+    let referenceDate: Date
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Group {
+            if hour.start <= referenceDate && referenceDate < hour.end {
+                Text("Now")
+            } else {
+                Text(DewPointFormatters.hourlyDetailsTime(hour.start, referenceDate: referenceDate, timeZone: calendar.timeZone))
+            }
+        }
+        .font(dynamicTypeSize.isAccessibilitySize ? .headline : .subheadline.weight(.semibold))
     }
 }
 
@@ -132,27 +159,36 @@ private struct HourlyWeatherMetrics: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
             : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
         layout {
-            HourlyWeatherMetric(title: "Precipitation",
+            HourlyWeatherMetric(title: "Precipitation", symbol: "cloud.rain",
+                compact: !dynamicTypeSize.isAccessibilitySize,
                 value: weather.precipitationChance.isFinite && (0...1).contains(weather.precipitationChance)
                     ? DewPointFormatters.percent(weather.precipitationChance) : "—")
-            VStack(alignment: .leading, spacing: 3) {
-                HourlyWeatherMetric(title: "Wind", value: windValue)
-                    .accessibilityValue(windAccessibilityValue)
-                if let gust = weather.windGustMetersPerSecond, gust.isFinite, gust > weather.windSpeedMetersPerSecond {
-                    Text("Gusts \(DewPointFormatters.windSpeed(gust))")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .leading, spacing: 3) {
-                HourlyWeatherMetric(title: "UV Index",
-                                    value: weather.uvIndex >= 0 ? weather.uvIndex.formatted() : "—")
-                if weather.uvIndex >= 0, let category = UVIndex.ExposureCategory(rawValue: weather.uvCategory) {
-                    Text(category.description).font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            HourlyWeatherMetric(title: "Wind", symbol: "wind",
+                                compact: !dynamicTypeSize.isAccessibilitySize, value: windValue,
+                                detail: gustDetail, spokenValue: windAccessibilityValue)
+            HourlyWeatherMetric(title: "UV Index", symbol: "sun.max",
+                                compact: !dynamicTypeSize.isAccessibilitySize, value: uvValue,
+                                detail: uvDetail)
         }
+    }
+
+    private var gustDetail: String? {
+        guard let gust = weather.windGustMetersPerSecond, gust.isFinite,
+              gust > weather.windSpeedMetersPerSecond else { return nil }
+        return String(localized: "Gusts \(DewPointFormatters.windSpeed(gust))")
+    }
+
+    private var uvDetail: String? {
+        guard weather.uvIndex >= 0,
+              let category = UVIndex.ExposureCategory(rawValue: weather.uvCategory) else { return nil }
+        return category.description
+    }
+
+    private var uvValue: String {
+        guard weather.uvIndex >= 0 else { return "—" }
+        return dynamicTypeSize.isAccessibilitySize
+            ? weather.uvIndex.formatted()
+            : String(localized: "UV \(weather.uvIndex.formatted())")
     }
 
     private var windValue: String {
@@ -172,23 +208,59 @@ private struct HourlyWeatherMetrics: View {
 
 private struct HourlyWeatherMetric: View {
     let title: LocalizedStringKey
+    let symbol: String
+    let compact: Bool
     let value: String
+    var detail: String? = nil
+    var spokenValue: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+        Group {
+            if compact {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: symbol)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(value)
+                            .fontWeight(.semibold)
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                        if let detail {
+                            Text(detail)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                    }
+                }
+                .font(.caption)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(value)
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                    if let detail {
+                        Text(detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(accessibilityValue)
+    }
+
+    private var accessibilityValue: Text {
+        let value = spokenValue ?? value
+        if let detail { return Text("\(value). \(detail)") }
+        return Text(value)
     }
 }
 #endif
