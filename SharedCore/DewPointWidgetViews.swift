@@ -87,7 +87,7 @@ struct JustDewWidgetEntryView: View {
         #if os(iOS)
         case .accessoryCircular:
             .center
-        case .accessoryRectangular:
+        case .accessoryRectangular, .systemSmall, .systemMedium:
             .leading
         #endif
         case .accessoryInline:
@@ -129,12 +129,21 @@ struct JustDewWidgetEntryView: View {
             DewPointInlineWidgetText(reading: reading, metric: metric)
                 .foregroundStyle(primaryTextColor)
         case .accessoryCircular:
-            VStack(spacing: 2) {
-                Image(systemName: metric == .temperature ? reading.symbolName : (reading.location.mode == .current ? "location.fill" : metric.widgetSymbol))
-                    .accessibilityLabel(reading.location.mode == .current ? Text("Current Location") : Text(metric.widgetTitle))
+            VStack(spacing: 1) {
+                if metric == .dewPoint {
+                    DewPointCircularWidgetIcon(isCurrentLocation: reading.location.mode == .current,
+                                               size: metric.widgetDayRange(for: reading) == nil ? 24 : 20)
+                } else {
+                    Image(systemName: reading.symbolName)
+                        .accessibilityLabel(reading.condition)
+                }
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.caption.bold())
+                    .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
             }
             .foregroundStyle(primaryTextColor)
         case .accessoryRectangular:
@@ -151,98 +160,40 @@ struct JustDewWidgetEntryView: View {
                 metric: metric
             )
         case .systemMedium:
-            VStack(alignment: .leading, spacing: 5) {
-                HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: metric.widgetSymbol)
-                            .foregroundStyle(comfortAccentColor(for: reading))
-                        Text(metric.widgetTitle)
-                            .foregroundStyle(secondaryTextColor)
-                    }
-                    Spacer()
-                    Image(systemName: reading.symbolName)
-                        .foregroundStyle(secondaryTextColor)
-                }
-                .font(.caption)
-
-                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(size: 40, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(dewPointValueColor(for: reading))
-
-                DewPointDayTimelineView(
-                    reading: reading,
-                    showsLabels: false,
-                    trackHeight: 7,
-                    markerSize: 14,
-                    usesComfortColor: showsComfortColor,
-                    monochromeColor: secondaryTextColor,
-                    metric: metric
+            ViewThatFits(in: .vertical) {
+                DewPointMediumWidgetContent(
+                    reading: reading, metric: metric, compact: false,
+                    accentColor: comfortAccentColor(for: reading),
+                    valueColor: dewPointValueColor(for: reading),
+                    secondaryTextColor: secondaryTextColor, usesComfortColor: showsComfortColor
                 )
-
-                DewPointWidgetLocationText(location: reading.location)
-                    .font(.caption)
-                    .foregroundStyle(secondaryTextColor)
-                    .lineLimit(1)
-
-                HStack {
-                    if metric == .dewPoint {
-                        Text("Air \(DewPointFormatters.temperature(reading.temperature))")
-                    } else {
-                        Text(reading.condition).lineLimit(1)
-                    }
-                    Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
-                    Spacer()
-                    Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
-                }
-                .font(.caption2)
-                .foregroundStyle(secondaryTextColor)
-
-                Spacer(minLength: 0)
+                .fixedSize(horizontal: false, vertical: true)
+                DewPointMediumWidgetContent(
+                    reading: reading, metric: metric, compact: true,
+                    accentColor: comfortAccentColor(for: reading),
+                    valueColor: dewPointValueColor(for: reading),
+                    secondaryTextColor: secondaryTextColor, usesComfortColor: showsComfortColor
+                )
+                .fixedSize(horizontal: false, vertical: true)
             }
         default:
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 5) {
-                    Image(systemName: metric.widgetSymbol)
-                        .foregroundStyle(comfortAccentColor(for: reading))
-                    Text(metric.widgetTitle)
-                        .foregroundStyle(secondaryTextColor)
-                }
-                .font(.caption)
-                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(size: 32, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(dewPointValueColor(for: reading))
-                HStack(spacing: 8) {
-                    if metric == .dewPoint {
-                        Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
-                    } else {
-                        Text(reading.condition)
-                    }
-                    Label(DewPointFormatters.percent(reading.humidity), systemImage: "humidity.fill")
-                }
-                .font(.caption2)
-                .foregroundStyle(secondaryTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                DewPointDayTimelineView(
-                    reading: reading,
-                    showsLabels: false,
-                    trackHeight: 5,
-                    markerSize: 10,
-                    usesComfortColor: showsComfortColor,
-                    monochromeColor: secondaryTextColor,
-                    metric: metric
+            ViewThatFits(in: .vertical) {
+                DewPointSmallWidgetContent(
+                    reading: reading, metric: metric, compact: false,
+                    accentColor: comfortAccentColor(for: reading),
+                    valueColor: dewPointValueColor(for: reading),
+                    secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
+                    usesComfortColor: showsComfortColor
                 )
-                DewPointWidgetLocationText(location: reading.location)
-                    .font(.caption2)
-                    .foregroundStyle(secondaryTextColor)
-                    .lineLimit(2)
-                Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
-                    .font(.caption2)
-                    .foregroundStyle(tertiaryTextColor)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                .fixedSize(horizontal: false, vertical: true)
+                DewPointSmallWidgetContent(
+                    reading: reading, metric: metric, compact: true,
+                    accentColor: comfortAccentColor(for: reading),
+                    valueColor: dewPointValueColor(for: reading),
+                    secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
+                    usesComfortColor: showsComfortColor
+                )
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -307,6 +258,212 @@ struct JustDewWidgetEntryView: View {
     }
 }
 
+#if os(iOS)
+private struct DewPointCircularWidgetIcon: View {
+    let isCurrentLocation: Bool
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: "drop.degreesign.fill")
+            .font(.system(size: size, weight: .medium))
+            .frame(width: size + 6, height: size + 3)
+            .overlay(alignment: .topTrailing) {
+                if isCurrentLocation {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .offset(x: 5, y: -1)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isCurrentLocation ? Text("Dew Point, Current Location") : Text("Dew Point"))
+    }
+}
+#endif
+
+private struct DewPointMediumWidgetContent: View {
+    let reading: DewPointReading
+    let metric: DayTimelineMetric
+    let compact: Bool
+    let accentColor: Color
+    let valueColor: Color
+    let secondaryTextColor: Color
+    let usesComfortColor: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 3 : 5) {
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: metric.widgetSymbol)
+                        .foregroundStyle(accentColor)
+                    Text(metric.widgetTitle)
+                        .foregroundStyle(secondaryTextColor)
+                }
+                Spacer()
+                if metric == .dewPoint {
+                    Image(systemName: reading.symbolName)
+                        .foregroundStyle(secondaryTextColor)
+                        .accessibilityLabel(reading.condition)
+                }
+            }
+            .font(.caption)
+
+            HStack(spacing: 8) {
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                    .font(.system(size: compact ? 28 : 32, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(valueColor)
+                if metric == .temperature {
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
+                                          size: compact ? 18 : 20)
+                }
+            }
+
+            DewPointDayTimelineView(
+                reading: reading,
+                showsLabels: false,
+                trackHeight: 7,
+                markerSize: 14,
+                usesComfortColor: usesComfortColor,
+                monochromeColor: secondaryTextColor,
+                metric: metric
+            )
+
+            HStack(spacing: 8) {
+                DewPointWidgetLocationText(location: reading.location)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .fixedSize()
+            }
+            .font(.caption)
+            .foregroundStyle(secondaryTextColor)
+
+            HStack {
+                if metric == .dewPoint {
+                    Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                }
+                Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                Spacer()
+                WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+            }
+            .font(.caption2)
+            .foregroundStyle(secondaryTextColor)
+        }
+    }
+}
+
+struct WidgetConditionSymbol: View {
+    let symbolName: String
+    let condition: String
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: symbolName)
+            .font(.system(size: size))
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(condition)
+    }
+}
+
+struct WidgetUpdateTime: View {
+    let date: Date
+    let timeZone: TimeZone
+
+    var body: some View {
+        let time = DewPointFormatters.updatedTime(date, timeZone: timeZone)
+        Text("\(Image(systemName: "clock")) \(time)")
+            .lineLimit(1)
+            .accessibilityLabel(Text("Updated \(time)"))
+    }
+}
+
+struct WidgetDayRangeText: View {
+    let reading: DewPointReading
+    let metric: DayTimelineMetric
+    var stacked = false
+
+    var body: some View {
+        if let range = metric.widgetDayRange(for: reading) {
+            let low = DewPointFormatters.temperatureValue(Measurement(value: range.lowerBound, unit: .celsius))
+            let high = DewPointFormatters.temperatureValue(Measurement(value: range.upperBound, unit: .celsius))
+            let label = stacked ? Text("L \(low)°\nH \(high)°") : Text("L \(low)°  H \(high)°")
+            label
+                .monospacedDigit()
+                .lineLimit(stacked ? 2 : 1)
+                .minimumScaleFactor(0.8)
+                .accessibilityLabel(Text("Today's \(Text(metric.widgetTitle)) forecast"))
+                .accessibilityValue(Text("Low \(DewPointFormatters.temperature(Measurement(value: range.lowerBound, unit: .celsius))), high \(DewPointFormatters.temperature(Measurement(value: range.upperBound, unit: .celsius)))"))
+        }
+    }
+}
+
+private struct DewPointSmallWidgetContent: View {
+    let reading: DewPointReading
+    let metric: DayTimelineMetric
+    let compact: Bool
+    let accentColor: Color
+    let valueColor: Color
+    let secondaryTextColor: Color
+    let tertiaryTextColor: Color
+    let usesComfortColor: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 3 : 6) {
+            HStack(spacing: 5) {
+                Image(systemName: metric.widgetSymbol)
+                    .foregroundStyle(accentColor)
+                Text(metric.widgetTitle)
+                    .foregroundStyle(secondaryTextColor)
+            }
+            .font(compact ? .caption2 : .caption)
+            HStack(spacing: 8) {
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                    .font(.system(size: compact ? 28 : 32, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(valueColor)
+                if metric == .temperature {
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
+                                          size: compact ? 18 : 20)
+                }
+            }
+            if metric.widgetDayRange(for: reading) != nil {
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .font(.caption2)
+                    .foregroundStyle(secondaryTextColor)
+            } else {
+                HStack(spacing: 8) {
+                    if metric == .dewPoint {
+                        Label(DewPointFormatters.temperature(reading.temperature), systemImage: "thermometer.medium")
+                    }
+                    Label(DewPointFormatters.percent(reading.humidity), systemImage: "humidity.fill")
+                }
+                .font(.caption2)
+                .foregroundStyle(secondaryTextColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            }
+            DewPointDayTimelineView(
+                reading: reading,
+                showsLabels: false,
+                trackHeight: 5,
+                markerSize: 10,
+                usesComfortColor: usesComfortColor,
+                monochromeColor: secondaryTextColor,
+                metric: metric
+            )
+            DewPointWidgetLocationText(location: reading.location)
+                .font(.caption2)
+                .foregroundStyle(secondaryTextColor)
+                .lineLimit(compact ? 1 : 2)
+            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+                .font(.caption2)
+                .foregroundStyle(tertiaryTextColor)
+                .lineLimit(1)
+        }
+    }
+}
+
 private struct DewPointLockScreenSquareContent: View {
     let reading: DewPointReading
 
@@ -330,7 +487,7 @@ private struct DewPointLockScreenSquareContent: View {
             DewPointDayTimelineView(reading: reading, showsLabels: false,
                                    trackHeight: 5, markerSize: 10,
                                    usesComfortColor: false, monochromeColor: .secondary, metric: metric)
-            Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -349,7 +506,7 @@ private struct DewPointLargeWidgetContent: View {
     var metric: DayTimelineMetric = .dewPoint
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             DewPointLargeWidgetCurrentConditions(
                 reading: reading, secondaryColor: secondaryColor,
                 valueColor: valueColor, accentColor: accentColor,
@@ -359,7 +516,7 @@ private struct DewPointLargeWidgetContent: View {
             DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
                                        secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric)
             Spacer(minLength: 0)
-            Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt))")
+            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
                 .font(.caption2)
                 .foregroundStyle(secondaryColor)
                 .lineLimit(1)
@@ -382,8 +539,11 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 Label(metric.widgetTitle, systemImage: metric.widgetSymbol)
                     .foregroundStyle(accentColor)
                 Spacer(minLength: 8)
-                Image(systemName: reading.symbolName)
-                    .foregroundStyle(secondaryColor)
+                if metric == .dewPoint {
+                    Image(systemName: reading.symbolName)
+                        .foregroundStyle(secondaryColor)
+                        .accessibilityLabel(reading.condition)
+                }
             }
             .font(.caption)
             HStack(alignment: .center) {
@@ -393,12 +553,13 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                     .foregroundStyle(valueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
+                if metric == .temperature {
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition, size: 22)
+                }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 4) {
                     if metric == .dewPoint {
                         Text("Air \(DewPointFormatters.temperature(reading.temperature))")
-                    } else {
-                        Text(reading.condition).lineLimit(1)
                     }
                     Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 }
@@ -407,10 +568,16 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             }
-            DewPointWidgetLocationText(location: reading.location)
-                .font(.caption)
-                .foregroundStyle(secondaryColor)
-                .lineLimit(1)
+            HStack(spacing: 8) {
+                DewPointWidgetLocationText(location: reading.location)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .fixedSize()
+            }
+            .font(.caption)
+            .foregroundStyle(secondaryColor)
             DewPointDayTimelineView(reading: reading, showsLabels: false,
                                    trackHeight: 5, markerSize: 10,
                                    usesComfortColor: usesComfortColor, monochromeColor: secondaryColor, metric: metric)
@@ -434,16 +601,17 @@ private struct DewPointLargeWidgetForecast: View {
     var metric: DayTimelineMetric = .dewPoint
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(metric.widgetForecastTitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(secondaryColor)
             if metric == .temperature {
                 WeatherWidgetForecastRows(reading: reading, primaryColor: textColor,
-                                          secondaryColor: secondaryColor, usesColor: usesComfortColor)
+                                          secondaryColor: secondaryColor, usesColor: usesComfortColor,
+                                          rowSpacing: 4)
             } else if hasForecast {
                 DewPointForecastView(reading: reading, trackHeight: 5, maximumDayCount: 7,
-                                     rowSpacing: 6, usesComfortColor: usesComfortColor,
+                                     rowSpacing: 4, usesComfortColor: usesComfortColor,
                                      monochromeColor: textColor)
             } else {
                 Text("Forecast temporarily unavailable")

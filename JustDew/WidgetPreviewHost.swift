@@ -24,10 +24,20 @@ struct JustDewWidgetPreviewHost: PreviewProvider {
             }
                 .previewDisplayName("Small")
 
+            WidgetPreviewTile(width: 148, height: 148) {
+                JustDewWidgetEntryView(entry: .previewReading, family: .systemSmall)
+            }
+                .previewDisplayName("Small Compact")
+
             WidgetPreviewTile(width: 360, height: 170) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .systemMedium)
             }
                 .previewDisplayName("Medium")
+
+            WidgetPreviewTile(width: 320, height: 148) {
+                JustDewWidgetEntryView(entry: .previewReading, family: .systemMedium)
+            }
+                .previewDisplayName("Medium Compact")
 
             #if !os(macOS)
             WidgetPreviewTile(width: 84, height: 84) {
@@ -87,6 +97,9 @@ struct CombinedWidgetPreviewHost: PreviewProvider {
             WidgetPreviewTile(width: 160, height: 160) {
                 CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemSmall)
             }.previewDisplayName("Combined Small")
+            WidgetPreviewTile(width: 148, height: 148) {
+                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemSmall)
+            }.previewDisplayName("Combined Small Compact")
             WidgetPreviewTile(width: 360, height: 170) {
                 CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemMedium)
             }.previewDisplayName("Combined Medium")
