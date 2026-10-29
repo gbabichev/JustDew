@@ -19,34 +19,11 @@ extension DewPointWidgetEntry {
     }
 }
 
-enum DewPointWidgetLayout {
-    static func padding(for family: WidgetFamily) -> EdgeInsets {
-        return switch family {
-        #if os(iOS)
-        case .systemSmall:
-            EdgeInsets(top: 21, leading: 20, bottom: 14, trailing: 20)
-        case .systemMedium:
-            EdgeInsets(top: 25, leading: 20, bottom: 16, trailing: 20)
-        case .systemLarge, .systemExtraLarge:
-            EdgeInsets(top: 20, leading: 20, bottom: 16, trailing: 20)
-        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
-            EdgeInsets()
-        #endif
-        #if os(macOS)
-        default:
-            EdgeInsets(top: 16, leading: 18, bottom: 16, trailing: 18)
-        #else
-        default:
-            EdgeInsets()
-        #endif
-        }
-    }
-}
-
 struct JustDewWidgetEntryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.widgetFamily) private var environmentFamily
     @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.widgetContentMargins) private var contentMargins
 
     let entry: DewPointWidgetEntry
     let metric: DayTimelineMetric
@@ -87,7 +64,7 @@ struct JustDewWidgetEntryView: View {
         #if os(iOS)
         case .accessoryCircular:
             .center
-        case .accessoryRectangular, .systemSmall, .systemMedium:
+        case .accessoryRectangular:
             .leading
         #endif
         case .accessoryInline:
@@ -98,10 +75,13 @@ struct JustDewWidgetEntryView: View {
     }
 
     private var widgetPadding: EdgeInsets {
-        if isLockScreenSquare {
-            return EdgeInsets()
+        // Keep accessories edge-to-edge; use WidgetKit's context-specific margins at home.
+        switch family {
+        case .systemSmall, .systemMedium, .systemLarge, .systemExtraLarge:
+            isLockScreenSquare ? EdgeInsets() : contentMargins
+        default:
+            EdgeInsets()
         }
-        return DewPointWidgetLayout.padding(for: family)
     }
 
     private var isLockScreenSquare: Bool {
@@ -162,14 +142,14 @@ struct JustDewWidgetEntryView: View {
         case .systemMedium:
             ViewThatFits(in: .vertical) {
                 DewPointMediumWidgetContent(
-                    reading: reading, metric: metric, compact: false,
+                    reading: reading, metric: metric, tightSpacing: false,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
                     secondaryTextColor: secondaryTextColor, usesComfortColor: showsComfortColor
                 )
                 .fixedSize(horizontal: false, vertical: true)
                 DewPointMediumWidgetContent(
-                    reading: reading, metric: metric, compact: true,
+                    reading: reading, metric: metric, tightSpacing: true,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
                     secondaryTextColor: secondaryTextColor, usesComfortColor: showsComfortColor
@@ -179,7 +159,7 @@ struct JustDewWidgetEntryView: View {
         default:
             ViewThatFits(in: .vertical) {
                 DewPointSmallWidgetContent(
-                    reading: reading, metric: metric, compact: false,
+                    reading: reading, metric: metric, tightSpacing: false,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
                     secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
@@ -187,7 +167,7 @@ struct JustDewWidgetEntryView: View {
                 )
                 .fixedSize(horizontal: false, vertical: true)
                 DewPointSmallWidgetContent(
-                    reading: reading, metric: metric, compact: true,
+                    reading: reading, metric: metric, tightSpacing: true,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
                     secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
@@ -283,14 +263,14 @@ private struct DewPointCircularWidgetIcon: View {
 private struct DewPointMediumWidgetContent: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
-    let compact: Bool
+    let tightSpacing: Bool
     let accentColor: Color
     let valueColor: Color
     let secondaryTextColor: Color
     let usesComfortColor: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 3 : 5) {
+        VStack(alignment: .leading, spacing: tightSpacing ? 2 : 5) {
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: metric.widgetSymbol)
@@ -309,12 +289,12 @@ private struct DewPointMediumWidgetContent: View {
 
             HStack(spacing: 8) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(size: compact ? 28 : 32, weight: .semibold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
                 if metric == .temperature {
                     WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
-                                          size: compact ? 18 : 20)
+                                          size: 20)
                 }
             }
 
@@ -401,7 +381,7 @@ struct WidgetDayRangeText: View {
 private struct DewPointSmallWidgetContent: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
-    let compact: Bool
+    let tightSpacing: Bool
     let accentColor: Color
     let valueColor: Color
     let secondaryTextColor: Color
@@ -409,22 +389,22 @@ private struct DewPointSmallWidgetContent: View {
     let usesComfortColor: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 3 : 6) {
+        VStack(alignment: .leading, spacing: tightSpacing ? 2 : 6) {
             HStack(spacing: 5) {
                 Image(systemName: metric.widgetSymbol)
                     .foregroundStyle(accentColor)
                 Text(metric.widgetTitle)
                     .foregroundStyle(secondaryTextColor)
             }
-            .font(compact ? .caption2 : .caption)
+            .font(.caption)
             HStack(spacing: 8) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(size: compact ? 28 : 32, weight: .semibold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
                 if metric == .temperature {
                     WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
-                                          size: compact ? 18 : 20)
+                                          size: 20)
                 }
             }
             if metric.widgetDayRange(for: reading) != nil {
@@ -455,7 +435,7 @@ private struct DewPointSmallWidgetContent: View {
             DewPointWidgetLocationText(location: reading.location)
                 .font(.caption2)
                 .foregroundStyle(secondaryTextColor)
-                .lineLimit(compact ? 1 : 2)
+                .lineLimit(1)
             WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
                 .font(.caption2)
                 .foregroundStyle(tertiaryTextColor)
@@ -548,7 +528,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
             .font(.caption)
             HStack(alignment: .center) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(size: 40, weight: .semibold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
                     .lineLimit(1)

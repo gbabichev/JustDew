@@ -16,50 +16,20 @@ private struct WidgetPreviewTile<Content: View>: View {
     }
 }
 
+// Home Screen previews live in JustDewWidget/WidgetLayoutPreviews.swift so WidgetKit supplies margins.
+#if os(iOS)
 struct JustDewWidgetPreviewHost: PreviewProvider {
     static var previews: some View {
         Group {
-            WidgetPreviewTile(width: 160, height: 160) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemSmall)
-            }
-                .previewDisplayName("Small")
-
-            WidgetPreviewTile(width: 148, height: 148) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemSmall)
-            }
-                .previewDisplayName("Small Compact")
-
-            WidgetPreviewTile(width: 360, height: 170) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemMedium)
-            }
-                .previewDisplayName("Medium")
-
-            WidgetPreviewTile(width: 320, height: 148) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemMedium)
-            }
-                .previewDisplayName("Medium Compact")
-
-            #if !os(macOS)
-            WidgetPreviewTile(width: 84, height: 84) {
+            WidgetPreviewTile(width: 62, height: 62) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryCircular)
-            }
-                .previewDisplayName("Lock Screen Circular")
-
-            WidgetPreviewTile(width: 172, height: 72) {
+            }.previewDisplayName("Lock Screen Circular")
+            WidgetPreviewTile(width: 160, height: 60) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryRectangular)
-            }
-                .previewDisplayName("Lock Screen Rectangular")
-
-            WidgetPreviewTile(width: 220, height: 40) {
+            }.previewDisplayName("Lock Screen Rectangular")
+            WidgetPreviewTile(width: 260, height: 26) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryInline)
-            }
-                .previewDisplayName("Lock Screen Inline")
-            #endif
-
-            WidgetPreviewTile(width: 160, height: 160) {
-                JustDewWidgetEntryView(entry: .previewNeedsLocation, family: .systemSmall)
-            }
-                .previewDisplayName("Needs Location")
+            }.previewDisplayName("Lock Screen Inline")
         }
     }
 }
@@ -67,26 +37,15 @@ struct JustDewWidgetPreviewHost: PreviewProvider {
 struct WeatherWidgetPreviewHost: PreviewProvider {
     static var previews: some View {
         Group {
-            WidgetPreviewTile(width: 160, height: 160) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemSmall, metric: .temperature)
-            }.previewDisplayName("Weather Small")
-            WidgetPreviewTile(width: 360, height: 170) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemMedium, metric: .temperature)
-            }.previewDisplayName("Weather Medium")
-            WidgetPreviewTile(width: 360, height: 360) {
-                JustDewWidgetEntryView(entry: .previewReading, family: .systemLarge, metric: .temperature)
-            }.previewDisplayName("Weather Large")
-            #if os(iOS)
-            WidgetPreviewTile(width: 84, height: 84) {
+            WidgetPreviewTile(width: 62, height: 62) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryCircular, metric: .temperature)
-            }.previewDisplayName("Weather Circular")
-            WidgetPreviewTile(width: 172, height: 72) {
+            }.previewDisplayName("Lock Screen Circular")
+            WidgetPreviewTile(width: 160, height: 60) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryRectangular, metric: .temperature)
-            }.previewDisplayName("Weather Rectangular")
-            WidgetPreviewTile(width: 220, height: 40) {
+            }.previewDisplayName("Lock Screen Rectangular")
+            WidgetPreviewTile(width: 260, height: 26) {
                 JustDewWidgetEntryView(entry: .previewReading, family: .accessoryInline, metric: .temperature)
-            }.previewDisplayName("Weather Inline")
-            #endif
+            }.previewDisplayName("Lock Screen Inline")
         }
     }
 }
@@ -94,42 +53,17 @@ struct WeatherWidgetPreviewHost: PreviewProvider {
 struct CombinedWidgetPreviewHost: PreviewProvider {
     static var previews: some View {
         Group {
-            WidgetPreviewTile(width: 160, height: 160) {
-                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemSmall)
-            }.previewDisplayName("Combined Small")
-            WidgetPreviewTile(width: 148, height: 148) {
-                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemSmall)
-            }.previewDisplayName("Combined Small Compact")
-            WidgetPreviewTile(width: 360, height: 170) {
-                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemMedium)
-            }.previewDisplayName("Combined Medium")
-            WidgetPreviewTile(width: 360, height: 360) {
-                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .systemLarge)
-            }.previewDisplayName("Combined Large")
-            WidgetPreviewTile(width: 160, height: 160) {
-                CombinedWeatherWidgetEntryView(entry: DewPointWidgetEntry(date: .now,
-                    reading: DewPointWidgetLoader.sampleReading, message: nil, alwaysDark: true), family: .systemSmall)
-            }.previewDisplayName("Combined Always Dark")
-            #if os(iOS)
             WidgetPreviewTile(width: 62, height: 62) {
                 CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryCircular)
-            }.previewDisplayName("Combined Lock Screen Circular")
+            }.previewDisplayName("Lock Screen Circular")
             WidgetPreviewTile(width: 160, height: 60) {
                 CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryRectangular)
-            }.previewDisplayName("Combined Lock Screen Rectangular")
-            WidgetPreviewTile(width: 150, height: 48) {
-                CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryRectangular)
-            }.previewDisplayName("Combined Compact Lock Screen Rectangular")
+            }.previewDisplayName("Lock Screen Rectangular")
             WidgetPreviewTile(width: 260, height: 26) {
                 CombinedWeatherWidgetEntryView(entry: .previewReading, family: .accessoryInline)
-            }.previewDisplayName("Combined Lock Screen Inline")
-            WidgetPreviewTile(width: 172, height: 72) {
-                CombinedWeatherWidgetEntryView(entry: .previewNeedsLocation, family: .accessoryRectangular)
-            }.previewDisplayName("Combined Lock Screen Needs Location")
-            #endif
-            WidgetPreviewTile(width: 160, height: 160) {
-                CombinedWeatherWidgetEntryView(entry: .previewNeedsLocation, family: .systemSmall)
-            }.previewDisplayName("Combined Needs Location")
+            }.previewDisplayName("Lock Screen Inline")
         }
     }
 }
+
+#endif
