@@ -3,6 +3,8 @@ import AppKit
 import SwiftUI
 
 struct AboutView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         VStack(spacing: 20) {
             AboutAppHeader()
@@ -15,10 +17,16 @@ struct AboutView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 330)
+            HStack {
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
         }
         .padding(.horizontal, 26)
         .padding(.vertical, 24)
         .frame(width: 410)
+        .onExitCommand { dismiss() }
     }
 }
 
@@ -166,12 +174,36 @@ private struct AboutDeveloperPhoto: View {
     }
 }
 
+private struct AboutPresentationKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
+
+extension FocusedValues {
+    var showsJustDewAbout: Binding<Bool>? {
+        get { self[AboutPresentationKey.self] }
+        set { self[AboutPresentationKey.self] = newValue }
+    }
+}
+
+struct MacAboutPresentation: ViewModifier {
+    @State private var showsAbout = false
+
+    func body(content: Content) -> some View {
+        content
+            .focusedSceneValue(\.showsJustDewAbout, $showsAbout)
+            .sheet(isPresented: $showsAbout) {
+                AboutView()
+            }
+    }
+}
+
 struct JustDewAboutCommands: Commands {
-    @Environment(\.openWindow) private var openWindow
+    @FocusedBinding(\.showsJustDewAbout) private var showsAbout
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("About JustDew") { openWindow(id: "about") }
+            Button("About JustDew") { showsAbout = true }
+                .disabled(showsAbout == nil)
         }
     }
 }

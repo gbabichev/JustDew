@@ -28,6 +28,7 @@ struct JustDewApp: App {
             ContentView()
                 #if os(macOS)
                 .frame(minWidth: 400, minHeight: 540)
+                .modifier(MacAboutPresentation())
                 #endif
         }
         #if os(macOS)
@@ -35,15 +36,6 @@ struct JustDewApp: App {
         .defaultSize(width: 1_050, height: 740)
         .windowResizability(.contentMinSize)
         .commands { JustDewAboutCommands() }
-        #endif
-
-        #if os(macOS)
-        Window("About JustDew", id: "about") {
-            AboutView()
-        }
-        .windowStyle(.titleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
         #endif
     }
 }
