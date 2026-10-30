@@ -186,6 +186,8 @@ extension FocusedValues {
 }
 
 struct MacAboutPresentation: ViewModifier {
+    // Read and written through $showsAbout by the sheet and focused scene binding.
+    // periphery:ignore
     @State private var showsAbout = false
 
     func body(content: Content) -> some View {

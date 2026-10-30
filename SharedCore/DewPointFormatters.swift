@@ -83,21 +83,6 @@ enum DewPointFormatters {
         return "\(label) \(timeZoneLabel(date, timeZone: timeZone))"
     }
 
-    static func weekdayLabel(_ date: Date, calendar: Calendar = .current) -> String {
-        if calendar.isDateInTomorrow(date) {
-            return "Tomorrow"
-        }
-
-        let formatter = DateFormatter()
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = DateFormatter.dateFormat(
-            fromTemplate: "EEE",
-            options: 0,
-            locale: .current
-        )
-        return formatter.string(from: date)
-    }
-
     static func forecastDayLabel(_ date: Date, relativeTo reference: Date, calendar: Calendar) -> String {
         if calendar.isDate(date, inSameDayAs: reference) { return String(localized: "Today") }
         let formatter = DateFormatter()
