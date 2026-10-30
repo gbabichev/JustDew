@@ -92,6 +92,11 @@ Locations are saved separately on each device.
 
 ## Changelog
 
+### 2.1.0
+- Tweaked app UI to reduce scrolling.
+- Tweaked widgets for better spacing across all platforms.
+- Added additional colors for hourly weather & UV.
+
 ### 2.0.1
 - Improved app start on slow internet connection.
 - Improved weather forecast showing ? if checking early in the morning.
