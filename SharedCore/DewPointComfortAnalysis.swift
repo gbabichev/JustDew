@@ -2,7 +2,9 @@ import Foundation
 
 enum DewPointComfortLimit: Int, CaseIterable, Identifiable {
     case standard = 55
+    case fahrenheit58 = 58
     case moderate = 60
+    case fahrenheit62 = 62
     case relaxed = 65
 
     var id: Int { rawValue }

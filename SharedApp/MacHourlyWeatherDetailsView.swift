@@ -26,6 +26,7 @@ struct MacHourlyWeatherDetailsView: View {
             }
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 3) {
+                    HourlyUVProtectionNote()
                     Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone, includesDate: true))")
                         .foregroundStyle(.secondary)
                     Link("Data from \(DewPointConfiguration.appleWeatherTrademark)",
@@ -160,11 +161,14 @@ private struct MacHourlyWindCell: View {
 
 private struct MacHourlyUVCell: View {
     let weather: DewPointHourlyWeather?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if let weather, weather.uvIndex >= 0 {
             VStack(alignment: .leading, spacing: 2) {
-                Text(weather.uvIndex.formatted()).monospacedDigit()
+                Text(weather.uvIndex.formatted())
+                    .monospacedDigit()
+                    .foregroundStyle(HourlyUVStyle.color(for: weather.uvIndex, colorScheme: colorScheme))
                 if let category = UVIndex.ExposureCategory(rawValue: weather.uvCategory) {
                     Text(category.description).font(.caption2).foregroundStyle(.secondary)
                 }

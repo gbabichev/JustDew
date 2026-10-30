@@ -2,6 +2,28 @@
 import SwiftUI
 import WeatherKit
 
+enum HourlyUVStyle {
+    static func color(for index: Int, colorScheme: ColorScheme) -> Color {
+        switch index {
+        case ..<0: .secondary
+        case 0...2: colorScheme == .dark ? .green : Color(red: 0.16, green: 0.43, blue: 0.22)
+        // Darker yellow and orange keep small readings legible on light row backgrounds.
+        case 3...5: colorScheme == .dark ? .yellow : Color(red: 0.55, green: 0.40, blue: 0)
+        case 6...7: colorScheme == .dark ? .orange : Color(red: 0.72, green: 0.30, blue: 0)
+        case 8...10: .red
+        default: .purple
+        }
+    }
+}
+
+struct HourlyUVProtectionNote: View {
+    var body: some View {
+        Text("UV 3+: use sunscreen, cover up, and seek shade.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+}
+
 struct WeatherDetailsPresentation: ViewModifier {
     let reading: DewPointReading?
     @State private var showsDetails = false
@@ -72,6 +94,7 @@ private struct HourlyWeatherDetailsView: View {
                             description: Text("Hourly details will appear after the next weather update."))
                     }
                     Section {
+                        HourlyUVProtectionNote()
                         Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone, includesDate: true))")
                         Link("Data from \(DewPointConfiguration.appleWeatherTrademark)",
                              destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
@@ -153,6 +176,7 @@ private struct HourlyWeatherTimeLabel: View {
 private struct HourlyWeatherMetrics: View {
     let weather: DewPointHourlyWeather
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let layout = dynamicTypeSize.isAccessibilitySize
@@ -168,7 +192,8 @@ private struct HourlyWeatherMetrics: View {
                                 detail: gustDetail, spokenValue: windAccessibilityValue)
             HourlyWeatherMetric(title: "UV Index", symbol: "sun.max",
                                 compact: !dynamicTypeSize.isAccessibilitySize, value: uvValue,
-                                detail: uvDetail)
+                                detail: uvDetail,
+                                tint: HourlyUVStyle.color(for: weather.uvIndex, colorScheme: colorScheme))
         }
     }
 
@@ -213,15 +238,17 @@ private struct HourlyWeatherMetric: View {
     let value: String
     var detail: String? = nil
     var spokenValue: String? = nil
+    var tint: Color? = nil
 
     var body: some View {
         Group {
             if compact {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Image(systemName: symbol)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(tint ?? .secondary)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(value)
+                            .foregroundStyle(tint ?? .primary)
                             .fontWeight(.semibold)
                             .monospacedDigit()
                             .lineLimit(1)
@@ -241,6 +268,7 @@ private struct HourlyWeatherMetric: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(value)
+                        .foregroundStyle(tint ?? .primary)
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                     if let detail {
