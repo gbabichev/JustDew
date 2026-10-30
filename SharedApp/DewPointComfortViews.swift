@@ -74,7 +74,9 @@ struct DewPointComfortHours: View {
                     (shortTitle ? Text("Comfort") : Text("Comfortable hours today"))
                         .font(.caption.weight(.semibold))
                         .accessibilityAddTraits(.isHeader)
+                    #if os(macOS)
                     Spacer(minLength: 0)
+                    #endif
                     Menu {
                         Picker("Dew point limit", selection: $storedLimit) {
                             ForEach(DewPointComfortLimit.allCases) { option in
@@ -94,6 +96,9 @@ struct DewPointComfortHours: View {
                     #endif
                     .accessibilityLabel("Change dew point comfort limit")
                     .accessibilityValue(DewPointFormatters.temperature(limit.temperature))
+                    #if os(iOS)
+                    Spacer(minLength: 0)
+                    #endif
                 }
                 DewPointComfortWindows(reading: reading, analysis: analysis)
                     .font(compact ? .caption2 : .caption)
