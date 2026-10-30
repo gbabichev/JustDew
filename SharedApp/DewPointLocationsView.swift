@@ -97,7 +97,7 @@ struct DewPointIOSPagesView: View {
                     DewPointHingeAwarePager(viewModel: viewModel, locations: pageLocations, selectedID: $selectedID)
                     .navigationTitle(displayedLocation?.compactDisplayName ?? "JustDew")
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
-                    .navigationBarTitleDisplayMode(WeatherDashboardPlatformStyle.supportsCompactDashboard && !usesSidebar ? .inline : .large)
+                    .navigationBarTitleDisplayMode(!usesSidebar ? .inline : .large)
                     .toolbar {
                         if !usesSidebar {
                             ToolbarItem(placement: .topBarTrailing) {

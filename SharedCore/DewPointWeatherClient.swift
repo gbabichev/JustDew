@@ -21,7 +21,7 @@ nonisolated enum DewPointWeatherClient {
                 including: .current,
                 // Include earlier hours today so both timelines can show the full local day.
                 .hourly(startDate: forecastRange.lowerBound, endDate: forecastRange.upperBound),
-                .daily
+                .daily(startDate: forecastRange.lowerBound, endDate: forecastRange.upperBound)
             )
             let currentHour = hourly.forecast.first {
                 $0.date <= current.date && current.date < $0.date.addingTimeInterval(3_600)
