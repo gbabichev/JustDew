@@ -130,15 +130,6 @@ private struct HourlyWeatherDetailRow: View {
         layout {
             HourlyWeatherTimeLabel(hour: hour, calendar: calendar, referenceDate: referenceDate)
                 .fixedSize(horizontal: true, vertical: false)
-            if let weather = hour.point.weather {
-                HourlyWeatherMetrics(weather: weather)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text("Details unavailable for this hour")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
             HStack(spacing: 6) {
                 if let weather = hour.point.weather {
                     Image(systemName: weather.symbolName)
@@ -150,6 +141,15 @@ private struct HourlyWeatherDetailRow: View {
             }
             .font(dynamicTypeSize.isAccessibilitySize ? .headline : .subheadline.weight(.semibold))
             .fixedSize(horizontal: true, vertical: false)
+            if let weather = hour.point.weather {
+                HourlyWeatherMetrics(weather: weather)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("Details unavailable for this hour")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .accessibilityElement(children: .contain)
     }
