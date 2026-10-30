@@ -2,20 +2,28 @@
 import SwiftUI
 import WidgetKit
 
-/// The weather-only large widget and the combined large widget use the same daily data.
-struct WeatherWidgetForecastRows: View {
+/// Shared forecast styling for dew point, weather, and combined large widgets.
+struct WidgetForecastRows: View {
     let reading: DewPointReading
     let primaryColor: Color
     let secondaryColor: Color
     let usesColor: Bool
+    var metric: DayTimelineMetric = .temperature
     var combined = false
     var rowSpacing: CGFloat = 4
 
     var body: some View {
-        let forecast = WeatherDashboardForecast(reading: reading)
-        let days = Array(forecast.days.dropFirst().filter {
-            $0.hasWeatherForecast && (!combined || $0.hasDewPointForecast)
+        let forecast = WeatherDashboardForecast(reading: reading, referenceDate: reading.observedAt)
+        let days = Array(forecast.days.dropFirst().filter { day in
+            if combined { return day.hasWeatherForecast && day.hasDewPointForecast }
+            return metric == .dewPoint ? day.hasDewPointForecast : day.hasWeatherForecast
         }.prefix(7))
+        let dewPointScale = WeatherRangeScale(values: days.flatMap {
+            [$0.lowDewPointCelsius, $0.highDewPointCelsius].compactMap { $0 }
+        })
+        let temperatureScale = WeatherRangeScale(values: days.flatMap {
+            [$0.weather?.lowTemperatureCelsius, $0.weather?.highTemperatureCelsius].compactMap { $0 }
+        })
         VStack(alignment: .leading, spacing: rowSpacing) {
             if combined && !days.isEmpty {
                 HStack(spacing: 8) {
@@ -23,19 +31,19 @@ struct WeatherWidgetForecastRows: View {
                     Text("Dew Point").frame(maxWidth: .infinity)
                     Text("Weather").frame(maxWidth: .infinity)
                 }
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(secondaryColor)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(primaryColor)
             }
             if !days.isEmpty {
                 ForEach(days) { day in
                     HStack(spacing: combined ? 8 : 6) {
                         Text(DewPointFormatters.forecastDayLabel(day.date, relativeTo: reading.observedAt,
                                                                calendar: reading.forecastCalendar))
-                            .font(.caption2)
-                            .foregroundStyle(secondaryColor)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(primaryColor)
                             .lineLimit(1)
                             .frame(width: combined ? 36 : 46, alignment: .leading)
-                        if !combined, let weather = day.weather {
+                        if !combined && metric == .temperature, let weather = day.weather {
                             Image(systemName: weather.symbolName)
                                 .resizable()
                                 .scaledToFit()
@@ -43,15 +51,17 @@ struct WeatherWidgetForecastRows: View {
                                 .frame(width: 16, height: 12)
                                 .accessibilityLabel(weather.condition)
                         }
-                        if combined {
+                        if combined || metric == .dewPoint {
                             WidgetForecastRange(low: day.lowDewPointCelsius, high: day.highDewPointCelsius,
-                                                scale: forecast.dewPointScale, metric: .dewPoint,
-                                                primaryColor: primaryColor, usesColor: usesColor)
+                                                scale: dewPointScale, metric: .dewPoint,
+                                                primaryColor: primaryColor, secondaryColor: secondaryColor, usesColor: usesColor)
                         }
-                        WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
-                                            high: day.weather?.highTemperatureCelsius,
-                                            scale: forecast.temperatureScale, metric: .temperature,
-                                            primaryColor: primaryColor, usesColor: usesColor)
+                        if combined || metric == .temperature {
+                            WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
+                                                high: day.weather?.highTemperatureCelsius,
+                                                scale: temperatureScale, metric: .temperature,
+                                                primaryColor: primaryColor, secondaryColor: secondaryColor, usesColor: usesColor)
+                        }
                     }
                 }
             } else {
@@ -69,18 +79,20 @@ private struct WidgetForecastRange: View {
     let scale: WeatherRangeScale
     let metric: DayTimelineMetric
     let primaryColor: Color
+    let secondaryColor: Color
     let usesColor: Bool
 
     var body: some View {
         HStack(spacing: 3) {
             if let low, let high, low.isFinite, high.isFinite {
                 Text(degrees(low))
-                    .frame(width: 25, alignment: .trailing)
+                    .foregroundStyle(secondaryColor)
+                    .frame(minWidth: 25, alignment: .trailing)
                 GeometryReader { geometry in
                     let width = max(geometry.size.width, 1)
                     let start = scale.fraction(for: low) * width
                     let end = scale.fraction(for: high) * width
-                    let barWidth = min(width, max(end - start, 3))
+                    let barWidth = min(width, max(end - start, 4))
                     ZStack(alignment: .leading) {
                         Capsule().fill(primaryColor.opacity(0.12))
                         Capsule()
@@ -90,10 +102,11 @@ private struct WidgetForecastRange: View {
                             .offset(x: min(start, width - barWidth))
                     }
                 }
-                .frame(height: 5)
+                .frame(height: 6)
                 .accessibilityHidden(true)
                 Text(degrees(high))
-                    .frame(width: 25, alignment: .trailing)
+                    .fontWeight(.medium)
+                    .frame(minWidth: 25, alignment: .trailing)
             } else {
                 Text("—").frame(maxWidth: .infinity)
             }
@@ -217,7 +230,10 @@ private struct CombinedHomeWidgetContent: View {
                         .foregroundStyle(.secondary)
                         if isLarge {
                             Divider()
-                            WeatherWidgetForecastRows(reading: reading, primaryColor: .primary,
+                            Text("Forecast")
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            WidgetForecastRows(reading: reading, primaryColor: .primary,
                                                       secondaryColor: .secondary, usesColor: usesColor, combined: true)
                         }
                         Spacer(minLength: 0)

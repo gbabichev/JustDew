@@ -101,16 +101,6 @@ struct WeatherDashboardForecastTests {
                      "Do not display an unknown tenth weather row")
         precondition(earlyForecast.dewPointDays.map(\.date) == dates,
                      "Available dew point data must survive a missing daily weather summary")
-        precondition(earlyForecast.combinedDays.map(\.date) == dates,
-                     "The shared forecast must retain the dew-only tenth day without duplicating dates")
-        var split = early
-        split.dailyForecast = [early.dailyForecast![0]]
-        split.dailyWeather = Array(early.dailyWeather!.dropFirst().prefix(2))
-        let splitForecast = WeatherDashboardForecast(reading: split, referenceDate: earlyMorning)
-        precondition(splitForecast.combinedDays.map(\.date) == Array(dates.prefix(3)),
-                     "A shared calendar must include disjoint dew-only and weather-only days in order")
-        precondition(splitForecast.combinedDays[0].hasDewPointForecast && !splitForecast.combinedDays[0].hasWeatherForecast)
-        precondition(!splitForecast.combinedDays[1].hasDewPointForecast && splitForecast.combinedDays[1].hasWeatherForecast)
         precondition(earlyForecast.dewPointDays.allSatisfy(\.hasPartialDewPoint),
                      "Partial numeric ranges are still real forecast data")
 
@@ -124,7 +114,7 @@ struct WeatherDashboardForecastTests {
         early.dailyWeather = nil
         early.dailyForecast = []
         let empty = WeatherDashboardForecast(reading: early, referenceDate: earlyMorning)
-        precondition(empty.weatherDays.isEmpty && empty.dewPointDays.isEmpty && empty.combinedDays.isEmpty)
+        precondition(empty.weatherDays.isEmpty && empty.dewPointDays.isEmpty)
         // Invalid numeric ranges are unavailable too; they must not create blank bars.
         early.dailyWeather = [WeatherForecastDay(date: dates[0], lowTemperatureCelsius: .nan,
             highTemperatureCelsius: 20, condition: "Clear", symbolName: "sun.max", precipitationChance: 0)]

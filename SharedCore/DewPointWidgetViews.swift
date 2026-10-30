@@ -571,33 +571,16 @@ private struct DewPointLargeWidgetForecast: View {
     let secondaryColor: Color
     let usesComfortColor: Bool
 
-    private var hasForecast: Bool {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: reading.observedAt)
-        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: start) else { return false }
-        return reading.dailyForecastPoints.contains { $0.date >= tomorrow }
-    }
-
     var metric: DayTimelineMetric = .dewPoint
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(metric.widgetForecastTitle)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(secondaryColor)
-            if metric == .temperature {
-                WeatherWidgetForecastRows(reading: reading, primaryColor: textColor,
-                                          secondaryColor: secondaryColor, usesColor: usesComfortColor,
-                                          rowSpacing: 4)
-            } else if hasForecast {
-                DewPointForecastView(reading: reading, trackHeight: 5, maximumDayCount: 7,
-                                     rowSpacing: 4, usesComfortColor: usesComfortColor,
-                                     monochromeColor: textColor)
-            } else {
-                Text("Forecast temporarily unavailable")
-                    .font(.caption2)
-                    .foregroundStyle(secondaryColor)
-            }
+                .font(.headline)
+                .foregroundStyle(textColor)
+            WidgetForecastRows(reading: reading, primaryColor: textColor,
+                               secondaryColor: secondaryColor, usesColor: usesComfortColor,
+                               metric: metric)
         }
     }
 }
