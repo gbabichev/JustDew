@@ -31,7 +31,7 @@ import WidgetKit
 }
 
 #Preview("Weather · Small", as: .systemSmall) {
-    JustWeatherWidget()
+    SavedLocationWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation
@@ -40,7 +40,7 @@ import WidgetKit
 }
 
 #Preview("Weather · Medium", as: .systemMedium) {
-    JustWeatherWidget()
+    SavedLocationWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation
@@ -49,7 +49,7 @@ import WidgetKit
 }
 
 #Preview("Weather · Large", as: .systemLarge) {
-    JustWeatherWidget()
+    SavedLocationWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation
@@ -58,7 +58,7 @@ import WidgetKit
 }
 
 #Preview("Combo · Small", as: .systemSmall) {
-    CombinedWeatherWidget()
+    SavedLocationCombinedWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation
@@ -67,7 +67,7 @@ import WidgetKit
 }
 
 #Preview("Combo · Medium", as: .systemMedium) {
-    CombinedWeatherWidget()
+    SavedLocationCombinedWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation
@@ -76,7 +76,7 @@ import WidgetKit
 }
 
 #Preview("Combo · Large", as: .systemLarge) {
-    CombinedWeatherWidget()
+    SavedLocationCombinedWeatherWidget()
 } timeline: {
     DewPointWidgetEntry.previewReading
     WidgetLayoutPreviewEntries.longLocation

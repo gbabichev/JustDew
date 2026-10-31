@@ -2,7 +2,7 @@ import Foundation
 
 nonisolated enum DewPointConfiguration {
     static let appGroupIdentifier = "group.com.georgebabichev.JustDew"
-    static let appWidgetKind = "JustDewWidget"
+    static let appWidgetKind = "JustDewSavedLocationWidget"
     static let watchWidgetKind = "JustDewWatch"
     // WeatherKit supplies ten forecast days, including today.
     static let forecastDayCount = 10

@@ -73,16 +73,19 @@ On iPhone and iPad, swipe between saved location pages. On Mac and Apple Watch,
 choose a location from the Locations list. Swipe to delete a saved location on
 mobile devices, or use its context menu on Mac.
 
-**Dew Point** and **Dew Point · Always Dark** always follow your current location.
-Browsing a saved city in the app does not change them.
-Dew point, weather, and combo widgets offer small, medium, and large sizes on iOS
-and Mac. Large widgets include forecasts for the coming days.
+Choose **Dew Point**, **Weather**, or **Dew Point + Weather**. Each offers small,
+medium, and large sizes on iOS and Mac, plus supported iPhone Lock Screen sizes.
+Large widgets include forecasts for the coming days.
 
-Use **Dew Point · Location** or **Dew Point · Location · Always Dark** to pin a
-widget to a city saved on that device. Both offer small, medium, and large sizes; the
-Location widget also supports Lock Screen sizes and an Always Dark switch.
-Edit a location widget to choose its location. Each widget keeps its own choice.
+Touch and hold a widget and choose **Edit Widget** (or right-click on Mac) to set
+its **Location** to Current Location or a city saved in JustDew, and toggle
+**Always Dark**. New widgets default to Current Location and follow the system
+appearance. Each widget keeps its own settings when you browse cities in the app.
 System tinting and Lock Screen rendering still control widget presentation.
+
+The former Location widgets retain their settings. If you used a retired
+Current Location or Always Dark variant, replace it with one of the three widgets
+and choose the matching settings in Edit Widget.
 
 On Apple Watch, **Current Location** always follows your device.
 Add **Saved Location** to your watch face or Smart Stack,
@@ -93,6 +96,7 @@ Locations are saved separately on each device.
 ## Changelog
 
 ### 2.1.0
+- Simplified the widget gallery to three editable widgets, each with location and Always Dark options.
 - Tweaked app UI to reduce scrolling.
 - Tweaked widgets for better spacing across all platforms.
 - Added additional colors for hourly weather & UV.

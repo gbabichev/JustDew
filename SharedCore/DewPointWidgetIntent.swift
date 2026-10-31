@@ -20,6 +20,8 @@ struct DewPointLocationQuery: EntityStringQuery {
         choices.filter { identifiers.contains($0.id) }
     }
 
+    func defaultResult() async -> DewPointLocationEntity? { .current }
+
     func suggestedEntities() async throws -> [DewPointLocationEntity] { choices }
 
     func entities(matching string: String) async throws -> [DewPointLocationEntity] {
@@ -33,7 +35,7 @@ struct DewPointLocationQuery: EntityStringQuery {
     }
 }
 
-struct DewPointWidgetIntent: WidgetConfigurationIntent {
+struct DewPointWidgetIntent: WeatherLocationWidgetOptions {
     static let title: LocalizedStringResource = "Dew Point Options"
     // Used by App Intents metadata extraction.
     // periphery:ignore
@@ -44,16 +46,13 @@ struct DewPointWidgetIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "Always Dark", default: false)
     var alwaysDark: Bool
-}
 
-struct DarkDewPointWidgetIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Dark Dew Point Options"
-    // Used by App Intents metadata extraction.
-    // periphery:ignore
-    static let description = IntentDescription("Choose a location for your always dark widget.")
-
-    @Parameter(title: "Location")
-    var location: DewPointLocationEntity?
+    static var parameterSummary: some ParameterSummary {
+        Summary {
+            \.$location
+            \.$alwaysDark
+        }
+    }
 }
 
 #if os(watchOS)
@@ -68,7 +67,7 @@ struct WatchLocationDewPointIntent: WidgetConfigurationIntent {
 }
 #endif
 
-// New configurations reuse stable location entities without changing shipped dew point intents.
+// The three editable widgets share the same location and appearance options.
 protocol WeatherLocationWidgetOptions: WidgetConfigurationIntent {
     var location: DewPointLocationEntity? { get }
     var alwaysDark: Bool { get }
@@ -85,18 +84,13 @@ struct WeatherWidgetIntent: WeatherLocationWidgetOptions {
 
     @Parameter(title: "Always Dark", default: false)
     var alwaysDark: Bool
-}
 
-struct DarkWeatherWidgetIntent: WeatherLocationWidgetOptions {
-    static let title: LocalizedStringResource = "Dark Weather Options"
-    // Used by App Intents metadata extraction.
-    // periphery:ignore
-    static let description = IntentDescription("Choose a location for your always dark weather widget.")
-
-    @Parameter(title: "Location")
-    var location: DewPointLocationEntity?
-
-    var alwaysDark: Bool { true }
+    static var parameterSummary: some ParameterSummary {
+        Summary {
+            \.$location
+            \.$alwaysDark
+        }
+    }
 }
 
 struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
@@ -110,18 +104,13 @@ struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
 
     @Parameter(title: "Always Dark", default: false)
     var alwaysDark: Bool
-}
 
-struct DarkCombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
-    static let title: LocalizedStringResource = "Dark Weather and Dew Point Options"
-    // Used by App Intents metadata extraction.
-    // periphery:ignore
-    static let description = IntentDescription("Choose a location for your always dark combined widget.")
-
-    @Parameter(title: "Location")
-    var location: DewPointLocationEntity?
-
-    var alwaysDark: Bool { true }
+    static var parameterSummary: some ParameterSummary {
+        Summary {
+            \.$location
+            \.$alwaysDark
+        }
+    }
 }
 
 #if os(watchOS)
