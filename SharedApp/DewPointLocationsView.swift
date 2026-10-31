@@ -201,12 +201,9 @@ struct DewPointLocationsList: View {
                                                  isSelected: viewModel.configuredLocation?.id == location.id)
                             }
                             #elseif os(iOS)
-                            if isSidebar {
-                                SidebarLocationRow(location: location, reading: cachedReading(for: location))
-                            } else {
-                                SavedLocationRow(location: location,
-                                                 isSelected: viewModel.configuredLocation?.id == location.id)
-                            }
+                            IOSSidebarLocationRow(location: location, reading: cachedReading(for: location),
+                                                  showsSelection: !isSidebar && viewModel.configuredLocation?.id == location.id)
+                                .foregroundStyle(.primary)
                             #else
                             SavedLocationRow(location: location,
                                              isSelected: viewModel.configuredLocation?.id == location.id)
@@ -408,20 +405,29 @@ private struct SidebarLocationRow: View {
 private struct IOSSidebarLocationRow: View {
     let location: DewPointLocation
     let reading: DewPointReading?
+    var showsSelection = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // Give the name the row's full width instead of competing with two readings.
-            Text(location.compactDisplayName)
-                .font(.body.weight(.medium))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .truncationMode(.tail)
-            if location.mode == .current {
-                Label("Current Location", systemImage: "location.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(location.compactDisplayName)
+                    .font(.body.weight(.medium))
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .truncationMode(.tail)
+                if location.mode == .current {
+                    Image(systemName: "location.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Current Location")
+                }
+                Spacer(minLength: 8)
+                if showsSelection {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.tint)
+                        .accessibilityLabel("Selected")
+                }
             }
             if let reading {
                 ViewThatFits(in: .horizontal) {
