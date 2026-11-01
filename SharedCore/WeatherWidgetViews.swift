@@ -227,13 +227,21 @@ private struct CombinedHomeWidgetContent: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
-                    ViewThatFits(in: .vertical) {
-                        CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
-                                                      showsForecast: isLarge, tightSpacing: false)
-                            .fixedSize(horizontal: false, vertical: true)
-                        CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
-                                                      showsForecast: isLarge, tightSpacing: true)
-                            .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        ViewThatFits(in: .vertical) {
+                            CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
+                                                          showsForecast: isLarge, tightSpacing: false)
+                                .fixedSize(horizontal: false, vertical: true)
+                            CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
+                                                          showsForecast: isLarge, tightSpacing: true)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if isLarge {
+                            Spacer(minLength: 0)
+                            WidgetRefreshTime(reading: reading)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             } else {
@@ -271,8 +279,10 @@ private struct CombinedStandardWidgetContent: View {
             HStack {
                 Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 Spacer(minLength: 0)
-                WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
-                    .lineLimit(1)
+                if !showsForecast {
+                    WidgetRefreshTime(reading: reading)
+                        .lineLimit(1)
+                }
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -317,7 +327,7 @@ private struct CombinedPortraitWidgetContent: View {
                                usesColor: usesColor, combined: true, rowSpacing: 10,
                                includesToday: true, dayLimit: 10, roomy: true)
             Spacer(minLength: 0)
-            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+            WidgetRefreshTime(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -335,11 +345,15 @@ private struct CombinedSmallWidgetContent: View {
                                    usesColor: usesColor)
             CombinedSmallWidgetRow(reading: reading, metric: .temperature,
                                    usesColor: usesColor)
-            DewPointWidgetLocationText(location: reading.location)
-                .font(.caption2)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                DewPointWidgetLocationText(location: reading.location)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                WidgetRefreshButton(locationID: reading.location.id)
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

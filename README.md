@@ -101,6 +101,9 @@ Large widgets include forecasts for the coming days.
 The wide extra-large size is also available on iPad and Mac.
 On iOS/iPadOS 27 and macOS 27, the extra-large portrait size keeps the simple
 current-reading header and adds up to ten days of forecasts, including today.
+Use the refresh button on Home Screen or Mac widgets to request fresh weather for
+that widget's location without opening the app. If offline, the last successful
+reading remains visible. The Small combo widget places refresh beside its location.
 
 Touch and hold a widget and choose **Edit Widget** (or right-click on Mac) to set
 its **Location** to Current Location or a city saved in JustDew, and toggle

@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -340,7 +341,7 @@ private struct DewPointMediumWidgetContent: View {
                 }
                 Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 Spacer()
-                WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+                WidgetRefreshTime(reading: reading)
             }
             .font(.caption2)
             .foregroundStyle(secondaryTextColor)
@@ -370,6 +371,34 @@ struct WidgetUpdateTime: View {
         Text("\(Image(systemName: "clock")) \(time)")
             .lineLimit(1)
             .accessibilityLabel(Text("Updated \(time)"))
+    }
+}
+
+struct WidgetRefreshButton: View {
+    let locationID: String
+
+    var body: some View {
+        Button(intent: RefreshWeatherWidgetIntent(locationID: locationID)) {
+            Image(systemName: "arrow.clockwise")
+                .padding(3)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Refresh weather")
+    }
+}
+
+struct WidgetRefreshTime: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        HStack(spacing: 2) {
+            WidgetRefreshButton(locationID: reading.location.id)
+            Text(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))
+                .lineLimit(1)
+                .invalidatableContent()
+                .accessibilityLabel(Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))"))
+        }
     }
 }
 
@@ -453,7 +482,7 @@ private struct DewPointSmallWidgetContent: View {
                 .font(.caption2)
                 .foregroundStyle(secondaryTextColor)
                 .lineLimit(1)
-            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+            WidgetRefreshTime(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(tertiaryTextColor)
                 .lineLimit(1)
@@ -513,7 +542,7 @@ private struct DewPointLargeWidgetContent: View {
             DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
                                        secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric)
             Spacer(minLength: 0)
-            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+            WidgetRefreshTime(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(secondaryColor)
                 .lineLimit(1)
@@ -606,7 +635,7 @@ private struct DewPointPortraitWidgetContent: View {
                                secondaryColor: secondaryColor, usesColor: usesComfortColor,
                                metric: metric, rowSpacing: 10, includesToday: true, dayLimit: 10, roomy: true)
             Spacer(minLength: 0)
-            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+            WidgetRefreshTime(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(secondaryColor)
         }

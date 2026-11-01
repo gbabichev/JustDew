@@ -90,7 +90,7 @@ enum DewPointWidgetLoader {
     }
 
     // Widget refreshes only update the per-location cache, never the app selection.
-    static func loadReading(locationID: String) async throws -> DewPointReading {
+    static func loadReading(locationID: String, forceRefresh: Bool = false) async throws -> DewPointReading {
         let store = DewPointStore()
         let location: DewPointLocation
         if locationID == "current" {
@@ -106,7 +106,7 @@ enum DewPointWidgetLoader {
             location = saved
         }
         // Reuse the app's recent snapshot rather than immediately fetching a different one.
-        if let cached = store.freshReading(for: location) { return cached }
+        if !forceRefresh, let cached = store.freshReading(for: location) { return cached }
         let reading = try await DewPointWeatherClient.reading(for: location)
         store.saveCachedReading(reading)
         return store.loadReading(for: location) ?? reading
