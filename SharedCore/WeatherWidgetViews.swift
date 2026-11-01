@@ -30,7 +30,7 @@ struct WidgetForecastRows: View {
         })
         VStack(alignment: .leading, spacing: rowSpacing) {
             if combined && !days.isEmpty {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Text("Day").frame(width: roomy ? roomyDayWidth : 36, alignment: .leading)
                     Text("Dew Point").frame(maxWidth: .infinity)
                     Text("Weather").frame(maxWidth: .infinity)
@@ -40,7 +40,7 @@ struct WidgetForecastRows: View {
             }
             if !days.isEmpty {
                 ForEach(days) { day in
-                    HStack(spacing: combined ? 8 : 6) {
+                    HStack(spacing: 6) {
                         Text(DewPointFormatters.forecastDayLabel(day.date, relativeTo: reading.observedAt,
                                                                calendar: reading.forecastCalendar))
                             .font((roomy ? Font.subheadline : .caption).weight(.medium))
@@ -62,11 +62,21 @@ struct WidgetForecastRows: View {
                                                 roomy: roomy)
                         }
                         if combined || metric == .temperature {
-                            WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
-                                                high: day.weather?.highTemperatureCelsius,
-                                                scale: temperatureScale, metric: .temperature,
-                                                primaryColor: primaryColor, secondaryColor: secondaryColor, usesColor: usesColor,
-                                                roomy: roomy)
+                            HStack(spacing: 3) {
+                                if combined, let weather = day.weather {
+                                    Image(systemName: weather.symbolName)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 12, height: 12)
+                                        .foregroundStyle(secondaryColor)
+                                        .accessibilityLabel(weather.condition)
+                                }
+                                WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
+                                                    high: day.weather?.highTemperatureCelsius,
+                                                    scale: temperatureScale, metric: .temperature,
+                                                    primaryColor: primaryColor, secondaryColor: secondaryColor, usesColor: usesColor,
+                                                    roomy: roomy)
+                            }
                         }
                     }
                 }
