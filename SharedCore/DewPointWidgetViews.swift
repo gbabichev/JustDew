@@ -75,8 +75,11 @@ struct JustDewWidgetEntryView: View {
     }
 
     private var widgetPadding: EdgeInsets {
+        if #available(iOS 27.0, macOS 27.0, *), family == .systemExtraLargePortrait {
+            return contentMargins
+        }
         // Keep accessories edge-to-edge; use WidgetKit's context-specific margins at home.
-        switch family {
+        return switch family {
         case .systemSmall, .systemMedium, .systemLarge, .systemExtraLarge:
             isLockScreenSquare ? EdgeInsets() : contentMargins
         default:
@@ -103,6 +106,18 @@ struct JustDewWidgetEntryView: View {
 
     @ViewBuilder
     private func standardContent(for reading: DewPointReading) -> some View {
+        if #available(iOS 27.0, macOS 27.0, *), family == .systemExtraLargePortrait {
+            DewPointPortraitWidgetContent(reading: reading, primaryColor: primaryTextColor,
+                                          secondaryColor: secondaryTextColor, valueColor: dewPointValueColor(for: reading),
+                                          accentColor: comfortAccentColor(for: reading),
+                                          usesComfortColor: showsComfortColor, metric: metric)
+        } else {
+            existingContent(for: reading)
+        }
+    }
+
+    @ViewBuilder
+    private func existingContent(for reading: DewPointReading) -> some View {
         switch family {
         #if os(iOS)
         case .accessoryInline:
@@ -399,9 +414,11 @@ private struct DewPointSmallWidgetContent: View {
             .font(.caption)
             HStack(spacing: 8) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
+                    .font(.system(tightSpacing ? .title : .largeTitle, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
                 if metric == .temperature {
                     WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
                                           size: 20)
@@ -512,6 +529,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
     let usesComfortColor: Bool
 
     var metric: DayTimelineMetric = .dewPoint
+    var showsTimelineLabels = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -558,9 +576,39 @@ private struct DewPointLargeWidgetCurrentConditions: View {
             }
             .font(.caption)
             .foregroundStyle(secondaryColor)
-            DewPointDayTimelineView(reading: reading, showsLabels: false,
+            DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels,
                                    trackHeight: 5, markerSize: 10,
                                    usesComfortColor: usesComfortColor, monochromeColor: secondaryColor, metric: metric)
+        }
+    }
+}
+
+private struct DewPointPortraitWidgetContent: View {
+    let reading: DewPointReading
+    let primaryColor: Color
+    let secondaryColor: Color
+    let valueColor: Color
+    let accentColor: Color
+    let usesComfortColor: Bool
+    let metric: DayTimelineMetric
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DewPointLargeWidgetCurrentConditions(reading: reading, secondaryColor: secondaryColor,
+                                                 valueColor: valueColor, accentColor: accentColor,
+                                                 usesComfortColor: usesComfortColor, metric: metric,
+                                                 showsTimelineLabels: false)
+            Divider()
+            Text(metric == .dewPoint ? "10-Day Dew Point" : "10-Day Weather")
+                .font(.headline)
+                .foregroundStyle(primaryColor)
+            WidgetForecastRows(reading: reading, primaryColor: primaryColor,
+                               secondaryColor: secondaryColor, usesColor: usesComfortColor,
+                               metric: metric, rowSpacing: 10, includesToday: true, dayLimit: 10, roomy: true)
+            Spacer(minLength: 0)
+            WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
+                .font(.caption2)
+                .foregroundStyle(secondaryColor)
         }
     }
 }

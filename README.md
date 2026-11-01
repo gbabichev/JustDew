@@ -64,6 +64,28 @@ cd JustDew
 open JustDew.xcodeproj
 ```
 
+### Checking widget layouts
+
+Open `JustDewWidget/WidgetLayoutPreviews.swift` in Xcode and enable the Canvas.
+It includes native previews for all three widget types and every supported Home
+Screen family. Choose an iPhone, iPad mini, or larger iPad preview destination
+and switch timeline entries to check long names, negative readings, and dark mode.
+No manual widget installation is needed for these previews.
+
+For a faster side-by-side visual check on a Mac running macOS 27 or later:
+
+```sh
+zsh tools/render-widget-gallery.zsh
+open /tmp/JustDew-widget-gallery/index.html
+```
+
+This renders 99 images from the actual widget views: three widget types across
+11 compact/standard/roomy size proposals and three data/appearance scenarios.
+The blue border marks the widget bounds, with overflow deliberately left visible.
+These are visual stress checks with simulated margins, not exact device snapshots;
+use native WidgetKit previews to confirm device-specific scaling and margins.
+They also cannot verify Home Screen registration or resizing behavior.
+
 ## Locations and Widgets
 
 Open **Locations** and type a city or ZIP code to see Apple Maps autocomplete
@@ -76,6 +98,9 @@ mobile devices, or use its context menu on Mac.
 Choose **Dew Point**, **Weather**, or **Dew Point + Weather**. Each offers small,
 medium, and large sizes on iOS and Mac, plus supported iPhone Lock Screen sizes.
 Large widgets include forecasts for the coming days.
+The wide extra-large size is also available on iPad and Mac.
+On iOS/iPadOS 27 and macOS 27, the extra-large portrait size keeps the simple
+current-reading header and adds up to ten days of forecasts, including today.
 
 Touch and hold a widget and choose **Edit Widget** (or right-click on Mac) to set
 its **Location** to Current Location or a city saved in JustDew, and toggle

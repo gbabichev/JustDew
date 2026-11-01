@@ -33,7 +33,13 @@ struct WeatherLocationProvider<Options: WeatherLocationWidgetOptions>: AppIntent
 }
 
 enum WeatherWidgetFamilies {
-    static let home: [WidgetFamily] = [.systemSmall, .systemMedium, .systemLarge]
+    static var home: [WidgetFamily] {
+        if #available(iOS 27.0, macOS 27.0, *) {
+            [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge, .systemExtraLargePortrait]
+        } else {
+            [.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge]
+        }
+    }
     static var all: [WidgetFamily] {
         #if os(macOS)
         home
