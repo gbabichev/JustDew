@@ -325,27 +325,11 @@ private struct CombinedSmallWidgetContent: View {
                                    usesColor: usesColor)
             CombinedSmallWidgetRow(reading: reading, metric: .temperature,
                                    usesColor: usesColor)
-            if tightSpacing {
-                HStack(spacing: 4) {
-                    DewPointWidgetLocationText(location: reading.location)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    Spacer(minLength: 0)
-                    WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
-                        .fixedSize()
-                }
+            DewPointWidgetLocationText(location: reading.location)
                 .font(.caption2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .foregroundStyle(.secondary)
-            } else {
-                DewPointWidgetLocationText(location: reading.location)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .foregroundStyle(.secondary)
-                WidgetUpdateTime(date: reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
