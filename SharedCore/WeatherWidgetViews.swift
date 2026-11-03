@@ -187,6 +187,7 @@ struct CombinedWeatherWidgetEntryView: View {
         }
         .padding(isAccessory ? EdgeInsets() : contentMargins)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isAccessory ? .center : .topLeading)
+        .modifier(WidgetRefreshPlacement(reading: entry.reading, enabled: !isAccessory, margins: contentMargins))
         .containerBackground(for: .widget) {
             if entry.alwaysDark {
                 Color(red: 0.07, green: 0.08, blue: 0.10)
@@ -238,7 +239,7 @@ private struct CombinedHomeWidgetContent: View {
                         }
                         if isLarge {
                             Spacer(minLength: 0)
-                            WidgetRefreshTime(reading: reading)
+                            WidgetTimestamp(reading: reading)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -280,7 +281,7 @@ private struct CombinedStandardWidgetContent: View {
                 Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 Spacer(minLength: 0)
                 if !showsForecast {
-                    WidgetRefreshTime(reading: reading)
+                    WidgetTimestamp(reading: reading)
                         .lineLimit(1)
                 }
             }
@@ -327,7 +328,7 @@ private struct CombinedPortraitWidgetContent: View {
                                usesColor: usesColor, combined: true, rowSpacing: 10,
                                includesToday: true, dayLimit: 10, roomy: true)
             Spacer(minLength: 0)
-            WidgetRefreshTime(reading: reading)
+            WidgetTimestamp(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -350,7 +351,8 @@ private struct CombinedSmallWidgetContent: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
-                WidgetRefreshButton(locationID: reading.location.id)
+                Color.clear.frame(width: WidgetRefreshPlacement.reservedWidth, height: 1)
+                    .accessibilityHidden(true)
             }
             .font(.caption2)
             .foregroundStyle(.secondary)

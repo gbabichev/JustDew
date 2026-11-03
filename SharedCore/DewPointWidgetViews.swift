@@ -46,6 +46,7 @@ struct JustDewWidgetEntryView: View {
         }
         .padding(widgetPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
+        .modifier(WidgetRefreshPlacement(reading: entry.reading, enabled: showsRefresh, margins: widgetPadding))
         .containerBackground(for: .widget) {
             if entry.alwaysDark {
                 Color(red: 0.07, green: 0.08, blue: 0.10)
@@ -58,6 +59,15 @@ struct JustDewWidgetEntryView: View {
 
     private var family: WidgetFamily {
         familyOverride ?? environmentFamily
+    }
+
+    private var showsRefresh: Bool {
+        #if os(iOS)
+        if family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline {
+            return false
+        }
+        #endif
+        return !isLockScreenSquare
     }
 
     private var contentAlignment: Alignment {
@@ -341,7 +351,7 @@ private struct DewPointMediumWidgetContent: View {
                 }
                 Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 Spacer()
-                WidgetRefreshTime(reading: reading)
+                WidgetTimestamp(reading: reading)
             }
             .font(.caption2)
             .foregroundStyle(secondaryTextColor)
@@ -388,16 +398,34 @@ struct WidgetRefreshButton: View {
     }
 }
 
-struct WidgetRefreshTime: View {
+struct WidgetTimestamp: View {
     let reading: DewPointReading
 
     var body: some View {
-        HStack(spacing: 2) {
-            WidgetRefreshButton(locationID: reading.location.id)
-            Text(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))
-                .lineLimit(1)
-                .invalidatableContent()
-                .accessibilityLabel(Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))"))
+        Text(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))
+            .lineLimit(1)
+            .invalidatableContent()
+            .accessibilityLabel(Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))"))
+            // Leave room if this text shares the bottom row with the refresh control.
+            .padding(.trailing, WidgetRefreshPlacement.reservedWidth)
+    }
+}
+
+/// Anchor to the WidgetKit container, independent of each family's content height.
+struct WidgetRefreshPlacement: ViewModifier {
+    let reading: DewPointReading?
+    let enabled: Bool
+    let margins: EdgeInsets
+    static let reservedWidth: CGFloat = 24
+
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .bottomTrailing) {
+            if enabled, let reading {
+                WidgetRefreshButton(locationID: reading.location.id)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(margins)
+            }
         }
     }
 }
@@ -482,7 +510,7 @@ private struct DewPointSmallWidgetContent: View {
                 .font(.caption2)
                 .foregroundStyle(secondaryTextColor)
                 .lineLimit(1)
-            WidgetRefreshTime(reading: reading)
+            WidgetTimestamp(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(tertiaryTextColor)
                 .lineLimit(1)
@@ -542,7 +570,7 @@ private struct DewPointLargeWidgetContent: View {
             DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
                                        secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric)
             Spacer(minLength: 0)
-            WidgetRefreshTime(reading: reading)
+            WidgetTimestamp(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(secondaryColor)
                 .lineLimit(1)
@@ -635,7 +663,7 @@ private struct DewPointPortraitWidgetContent: View {
                                secondaryColor: secondaryColor, usesColor: usesComfortColor,
                                metric: metric, rowSpacing: 10, includesToday: true, dayLimit: 10, roomy: true)
             Spacer(minLength: 0)
-            WidgetRefreshTime(reading: reading)
+            WidgetTimestamp(reading: reading)
                 .font(.caption2)
                 .foregroundStyle(secondaryColor)
         }

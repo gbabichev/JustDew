@@ -118,7 +118,8 @@ On iOS/iPadOS 27 and macOS 27, the extra-large portrait size keeps the simple
 current-reading header and adds up to ten days of forecasts, including today.
 Use the refresh button on Home Screen or Mac widgets to request fresh weather for
 that widget's location without opening the app. If offline, the last successful
-reading remains visible. The Small combo widget places refresh beside its location.
+reading remains visible. Refresh stays at the bottom right of every Home Screen
+and Mac widget. The Small combo widget continues to omit the timestamp.
 
 Touch and hold a widget and choose **Edit Widget** (or right-click on Mac) to set
 its **Location** to Current Location or a city saved in JustDew, and toggle
