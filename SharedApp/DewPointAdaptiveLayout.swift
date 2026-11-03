@@ -4,12 +4,20 @@ import SwiftUI
 /// Choose from the window's available space, including split-screen and Duo poses.
 struct DewPointAdaptiveAppView: View {
     @ObservedObject var viewModel: DewPointViewModel
+    #if os(iOS)
+    // Keep the user's choice when rotation replaces the compact/split subtree.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    #endif
 
     var body: some View {
         GeometryReader { geometry in
             let navigation = WeatherLayoutPolicy.navigationMode(for: geometry.size.width)
             if navigation != .compact {
+                #if os(iOS)
+                DewPointSplitView(viewModel: viewModel, columnVisibility: $columnVisibility)
+                #else
                 DewPointSplitView(viewModel: viewModel, showsSidebar: navigation == .splitExpanded)
+                #endif
             } else {
                 #if os(macOS)
                 MacDewPointAppView(viewModel: viewModel)
@@ -24,6 +32,9 @@ struct DewPointAdaptiveAppView: View {
 
 private struct DewPointSplitView: View {
     @ObservedObject var viewModel: DewPointViewModel
+    #if os(iOS)
+    @Binding var columnVisibility: NavigationSplitViewVisibility
+    #else
     let showsSidebar: Bool
     @State private var columnVisibility: NavigationSplitViewVisibility
     @State private var hasSearchQuery = false
@@ -33,6 +44,7 @@ private struct DewPointSplitView: View {
         self.showsSidebar = showsSidebar
         _columnVisibility = State(initialValue: showsSidebar ? .all : .detailOnly)
     }
+    #endif
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -80,13 +92,11 @@ private struct DewPointSplitView: View {
         #else
         .navigationSplitViewStyle(.balanced)
         #endif
+        #if os(macOS)
         .onChange(of: showsSidebar) { _, showsSidebar in
-            #if os(macOS)
             columnVisibility = showsSidebar || hasSearchQuery ? .all : .detailOnly
-            #else
-            columnVisibility = showsSidebar ? .all : .detailOnly
-            #endif
         }
+        #endif
     }
 }
 
