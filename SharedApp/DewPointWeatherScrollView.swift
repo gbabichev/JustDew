@@ -185,7 +185,7 @@ private struct AdaptiveWeatherDashboard: View {
         #if os(macOS)
         true
         #else
-        horizontalSizeClass == .regular && (viewport.map { $0.width > $0.height } ?? false)
+        viewport.map { $0.width > $0.height } ?? false
         #endif
     }
 
@@ -521,6 +521,15 @@ private struct FoldedLinkedScroll {
     }
 }
 
+#if DEBUG && os(iOS)
+#Preview("iPhone landscape · side-by-side forecasts", traits: .sizeThatFitsLayout) {
+    DewPointWeatherScrollView(reading: DewPointWidgetLoader.sampleReading,
+                             isLoading: false, errorMessage: nil, refresh: {})
+        .environment(\.horizontalSizeClass, .compact)
+        .environment(\.weatherDashboardViewport, CGSize(width: 740, height: 330))
+        .frame(width: 740, height: 330)
+}
+#endif
 #endif
 
 private struct WeatherDashboardCard<Content: View>: View {
