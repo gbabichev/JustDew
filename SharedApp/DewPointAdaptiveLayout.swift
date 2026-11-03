@@ -7,8 +7,9 @@ struct DewPointAdaptiveAppView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if geometry.size.width >= 760 {
-                DewPointSplitView(viewModel: viewModel, showsSidebar: geometry.size.width >= 1_050)
+            let navigation = WeatherLayoutPolicy.navigationMode(for: geometry.size.width)
+            if navigation != .compact {
+                DewPointSplitView(viewModel: viewModel, showsSidebar: navigation == .splitExpanded)
             } else {
                 #if os(macOS)
                 MacDewPointAppView(viewModel: viewModel)
@@ -42,7 +43,9 @@ private struct DewPointSplitView: View {
                 #endif
             })
                 .navigationTitle("Locations")
-                .navigationSplitViewColumnWidth(min: 230, ideal: 270, max: 320)
+                .navigationSplitViewColumnWidth(min: WeatherLayoutPolicy.sidebarWidth.lowerBound,
+                                                ideal: WeatherLayoutPolicy.idealSidebarWidth,
+                                                max: WeatherLayoutPolicy.sidebarWidth.upperBound)
         } detail: {
             #if os(iOS)
             DewPointIOSPagesView(viewModel: viewModel, usesSidebar: true)

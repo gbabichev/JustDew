@@ -86,6 +86,21 @@ These are visual stress checks with simulated margins, not exact device snapshot
 use native WidgetKit previews to confirm device-specific scaling and margins.
 They also cannot verify Home Screen registration or resizing behavior.
 
+### Dashboard layout policy
+
+Dashboard layout decisions live in `SharedApp/WeatherLayoutPolicy.swift`: navigation
+breakpoints, column limits, presentation styles, and forecast density. Hinge geometry
+and linked scrolling stay in the folded host. WidgetKit and watchOS retain their own
+layouts. Check the policy independently with:
+
+```sh
+xcrun swiftc -module-cache-path /tmp/justdew-layout-module-cache \
+  SharedApp/WeatherLayoutPolicy.swift Tests/WeatherLayoutPolicyTests.swift \
+  -o /tmp/justdew-layout-tests
+/tmp/justdew-layout-tests
+```
+
+
 ## Locations and Widgets
 
 Open **Locations** and type a city or ZIP code to see Apple Maps autocomplete

@@ -1,18 +1,9 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
 
-private enum WeatherDashboardPlatformStyle {
-    #if os(macOS)
-    static let compact = true
-    static let readingSize: CGFloat = 32
-    #else
-    static let compact = false
-    static let readingSize: CGFloat = 36
-    #endif
-}
-
 extension EnvironmentValues {
     @Entry var weatherDashboardViewport: CGSize? = nil
+    @Entry var weatherDashboardLayout = WeatherLayoutPolicy()
 }
 
 struct DewPointWeatherScrollView: View {
@@ -48,27 +39,35 @@ struct DewPointWeatherContent: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.weatherDashboardViewport) private var viewport
 
-    private var heightConstrained: Bool {
-        guard let viewport else { return false }
-        return viewport.width >= 700 && viewport.width > viewport.height
-            && !dynamicTypeSize.isAccessibilitySize
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var layout: WeatherLayoutPolicy {
+        #if os(iOS)
+        let regularWidth = horizontalSizeClass == .regular
+        #else
+        let regularWidth = false
+        #endif
+        return WeatherLayoutPolicy(viewport: viewport, regularWidth: regularWidth,
+                                   accessibility: dynamicTypeSize.isAccessibilitySize)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: WeatherDashboardPlatformStyle.compact ? 12 : (heightConstrained ? 14 : 16)) {
+        VStack(alignment: .leading, spacing: layout.outerGap) {
             if let reading {
                 let forecast = WeatherDashboardForecast(reading: reading)
-                if !dynamicTypeSize.isAccessibilitySize {
+                if !layout.accessibility {
                     AdaptiveWeatherDashboard(reading: reading, forecast: forecast)
                 } else {
-                    VStack(spacing: 16) {
+                    VStack(spacing: layout.accessibilityCardGap) {
                         DewPointNowCard(reading: reading)
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .dewPoint)
                         WeatherNowCard(reading: reading, today: forecast.days.first?.weather)
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
                     }
                 }
-                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage, compact: !dynamicTypeSize.isAccessibilitySize)
+                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
             } else {
                 VStack(spacing: 12) {
                     if isLoading {
@@ -85,10 +84,11 @@ struct DewPointWeatherContent: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: 1_100, alignment: .topLeading)
+        .environment(\.weatherDashboardLayout, layout)
+        .frame(maxWidth: WeatherLayoutPolicy.maximumContentWidth, alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .top)
-        .padding(heightConstrained || WeatherDashboardPlatformStyle.compact ? 12 : 14)
-        .padding(.bottom, heightConstrained ? 4 : (WeatherDashboardPlatformStyle.compact ? 12 : 16))
+        .padding(layout.contentPadding)
+        .padding(.bottom, layout.bottomPadding)
     }
 }
 
@@ -96,7 +96,7 @@ private struct LandscapeCurrentCard: View {
     let reading: DewPointReading
     let today: WeatherForecastDay?
     let metric: WeatherForecastMetric
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherLayoutPolicy.Platform.current.readingSize
 
     var body: some View {
         WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point Now" : "Weather Now",
@@ -168,32 +168,12 @@ private struct LandscapeCurrentCard: View {
 private struct AdaptiveWeatherDashboard: View {
     let reading: DewPointReading
     let forecast: WeatherDashboardForecast
-    @Environment(\.weatherDashboardViewport) private var viewport
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
-
-    private var roomyForecast: Bool {
-        #if os(iOS)
-        horizontalSizeClass == .regular
-        #else
-        false
-        #endif
-    }
-
-    private var sideBySideForecasts: Bool {
-        #if os(macOS)
-        true
-        #else
-        viewport.map { $0.width > $0.height } ?? false
-        #endif
-    }
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
-        VStack(spacing: WeatherDashboardPlatformStyle.compact ? 12 : 10) {
+        VStack(spacing: layout.dashboardGap) {
             DashboardCurrentCards(reading: reading, today: forecast.days.first?.weather)
-            DashboardForecastCards(reading: reading, forecast: forecast, roomy: roomyForecast,
-                                   sideBySide: sideBySideForecasts)
+            DashboardForecastCards(reading: reading, forecast: forecast)
         }
     }
 }
@@ -204,14 +184,14 @@ private struct DashboardCurrentCards: View {
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: WeatherLayoutPolicy.columnGap) {
                 ForEach([WeatherForecastMetric.dewPoint, .temperature], id: \.self) { metric in
                     CurrentConditionsStrip(reading: reading, today: today, metric: metric, fillsHeight: true)
-                        .frame(minWidth: 320, maxWidth: .infinity)
+                        .frame(minWidth: WeatherLayoutPolicy.minimumColumnWidth, maxWidth: .infinity)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
-            VStack(spacing: 10) {
+            VStack(spacing: WeatherLayoutPolicy.stackedCardGap) {
                 ForEach([WeatherForecastMetric.dewPoint, .temperature], id: \.self) { metric in
                     CurrentConditionsStrip(reading: reading, today: today, metric: metric)
                 }
@@ -223,16 +203,15 @@ private struct DashboardCurrentCards: View {
 private struct DashboardForecastCards: View {
     let reading: DewPointReading
     let forecast: WeatherDashboardForecast
-    let roomy: Bool
-    let sideBySide: Bool
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
-        if sideBySide {
+        if layout.forecastArrangement == .adaptiveColumns {
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: WeatherLayoutPolicy.columnGap) {
                     ForEach([WeatherForecastMetric.dewPoint, .temperature], id: \.self) { metric in
-                        WeatherForecastCard(reading: reading, forecast: forecast, metric: metric, compact: true, roomy: roomy)
-                            .frame(minWidth: 320, maxWidth: .infinity)
+                        WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
+                            .frame(minWidth: WeatherLayoutPolicy.minimumColumnWidth, maxWidth: .infinity)
                     }
                 }
                 stackedCards
@@ -243,9 +222,9 @@ private struct DashboardForecastCards: View {
     }
 
     private var stackedCards: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: WeatherLayoutPolicy.stackedCardGap) {
             ForEach([WeatherForecastMetric.dewPoint, .temperature], id: \.self) { metric in
-                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric, compact: true, roomy: roomy)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
             }
         }
     }
@@ -260,7 +239,7 @@ private struct CurrentConditionsStrip: View {
     var body: some View {
         WeatherDashboardCard(title: metric == .dewPoint ? "Dew Point" : "Weather",
                              symbol: metric == .dewPoint ? "drop.degreesign" : "thermometer.medium",
-                             fillsHeight: fillsHeight, compact: true, showsDewPointInfo: metric == .dewPoint,
+                             fillsHeight: fillsHeight, spacing: .compact, showsDewPointInfo: metric == .dewPoint,
                              showsWeatherDetails: metric == .temperature) {
             HStack(alignment: .center, spacing: 16) {
                 if metric == .dewPoint {
@@ -330,11 +309,18 @@ struct DewPointFoldedWeatherDashboard: View {
     // periphery:ignore
     @State private var linkedScroll = FoldedLinkedScroll()
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var layout: WeatherLayoutPolicy {
+        WeatherLayoutPolicy(accessibility: dynamicTypeSize.isAccessibilitySize,
+                            presentation: axis == .horizontal ? .foldedBook : .foldedTabletop)
+    }
+
     var body: some View {
         // The system split arrangement places each pane in the usable region on
         // its side of the fold, including asymmetric toolbar and sidebar insets.
         ArrangementView {
-            FoldedWeatherPane(reading: reading, metric: .dewPoint, showsCardsSideBySide: axis == .vertical,
+            FoldedWeatherPane(reading: reading, metric: .dewPoint,
                               scrollOverflowEdges: axis == .horizontal ? .vertical : .top, linkedScroll: $linkedScroll,
                               isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -343,10 +329,11 @@ struct DewPointFoldedWeatherDashboard: View {
                 }
                 .splitArrangementLayoutRatio(0.5)
         } secondary: {
-            FoldedWeatherPane(reading: reading, metric: .temperature, showsCardsSideBySide: axis == .vertical,
+            FoldedWeatherPane(reading: reading, metric: .temperature,
                               scrollOverflowEdges: axis == .horizontal ? .vertical : .bottom, linkedScroll: $linkedScroll,
                               isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
         }
+        .environment(\.weatherDashboardLayout, layout)
         .arrangementViewStyle(.split.axes(axis == .horizontal ? .horizontal : .vertical))
         .simultaneousGesture(DragGesture(minimumDistance: 30).onEnded { value in
             guard abs(value.translation.width) > 60,
@@ -361,7 +348,6 @@ struct DewPointFoldedWeatherDashboard: View {
 private struct FoldedWeatherPane: View {
     let reading: DewPointReading?
     let metric: WeatherForecastMetric
-    let showsCardsSideBySide: Bool
     let scrollOverflowEdges: Edge.Set
     @Binding var linkedScroll: FoldedLinkedScroll
     let isLoading: Bool
@@ -369,14 +355,15 @@ private struct FoldedWeatherPane: View {
     let refresh: @MainActor @Sendable () async -> Void
 
     @State private var position = ScrollPosition(edge: .top)
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: layout.foldedContentGap) {
                 if let reading {
                     let forecast = WeatherDashboardForecast(reading: reading)
                     FoldedMetricCards(reading: reading, forecast: forecast, metric: metric,
-                                      showsCardsSideBySide: showsCardsSideBySide, linkedScroll: $linkedScroll)
+                                      linkedScroll: $linkedScroll)
                     WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
                 } else if isLoading {
                     ProgressView("Loading weather…")
@@ -385,7 +372,7 @@ private struct FoldedWeatherPane: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
-            .padding(14)
+            .padding(layout.foldedContentPadding)
             .fixedSize(horizontal: false, vertical: true)
             .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
                 linkedScroll.contentHeights[metric] = height
@@ -431,29 +418,28 @@ private struct FoldedMetricCards: View {
     let reading: DewPointReading
     let forecast: WeatherDashboardForecast
     let metric: WeatherForecastMetric
-    let showsCardsSideBySide: Bool
     @Binding var linkedScroll: FoldedLinkedScroll
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
-        if showsCardsSideBySide && !dynamicTypeSize.isAccessibilitySize {
-            HStack(alignment: .top, spacing: 16) {
+        switch layout.foldedArrangement {
+        case .columns:
+            HStack(alignment: .top, spacing: layout.foldedCardGap) {
                 FoldedCurrentMetricCard(reading: reading, today: forecast.days.first?.weather,
-                                        metric: metric, compact: true)
+                                        metric: metric, spacing: .compact)
                     .frame(maxWidth: .infinity)
-                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric, compact: true)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
                     .frame(maxWidth: .infinity)
             }
             .fixedSize(horizontal: false, vertical: true)
-        } else if !dynamicTypeSize.isAccessibilitySize {
-            VStack(spacing: 14) {
+        case .matchedStack:
+            VStack(spacing: layout.foldedCardGap) {
                 FoldedAlignedCurrentCard(reading: reading, today: forecast.days.first?.weather,
                                          metric: metric, heights: $linkedScroll.currentCardHeights)
-                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric,
-                                    compact: true, dense: true)
+                WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
             }
-        } else {
-            VStack(spacing: 16) {
+        case .accessibleStack:
+            VStack(spacing: layout.foldedCardGap) {
                 FoldedCurrentMetricCard(reading: reading, today: forecast.days.first?.weather, metric: metric)
                 WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
             }
@@ -488,13 +474,13 @@ private struct FoldedCurrentMetricCard: View {
     let reading: DewPointReading
     let today: WeatherForecastDay?
     let metric: WeatherForecastMetric
-    var compact = false
+    var spacing: WeatherLayoutPolicy.CardSpacing? = nil
 
     var body: some View {
         if metric == .dewPoint {
-            DewPointNowCard(reading: reading, compact: compact)
+            DewPointNowCard(reading: reading, spacing: spacing)
         } else {
-            WeatherNowCard(reading: reading, today: today, compact: compact)
+            WeatherNowCard(reading: reading, today: today, spacing: spacing)
         }
     }
 }
@@ -536,18 +522,16 @@ private struct WeatherDashboardCard<Content: View>: View {
     let title: LocalizedStringKey
     let symbol: String
     var fillsHeight = false
-    var compact = false
+    var spacing: WeatherLayoutPolicy.CardSpacing? = nil
     var showsDewPointInfo = false
     var showsWeatherDetails = false
     @ViewBuilder var content: Content
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.weatherDashboardLayout) private var layout
 
-    private var compactSpacing: Bool {
-        compact || (WeatherDashboardPlatformStyle.compact && !dynamicTypeSize.isAccessibilitySize)
-    }
+    private var resolvedSpacing: WeatherLayoutPolicy.CardSpacing { spacing ?? layout.defaultCardSpacing }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compactSpacing ? 6 : 10) {
+        VStack(alignment: .leading, spacing: resolvedSpacing.gap) {
             HStack(spacing: 4) {
                 Label {
                     Text(title)
@@ -578,7 +562,7 @@ private struct WeatherDashboardCard<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
-        .padding(compactSpacing ? 12 : 14)
+        .padding(resolvedSpacing.padding)
         .background {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 #if os(iOS)
@@ -594,11 +578,12 @@ private struct WeatherNowCard: View {
     let reading: DewPointReading
     let today: WeatherForecastDay?
     var fillsHeight = false
-    var compact = false
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
+    var spacing: WeatherLayoutPolicy.CardSpacing? = nil
+    @Environment(\.weatherDashboardLayout) private var layout
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherLayoutPolicy.Platform.current.readingSize
 
     var body: some View {
-        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, compact: compact, showsWeatherDetails: true) {
+        WeatherDashboardCard(title: "Weather Now", symbol: "thermometer.medium", fillsHeight: fillsHeight, spacing: spacing, showsWeatherDetails: true) {
             HStack(alignment: .top) {
                 Text(DewPointFormatters.temperature(reading.temperature))
                     .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
@@ -651,11 +636,12 @@ private struct WeatherNowCard: View {
 private struct DewPointNowCard: View {
     let reading: DewPointReading
     var fillsHeight = false
-    var compact = false
-    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherDashboardPlatformStyle.readingSize
+    var spacing: WeatherLayoutPolicy.CardSpacing? = nil
+    @Environment(\.weatherDashboardLayout) private var layout
+    @ScaledMetric(relativeTo: .largeTitle) private var readingSize: CGFloat = WeatherLayoutPolicy.Platform.current.readingSize
 
     var body: some View {
-        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight, compact: compact, showsDewPointInfo: true) {
+        WeatherDashboardCard(title: "Dew Point Now", symbol: "drop.degreesign", fillsHeight: fillsHeight, spacing: spacing, showsDewPointInfo: true) {
             DewPointExplanationButton {
                 Text(DewPointFormatters.temperature(reading.dewPoint))
                     .font(.system(size: readingSize, weight: .semibold, design: .rounded))
@@ -668,11 +654,11 @@ private struct DewPointNowCard: View {
             Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            DewPointComfortSummary(reading: reading, compact: compact || WeatherDashboardPlatformStyle.compact)
+            DewPointComfortSummary(reading: reading, compact: layout.usesCompactComfort(spacing: spacing))
             if fillsHeight { Spacer(minLength: 0) }
             DewPointDayTimelineView(reading: reading, referenceDate: Date())
                 .accessibilityHint("Color shows dew point comfort through the day.")
-            DewPointComfortHours(reading: reading, compact: compact || WeatherDashboardPlatformStyle.compact)
+            DewPointComfortHours(reading: reading, compact: layout.usesCompactComfort(spacing: spacing))
         }
     }
 }
@@ -707,30 +693,19 @@ private struct WeatherForecastCard: View {
     let reading: DewPointReading
     let forecast: WeatherDashboardForecast
     let metric: WeatherForecastMetric
-    var compact = false
-    var roomy = false
-    var dense = false
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    private var compactMac: Bool {
-        WeatherDashboardPlatformStyle.compact && !dynamicTypeSize.isAccessibilitySize
-    }
-
-    private var comfortableRows: Bool {
-        roomy && !dense && !WeatherDashboardPlatformStyle.compact && !dynamicTypeSize.isAccessibilitySize
-    }
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
         let days = metric == .temperature ? forecast.weatherDays : forecast.dewPointDays
-        WeatherDashboardCard(title: metric.title, symbol: metric.symbol, compact: compact && !roomy && !dense) {
+        let metrics = layout.forecastStyle.metrics
+        WeatherDashboardCard(title: metric.title, symbol: metric.symbol, spacing: metrics.cardSpacing) {
             if !days.isEmpty {
-                VStack(spacing: comfortableRows ? 6 : (compactMac ? 4 : (dense ? 3 : (compact && !roomy ? 3 : 6)))) {
+                VStack(spacing: metrics.rowGap) {
                     ForEach(days) { day in
                         WeatherForecastRow(
                             day: day, reading: reading, metric: metric,
                             scale: metric == .temperature ? forecast.temperatureScale : forecast.dewPointScale,
-                            compact: compact || compactMac, roomy: comfortableRows,
-                            minimumHeight: comfortableRows ? 28 : (compactMac ? 22 : (dense ? 20 : (roomy && compact ? 24 : nil)))
+                            style: metrics.rowStyle, minimumHeight: metrics.rowHeight
                         )
                     }
                 }
@@ -739,7 +714,7 @@ private struct WeatherForecastCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                if !compact && !compactMac {
+                if metrics.showsExplanation {
                     Text("Bars compare daily lows and highs across the available forecast.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -757,9 +732,8 @@ private struct WeatherForecastRow: View {
     let reading: DewPointReading
     let metric: WeatherForecastMetric
     let scale: WeatherRangeScale
-    var compact = false
-    var roomy = false
-    var minimumHeight: CGFloat? = nil
+    let style: WeatherLayoutPolicy.ForecastRowStyle
+    let minimumHeight: CGFloat
 
     private var dayLabel: String {
         let label = DewPointFormatters.forecastDayLabel(day.date, relativeTo: Date(),
@@ -767,11 +741,9 @@ private struct WeatherForecastRow: View {
         return metric == .dewPoint && day.hasPartialDewPoint ? label + "*" : label
     }
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if dynamicTypeSize.isAccessibilitySize {
+            if style == .accessible {
                 HStack {
                     Text(dayLabel).font(.body.weight(.medium))
                     Spacer(minLength: 8)
@@ -780,23 +752,23 @@ private struct WeatherForecastRow: View {
                     }
                 }
                 WeatherForecastValues(day: day, metric: metric, scale: scale,
-                                      current: currentValue, usesFixedColumns: false)
+                                      current: currentValue, style: .accessible)
             } else {
                 HStack(spacing: 6) {
                     Text(dayLabel)
-                        .font(roomy ? .subheadline.weight(.medium) : .caption.weight(.medium))
+                        .font(style == .roomy ? .subheadline.weight(.medium) : .caption.weight(.medium))
                         .lineLimit(1)
-                        .frame(width: roomy ? 56 : (compact ? 42 : 52), alignment: .leading)
+                        .frame(width: style.dayWidth, alignment: .leading)
                     if metric == .temperature, let weather = day.weather {
-                        WeatherForecastCondition(weather: weather, compact: compact, roomy: roomy)
-                            .frame(width: compact ? (roomy ? 66 : 54) : 30)
+                        WeatherForecastCondition(weather: weather, style: style)
+                            .frame(width: style.conditionWidth)
                     }
                     WeatherForecastValues(day: day, metric: metric, scale: scale,
-                                          current: currentValue, usesFixedColumns: true, roomy: roomy)
+                                          current: currentValue, style: style)
                 }
             }
         }
-        .frame(minHeight: minimumHeight ?? (compact && !dynamicTypeSize.isAccessibilitySize ? 18 : 26))
+        .frame(minHeight: minimumHeight)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dayLabel)
         .accessibilityValue(accessibilitySummary)
@@ -823,23 +795,22 @@ private struct WeatherForecastRow: View {
 
 private struct WeatherForecastCondition: View {
     let weather: WeatherForecastDay
-    var compact = false
-    var roomy = false
+    var style: WeatherLayoutPolicy.ForecastRowStyle = .accessible
 
     var body: some View {
-        let layout = compact ? AnyLayout(HStackLayout(spacing: 3)) : AnyLayout(VStackLayout(spacing: 2))
+        let layout = style != .accessible ? AnyLayout(HStackLayout(spacing: 3)) : AnyLayout(VStackLayout(spacing: 2))
         layout {
             Image(systemName: weather.symbolName)
-                .font(roomy ? .subheadline : .caption)
+                .font(style == .roomy ? .subheadline : .caption)
                 .symbolRenderingMode(.multicolor)
-                .frame(width: compact ? (roomy ? 24 : 18) : nil)
-            if compact || weather.precipitationChance > 0 {
+                .frame(width: style == .accessible ? nil : style.symbolWidth)
+            if style != .accessible || weather.precipitationChance > 0 {
                 Text(weather.precipitationChance > 0 ? DewPointFormatters.percent(weather.precipitationChance) : "")
-                    .font(roomy ? .caption : .caption2)
+                    .font(style == .roomy ? .caption : .caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                    .frame(width: compact ? (roomy ? 36 : 30) : nil, alignment: .leading)
+                    .frame(width: style == .accessible ? nil : style.precipitationWidth, alignment: .leading)
             }
         }
     }
@@ -850,29 +821,28 @@ private struct WeatherForecastValues: View {
     let metric: WeatherForecastMetric
     let scale: WeatherRangeScale
     let current: Double?
-    let usesFixedColumns: Bool
-    var roomy = false
+    let style: WeatherLayoutPolicy.ForecastRowStyle
 
     var body: some View {
         HStack(spacing: 6) {
             if let low = metric.low(day), let high = metric.high(day), low.isFinite, high.isFinite {
                 Text(degrees(low))
-                    .font(roomy ? .subheadline : .caption)
+                    .font(style == .roomy ? .subheadline : .caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
-                    .frame(width: usesFixedColumns ? (roomy ? 40 : 32) : nil, alignment: .trailing)
+                    .frame(width: style == .accessible ? nil : style.valueWidth, alignment: .trailing)
                     .layoutPriority(1)
                 WeatherRangeBar(low: low, high: high, scale: scale,
                                 colors: [metric.color(low), metric.color(high)], current: current)
                     .frame(minWidth: 24)
                 Text(degrees(high))
-                    .font(roomy ? .subheadline.weight(.medium) : .caption.weight(.medium))
+                    .font(style == .roomy ? .subheadline.weight(.medium) : .caption.weight(.medium))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
-                    .frame(width: usesFixedColumns ? (roomy ? 40 : 32) : nil, alignment: .trailing)
+                    .frame(width: style == .accessible ? nil : style.valueWidth, alignment: .trailing)
                     .layoutPriority(1)
             } else {
                 Text("—")
@@ -925,12 +895,12 @@ private struct WeatherDashboardFooter: View {
     let reading: DewPointReading
     let isLoading: Bool
     let errorMessage: String?
-    var compact = false
+    @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
-        let layout = compact ? AnyLayout(HStackLayout(spacing: 12))
+        let footerLayout = layout.footerInline ? AnyLayout(HStackLayout(spacing: 12))
             : AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-        layout {
+        footerLayout {
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle")
                     .font(.caption)
