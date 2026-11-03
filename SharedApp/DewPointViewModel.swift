@@ -326,7 +326,7 @@ final class DewPointViewModel: ObservableObject {
 
     private func shouldRefreshForecast(_ reading: DewPointReading?) -> Bool {
         guard let reading else { return true }
-        guard reading.dailyWeather != nil else { return true }
+        guard let dailyWeather = reading.dailyWeather else { return true }
         // Refresh caches written before hourly weather details were stored.
         guard reading.dailyForecastPoints.contains(where: { $0.weather != nil }) else { return true }
         let calendar = reading.forecastCalendar
@@ -335,7 +335,9 @@ final class DewPointViewModel: ObservableObject {
             return reading.dailyForecastPoints.isEmpty
         }
 
+        // Both the hourly dew point data and the daily summaries must reach the last forecast day.
         return !reading.dailyForecastPoints.contains { $0.date >= lastDayStart }
+            || !dailyWeather.contains { $0.date >= lastDayStart }
     }
 
     private func currentLocationNames(_ names: (name: String, shortName: String?, timeZoneIdentifier: String?)) -> (name: String, shortName: String?) {
