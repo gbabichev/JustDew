@@ -124,34 +124,75 @@ private struct HourlyWeatherDetailRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
-        layout {
-            HourlyWeatherTimeLabel(hour: hour, calendar: calendar, referenceDate: referenceDate)
-                .fixedSize(horizontal: true, vertical: false)
-            HStack(spacing: 6) {
-                if let weather = hour.point.weather {
-                    Image(systemName: weather.symbolName)
-                        .accessibilityLabel(weather.condition)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        timeLabel
+                        Spacer(minLength: 12)
+                        temperature
+                    }
+                    if let weather = hour.point.weather {
+                        HourlyWeatherMetrics(weather: weather, part: .all)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        unavailable
+                    }
                 }
-                Text(DewPointFormatters.temperature(hour.point.temperature))
-                    .foregroundStyle(WeatherTemperatureColors.color(forCelsius: hour.point.temperatureCelsius))
-                    .monospacedDigit()
-            }
-            .font(dynamicTypeSize.isAccessibilitySize ? .headline : .subheadline.weight(.semibold))
-            .fixedSize(horizontal: true, vertical: false)
-            if let weather = hour.point.weather {
-                HourlyWeatherMetrics(weather: weather)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text("Details unavailable for this hour")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let weather = hour.point.weather {
+                    // Hour | Weather | UV | Rain | Wind, same widths in every row.
+                    HourlyMetricColumns {
+                        timeLabel
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        temperature
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HourlyWeatherMetrics(weather: weather, part: .uv)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HourlyWeatherMetrics(weather: weather, part: .rain)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        HourlyWeatherMetrics(weather: weather, part: .wind)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            timeLabel
+                            Spacer(minLength: 12)
+                            temperature
+                        }
+                        unavailable
+                    }
+                }
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var timeLabel: some View {
+        HourlyWeatherTimeLabel(hour: hour, calendar: calendar, referenceDate: referenceDate)
+    }
+
+    private var temperature: some View {
+        HStack(spacing: 8) {
+            if let weather = hour.point.weather {
+                Image(systemName: weather.symbolName)
+                    .symbolRenderingMode(.multicolor)
+                    .accessibilityLabel(weather.condition)
+            }
+            Text(DewPointFormatters.temperature(hour.point.temperature))
+                .foregroundStyle(WeatherTemperatureColors.color(forCelsius: hour.point.temperatureCelsius))
+                .monospacedDigit()
+        }
+        .font(.title3.weight(.semibold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+
+    private var unavailable: some View {
+        Text("Details unavailable for this hour")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 }
 
@@ -162,14 +203,16 @@ private struct HourlyWeatherTimeLabel: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let isNow = hour.start <= referenceDate && referenceDate < hour.end
         Group {
-            if hour.start <= referenceDate && referenceDate < hour.end {
+            if isNow {
                 Text("Now")
             } else {
                 Text(DewPointFormatters.hourlyDetailsTime(hour.start, referenceDate: referenceDate, timeZone: calendar.timeZone))
             }
         }
-        .font(dynamicTypeSize.isAccessibilitySize ? .headline : .subheadline.weight(.semibold))
+        .font(dynamicTypeSize.isAccessibilitySize ? .headline : .body.weight(isNow ? .semibold : .regular))
+        .foregroundStyle(isNow ? Color.accentColor : Color.primary)
     }
 }
 
@@ -178,23 +221,41 @@ private struct HourlyWeatherMetrics: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
 
+    enum Part { case all, rain, uv, wind }
+    var part: Part = .all
+
+    @ViewBuilder
     var body: some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
-        layout {
-            HourlyWeatherMetric(title: "Precipitation", symbol: "cloud.rain",
-                compact: !dynamicTypeSize.isAccessibilitySize,
-                value: weather.precipitationChance.isFinite && (0...1).contains(weather.precipitationChance)
-                    ? DewPointFormatters.percent(weather.precipitationChance) : "—")
-            HourlyWeatherMetric(title: "Wind", symbol: "wind",
-                                compact: !dynamicTypeSize.isAccessibilitySize, value: windValue,
-                                detail: gustDetail, spokenValue: windAccessibilityValue)
-            HourlyWeatherMetric(title: "UV Index", symbol: "sun.max",
-                                compact: !dynamicTypeSize.isAccessibilitySize, value: uvValue,
-                                detail: uvDetail,
-                                tint: HourlyUVStyle.color(for: weather.uvIndex, colorScheme: colorScheme))
+        switch part {
+        case .rain:
+            HourlyWeatherMetric(title: "Precipitation", symbol: "drop.fill", compact: true,
+                                value: rainValue, iconTint: .blue)
+        case .uv:
+            HourlyWeatherMetric(title: "UV Index", symbol: "", compact: true,
+                                value: uvValue, detail: uvDetail,
+                                tint: HourlyUVStyle.color(for: weather.uvIndex, colorScheme: colorScheme),
+                                showsDetail: false)
+        case .wind:
+            HourlyWeatherMetric(title: "Wind", symbol: "wind", compact: true,
+                                value: DewPointFormatters.windSpeed(weather.windSpeedMetersPerSecond),
+                                detail: gustDetail, spokenValue: windAccessibilityValue,
+                                showsDetail: false)
+        case .all:
+            VStack(alignment: .leading, spacing: 12) {
+                HourlyWeatherMetric(title: "Precipitation", symbol: "cloud.rain", compact: false,
+                                    value: rainValue)
+                HourlyWeatherMetric(title: "Wind", symbol: "wind", compact: false,
+                                    value: windValue, detail: gustDetail, spokenValue: windAccessibilityValue)
+                HourlyWeatherMetric(title: "UV Index", symbol: "sun.max", compact: false,
+                                    value: uvValue, detail: uvDetail,
+                                    tint: HourlyUVStyle.color(for: weather.uvIndex, colorScheme: colorScheme))
+            }
         }
+    }
+
+    private var rainValue: String {
+        weather.precipitationChance.isFinite && (0...1).contains(weather.precipitationChance)
+            ? DewPointFormatters.percent(weather.precipitationChance) : "—"
     }
 
     private var gustDetail: String? {
@@ -231,6 +292,30 @@ private struct HourlyWeatherMetrics: View {
     }
 }
 
+/// Splits the width into fixed proportions and centers each child vertically,
+/// so every row's columns line up regardless of content.
+private struct HourlyMetricColumns: Layout {
+    private let weights: [CGFloat] = [0.16, 0.32, 0.15, 0.17, 0.20]
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 300
+        let height = zip(subviews, weights).map { subview, weight in
+            subview.sizeThatFits(ProposedViewSize(width: width * weight, height: nil)).height
+        }.max() ?? 0
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        for (subview, weight) in zip(subviews, weights) {
+            let width = bounds.width * weight
+            subview.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading,
+                          proposal: ProposedViewSize(width: width, height: nil))
+            x += width
+        }
+    }
+}
+
 private struct HourlyWeatherMetric: View {
     let title: LocalizedStringKey
     let symbol: String
@@ -239,29 +324,26 @@ private struct HourlyWeatherMetric: View {
     var detail: String? = nil
     var spokenValue: String? = nil
     var tint: Color? = nil
+    var iconTint: Color? = nil
+    var showsDetail = true
+    var alignment: Alignment = .leading
 
     var body: some View {
         Group {
             if compact {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: symbol)
-                        .foregroundStyle(tint ?? .secondary)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(value)
-                            .foregroundStyle(tint ?? .primary)
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                        if let detail {
-                            Text(detail)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: true, vertical: false)
-                        }
+                HStack(spacing: 5) {
+                    if !symbol.isEmpty {
+                        Image(systemName: symbol)
+                            .foregroundStyle(tint ?? iconTint ?? .secondary)
+                            .imageScale(.small)
                     }
+                    Text(value)
+                        .foregroundStyle(tint ?? .secondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                 }
-                .font(.caption)
+                .font(.subheadline)
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
@@ -279,7 +361,7 @@ private struct HourlyWeatherMetric: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: compact ? nil : .infinity, alignment: alignment)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(title))
         .accessibilityValue(accessibilityValue)
@@ -291,5 +373,43 @@ private struct HourlyWeatherMetric: View {
         return Text(value)
     }
 }
+
+#if DEBUG
+#Preview("Hourly · narrow two-row layout", traits: .sizeThatFitsLayout) {
+    HourlyWeatherDetailRow(hour: HourlyWeatherRowPreview.hour, calendar: .current,
+                          referenceDate: HourlyWeatherRowPreview.hour.start)
+        .padding(16)
+        .frame(width: 288)
+}
+
+#Preview("Hourly · larger text", traits: .sizeThatFitsLayout) {
+    HourlyWeatherDetailRow(hour: HourlyWeatherRowPreview.hour, calendar: .current,
+                          referenceDate: HourlyWeatherRowPreview.hour.start)
+        .padding(16)
+        .frame(width: 320)
+        .environment(\.dynamicTypeSize, .xxxLarge)
+}
+
+#Preview("Hourly · accessibility", traits: .sizeThatFitsLayout) {
+    HourlyWeatherDetailRow(hour: HourlyWeatherRowPreview.hour, calendar: .current,
+                          referenceDate: HourlyWeatherRowPreview.hour.start)
+        .padding(16)
+        .frame(width: 320)
+        .environment(\.dynamicTypeSize, .accessibility2)
+}
+
+private enum HourlyWeatherRowPreview {
+    static var hour: HourlyWeatherForecast.Hour {
+        let date = Date()
+        let weather = DewPointHourlyWeather(precipitationChance: 0.65,
+            windSpeedMetersPerSecond: 12, windGustMetersPerSecond: 18,
+            windDirection: "SSE", uvIndex: 11, uvCategory: "extreme",
+            condition: "Rain", symbolName: "cloud.rain")
+        let point = DewPointForecastPoint(date: date, dewPointCelsius: 18,
+            temperatureCelsius: 28, humidity: 0.65, weather: weather)
+        return HourlyWeatherForecast.Hour(start: date, end: date.addingTimeInterval(3_600), point: point)
+    }
+}
+#endif
 #endif
 #endif
