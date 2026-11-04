@@ -523,9 +523,6 @@ private struct DewPointLockScreenSquareContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 0)
-            DewPointDayTimelineView(reading: reading, showsLabels: false,
-                                   trackHeight: 5, markerSize: 10,
-                                   usesComfortColor: false, monochromeColor: .secondary, metric: metric)
         }
     }
 }
@@ -694,7 +691,13 @@ private struct DewPointAccessoryRectangularView: View {
             .lineLimit(1)
             .minimumScaleFactor(0.8)
 
+            #if os(watchOS)
             DewPointAccessoryTimeline(reading: reading, usesComfortColor: usesComfortColor, metric: metric)
+            #else
+            WidgetDayRangeText(reading: reading, metric: metric)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            #endif
 
             #if os(watchOS)
             HStack(spacing: 6) {
