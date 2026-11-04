@@ -30,7 +30,6 @@ struct WeatherLayoutPolicy: Equatable, Sendable {
 
     enum ForecastRowStyle: Sendable {
         case compact, roomy, accessible
-        var dayWidth: CGFloat { self == .roomy ? 56 : 42 }
         var conditionWidth: CGFloat { self == .roomy ? 66 : 54 }
         var symbolWidth: CGFloat { self == .roomy ? 24 : 18 }
         var precipitationWidth: CGFloat { self == .roomy ? 36 : 30 }

@@ -701,13 +701,13 @@ private struct WeatherForecastCard: View {
         let metrics = layout.forecastStyle.metrics
         WeatherDashboardCard(title: metric.title, symbol: metric.symbol, spacing: metrics.cardSpacing) {
             if !days.isEmpty {
-                VStack(spacing: metrics.rowGap) {
-                    ForEach(days) { day in
-                        WeatherForecastRow(
-                            day: day, reading: reading, metric: metric,
-                            scale: metric == .temperature ? forecast.temperatureScale : forecast.dewPointScale,
-                            style: metrics.rowStyle, minimumHeight: metrics.rowHeight
-                        )
+                if metrics.rowStyle == .accessible {
+                    VStack(spacing: metrics.rowGap) {
+                        forecastRows(days, metrics: metrics)
+                    }
+                } else {
+                    Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: metrics.rowGap) {
+                        forecastRows(days, metrics: metrics)
                     }
                 }
                 if metric == .dewPoint && days.contains(where: \.hasPartialDewPoint) {
@@ -724,6 +724,16 @@ private struct WeatherForecastCard: View {
                 ContentUnavailableView("Forecast Unavailable", systemImage: metric.symbol,
                                        description: Text("Refresh to load the latest forecast."))
             }
+        }
+    }
+
+    private func forecastRows(_ days: [WeatherDashboardDay], metrics: WeatherLayoutPolicy.ForecastMetrics) -> some View {
+        ForEach(days) { day in
+            WeatherForecastRow(
+                day: day, reading: reading, metric: metric,
+                scale: metric == .temperature ? forecast.temperatureScale : forecast.dewPointScale,
+                style: metrics.rowStyle, minimumHeight: metrics.rowHeight
+            )
         }
     }
 }
@@ -743,33 +753,38 @@ private struct WeatherForecastRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        Group {
             if style == .accessible {
-                HStack {
-                    Text(dayLabel).font(.body.weight(.medium))
-                    Spacer(minLength: 8)
-                    if metric == .temperature, let weather = day.weather {
-                        WeatherForecastCondition(weather: weather)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(dayLabel).font(.body.weight(.medium))
+                        Spacer(minLength: 8)
+                        if metric == .temperature, let weather = day.weather {
+                            WeatherForecastCondition(weather: weather)
+                        }
                     }
+                    WeatherForecastValues(day: day, metric: metric, scale: scale,
+                                          current: currentValue, style: .accessible)
                 }
-                WeatherForecastValues(day: day, metric: metric, scale: scale,
-                                      current: currentValue, style: .accessible)
+                .frame(minHeight: minimumHeight)
             } else {
-                HStack(spacing: 6) {
+                GridRow(alignment: .center) {
                     Text(dayLabel)
                         .font(style == .roomy ? .subheadline.weight(.medium) : .caption.weight(.medium))
                         .lineLimit(1)
-                        .frame(width: style.dayWidth, alignment: .leading)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .gridColumnAlignment(.leading)
+                        .frame(minHeight: minimumHeight, alignment: .leading)
                     if metric == .temperature, let weather = day.weather {
                         WeatherForecastCondition(weather: weather, style: style)
                             .frame(width: style.conditionWidth)
                     }
                     WeatherForecastValues(day: day, metric: metric, scale: scale,
                                           current: currentValue, style: style)
+                        .frame(minHeight: minimumHeight)
                 }
             }
         }
-        .frame(minHeight: minimumHeight)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dayLabel)
         .accessibilityValue(accessibilitySummary)
