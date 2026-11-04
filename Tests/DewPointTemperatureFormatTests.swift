@@ -10,20 +10,20 @@ struct DewPointTemperatureFormatTests {
         let mild = Measurement(value: 20, unit: UnitTemperature.celsius)
 
         // Explicit temperature preferences must win over the region's default.
-        expect(DewPointFormatters.temperature(mild, locale: celsius), "20°C")
-        expect(DewPointFormatters.temperature(mild, locale: fahrenheit), "68°F")
+        expect(DewPointFormatters.temperature(mild, locale: celsius), "20°")
+        expect(DewPointFormatters.temperature(mild, locale: fahrenheit), "68°")
         precondition(DewPointFormatters.temperatureValue(mild, locale: celsius) == "20")
         precondition(DewPointFormatters.temperatureValue(mild, locale: fahrenheit) == "68")
-        expect(DewPointFormatters.temperatureRange(low: freezing, high: mild, locale: celsius), "0-20°C")
-        expect(DewPointFormatters.temperatureRange(low: freezing, high: mild, locale: fahrenheit), "32-68°F")
-        expect(DewPointFormatters.temperatureRange(low: mild, high: mild, locale: celsius), "20°C")
+        expect(DewPointFormatters.temperatureRange(low: freezing, high: mild, locale: celsius), "0-20°")
+        expect(DewPointFormatters.temperatureRange(low: freezing, high: mild, locale: fahrenheit), "32-68°")
+        expect(DewPointFormatters.temperatureRange(low: mild, high: mild, locale: celsius), "20°")
 
         // Defaults, conversions from another source unit, rounding, and negative values.
-        expect(DewPointFormatters.temperature(mild, locale: Locale(identifier: "en_US")), "68°F")
-        expect(DewPointFormatters.temperature(mild, locale: Locale(identifier: "en_GB")), "20°C")
-        expect(DewPointFormatters.temperature(Measurement(value: 68, unit: .fahrenheit), locale: celsius), "20°C")
-        expect(DewPointFormatters.temperature(Measurement(value: -5, unit: .celsius), locale: fahrenheit), "23°F")
-        expect(DewPointFormatters.temperature(Measurement(value: 14.6, unit: .celsius), locale: celsius), "15°C")
+        expect(DewPointFormatters.temperature(mild, locale: Locale(identifier: "en_US")), "68°")
+        expect(DewPointFormatters.temperature(mild, locale: Locale(identifier: "en_GB")), "20°")
+        expect(DewPointFormatters.temperature(Measurement(value: 68, unit: .fahrenheit), locale: celsius), "20°")
+        expect(DewPointFormatters.temperature(Measurement(value: -5, unit: .celsius), locale: fahrenheit), "23°")
+        expect(DewPointFormatters.temperature(Measurement(value: 14.6, unit: .celsius), locale: celsius), "15°")
         print("Temperature formatting tests passed")
     }
 

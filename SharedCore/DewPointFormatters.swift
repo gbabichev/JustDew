@@ -2,12 +2,8 @@ import Foundation
 
 enum DewPointFormatters {
     static func temperature(_ measurement: Measurement<UnitTemperature>, locale: Locale = .autoupdatingCurrent) -> String {
-        let formatter = MeasurementFormatter()
-        formatter.locale = locale
-        formatter.numberFormatter.maximumFractionDigits = 0
-        formatter.numberFormatter.minimumFractionDigits = 0
-        formatter.unitOptions = .providedUnit
-        return formatter.string(from: measurement.converted(to: UnitTemperature(forLocale: locale, usage: .weather)))
+        // Keep system-unit conversion centralized while omitting the unit letter in readings.
+        "\(temperatureValue(measurement, locale: locale))°"
     }
 
     static func temperatureValue(_ measurement: Measurement<UnitTemperature>, locale: Locale = .autoupdatingCurrent) -> String {

@@ -513,10 +513,8 @@ private struct CombinedAccessoryMetric: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 3) {
-                if metric == .temperature {
-                    Image(systemName: reading.symbolName)
-                        .accessibilityLabel(reading.condition)
-                }
+                Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text("Dew Point"))
                 Text(metric.widgetTitle)
             }
             .font(.system(size: compact ? 8 : 9))
