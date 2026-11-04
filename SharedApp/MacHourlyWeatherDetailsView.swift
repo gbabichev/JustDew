@@ -113,6 +113,7 @@ private struct MacHourlyConditionsCell: View {
             HStack(spacing: 6) {
                 if let weather = point.weather {
                     Image(systemName: weather.symbolName)
+                        .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName))
                         .frame(width: 18)
                         .accessibilityHidden(true)
                 }

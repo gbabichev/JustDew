@@ -51,6 +51,7 @@ struct WidgetForecastRows: View {
                             Image(systemName: weather.symbolName)
                                 .resizable()
                                 .scaledToFit()
+                                .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
                                 .foregroundStyle(secondaryColor)
                                 .frame(width: 16, height: 12)
                                 .accessibilityLabel(weather.condition)
@@ -67,6 +68,7 @@ struct WidgetForecastRows: View {
                                     Image(systemName: weather.symbolName)
                                         .resizable()
                                         .scaledToFit()
+                                        .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
                                         .frame(width: 12, height: 12)
                                         .foregroundStyle(secondaryColor)
                                         .accessibilityLabel(weather.condition)
@@ -368,6 +370,7 @@ private struct CombinedSmallWidgetRow: View {
                 Text(metric.widgetTitle)
             } icon: {
                 Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                    .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName, usesColor: metric == .temperature && usesColor))
                     .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
                     .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text(metric.widgetTitle))
             }

@@ -298,6 +298,7 @@ private struct DewPointMediumWidgetContent: View {
                 Spacer()
                 if metric == .dewPoint {
                     Image(systemName: reading.symbolName)
+                        .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         .foregroundStyle(secondaryTextColor)
                         .accessibilityLabel(reading.condition)
                 }
@@ -357,8 +358,8 @@ struct WidgetConditionSymbol: View {
 
     var body: some View {
         Image(systemName: symbolName)
+            .modifier(WeatherConditionSymbolStyle(symbolName: symbolName))
             .font(.system(size: size))
-            .foregroundStyle(.secondary)
             .accessibilityLabel(condition)
     }
 }
@@ -579,6 +580,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 Spacer(minLength: 8)
                 if metric == .dewPoint {
                     Image(systemName: reading.symbolName)
+                        .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         .foregroundStyle(secondaryColor)
                         .accessibilityLabel(reading.condition)
                 }

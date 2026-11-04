@@ -379,7 +379,7 @@ private struct SidebarLocationRow: View {
                     HStack(spacing: 6) {
                         Image(systemName: reading.symbolName)
                             .font(.caption)
-                            .symbolRenderingMode(.multicolor)
+                            .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                             .accessibilityHidden(true)
                         Text(DewPointFormatters.temperature(reading.temperature))
                             .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))
@@ -467,7 +467,7 @@ private struct SidebarWeatherValue: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: reading.symbolName)
-                .symbolRenderingMode(.multicolor)
+                .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                 .accessibilityHidden(true)
             Text(DewPointFormatters.temperature(reading.temperature))
                 .foregroundStyle(WeatherTemperatureColors.color(forCelsius: reading.temperatureCelsius))

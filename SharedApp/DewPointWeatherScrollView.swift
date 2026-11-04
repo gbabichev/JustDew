@@ -129,6 +129,7 @@ private struct LandscapeCurrentCard: View {
                 } else {
                     VStack(alignment: .trailing, spacing: 2) {
                         Label(reading.condition, systemImage: reading.symbolName)
+                            .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         if let apparent = reading.apparentTemperatureCelsius {
                             Text("Feels like \(temperature(apparent))")
                                 .foregroundStyle(.secondary)
@@ -257,6 +258,7 @@ private struct CurrentConditionsStrip: View {
                     } else {
                         HStack(spacing: 8) {
                             Label(reading.condition, systemImage: reading.symbolName)
+                                .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                             if let apparent = reading.apparentTemperatureCelsius {
                                 Text("Feels like \(temperature(apparent))")
                                     .foregroundStyle(.secondary)
@@ -591,7 +593,7 @@ private struct WeatherNowCard: View {
                 Spacer(minLength: 8)
                 Image(systemName: reading.symbolName)
                     .font(.title2)
-                    .symbolRenderingMode(.multicolor)
+                    .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                     .accessibilityHidden(true)
             }
             Text(reading.condition)
@@ -797,7 +799,7 @@ private struct WeatherForecastCondition: View {
         layout {
             Image(systemName: weather.symbolName)
                 .font(style == .roomy ? .subheadline : .caption)
-                .symbolRenderingMode(.multicolor)
+                .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName))
                 .frame(width: style == .accessible ? nil : style.symbolWidth)
             if style != .accessible || weather.precipitationChance > 0 {
                 Text(weather.precipitationChance > 0 ? DewPointFormatters.percent(weather.precipitationChance) : "")

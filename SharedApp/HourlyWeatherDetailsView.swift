@@ -200,7 +200,7 @@ private struct HourlyWeatherDetailRow: View {
         HStack(spacing: 8) {
             if let weather = hour.point.weather {
                 Image(systemName: weather.symbolName)
-                    .symbolRenderingMode(.multicolor)
+                    .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName))
                     .accessibilityLabel(weather.condition)
             }
             Text(DewPointFormatters.temperature(hour.point.temperature))
