@@ -32,6 +32,9 @@ struct DewPointIOSWelcomeView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     DewPointWelcomeHeader()
+                    if let message = viewModel.errorMessage {
+                        WeatherUpdateNotice(message: message, showsCachedForecast: false, isSetup: true)
+                    }
                     DewPointWelcomeActions(
                         isLoading: viewModel.isLoading,
                         useCurrentLocation: viewModel.useCurrentLocation,
@@ -39,12 +42,6 @@ struct DewPointIOSWelcomeView: View {
                     )
                     if viewModel.isLoading {
                         ProgressView("Loading weather…")
-                    }
-                    if let message = viewModel.errorMessage {
-                        Label(message, systemImage: "exclamationmark.triangle")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
                     }
                 }
                 .frame(maxWidth: 420)

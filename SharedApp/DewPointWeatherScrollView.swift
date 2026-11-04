@@ -1,5 +1,8 @@
 #if os(iOS) || os(macOS)
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 extension EnvironmentValues {
     @Entry var weatherDashboardViewport: CGSize? = nil
@@ -55,6 +58,9 @@ struct DewPointWeatherContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: layout.outerGap) {
+            if let errorMessage {
+                WeatherUpdateNotice(message: errorMessage, showsCachedForecast: reading != nil)
+            }
             if let reading {
                 let forecast = WeatherDashboardForecast(reading: reading)
                 if !layout.accessibility {
@@ -67,18 +73,13 @@ struct DewPointWeatherContent: View {
                         WeatherForecastCard(reading: reading, forecast: forecast, metric: .temperature)
                     }
                 }
-                WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
+                WeatherDashboardFooter(reading: reading, isLoading: isLoading)
             } else {
                 VStack(spacing: 12) {
                     if isLoading {
                         ProgressView("Loading weather…")
                     } else {
                         ContentUnavailableView("No Weather", systemImage: "cloud.sun")
-                    }
-                    if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.triangle")
-                            .font(.subheadline)
-                            .foregroundStyle(.orange)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -358,11 +359,14 @@ private struct FoldedWeatherPane: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: layout.foldedContentGap) {
+                if let errorMessage {
+                    WeatherUpdateNotice(message: errorMessage, showsCachedForecast: reading != nil)
+                }
                 if let reading {
                     let forecast = WeatherDashboardForecast(reading: reading)
                     FoldedMetricCards(reading: reading, forecast: forecast, metric: metric,
                                       linkedScroll: $linkedScroll)
-                    WeatherDashboardFooter(reading: reading, isLoading: isLoading, errorMessage: errorMessage)
+                    WeatherDashboardFooter(reading: reading, isLoading: isLoading)
                 } else if isLoading {
                     ProgressView("Loading weather…")
                 } else {
@@ -891,18 +895,12 @@ private struct WeatherRangeBar: View {
 private struct WeatherDashboardFooter: View {
     let reading: DewPointReading
     let isLoading: Bool
-    let errorMessage: String?
     @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
         let footerLayout = layout.footerInline ? AnyLayout(HStackLayout(spacing: 12))
             : AnyLayout(VStackLayout(alignment: .center, spacing: 8))
         footerLayout {
-            if let errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
             HStack(spacing: 8) {
                 if isLoading { ProgressView().controlSize(.small) }
                 Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone, includesDate: !reading.forecastCalendar.isDate(reading.fetchedAt, inSameDayAs: Date())))")
@@ -918,4 +916,74 @@ private struct WeatherDashboardFooter: View {
         .multilineTextAlignment(.center)
     }
 }
+
+struct WeatherUpdateNotice: View {
+    let message: String
+    let showsCachedForecast: Bool
+    var isSetup = false
+    @Environment(\.openURL) private var openURL
+
+    private var permissionDenied: Bool {
+        message == DewPointError.permissionDenied.localizedDescription
+    }
+
+    private var locationUnavailable: Bool {
+        message == DewPointError.locationUnavailable.localizedDescription
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: permissionDenied || locationUnavailable ? "location.slash" : "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .font(.subheadline)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                if showsCachedForecast {
+                    Text("Showing your last saved forecast.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if permissionDenied {
+                    #if os(iOS)
+                    Text(isSetup
+                         ? "Allow location access in Settings, or use Search for a City below."
+                         : "Allow location access in Settings, or search for a city in Locations.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            openURL(url)
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    #else
+                    Text("Allow JustDew to use your location in System Settings → Privacy & Security → Location Services, or search for a city in Locations.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    #endif
+                } else if locationUnavailable {
+                    Text(isSetup
+                         ? "Try Use Current Location again, or use Search for a City below."
+                         : "Try refreshing again, or search for a city in Locations.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .multilineTextAlignment(.leading)
+    }
+
+    private var title: String {
+        if permissionDenied { return String(localized: "Location access is off") }
+        if locationUnavailable { return String(localized: "Unable to update your location") }
+        return message
+    }
+}
+
 #endif

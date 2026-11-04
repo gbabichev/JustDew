@@ -271,7 +271,9 @@ final class DewPointViewModel: ObservableObject {
     }
 
     private func fetchReading(for location: DewPointLocation) async {
-        await runLoadingOperation {
+        // Keep the existing notice in place while pull-to-refresh is active.
+        // applyReading clears it when fresh data is successfully applied.
+        await runLoadingOperation(clearsErrorOnStart: false) {
             try await fetchReadingValue(for: location, resolveCurrentLocation: true)
             reloadWidgets()
         }
@@ -303,10 +305,10 @@ final class DewPointViewModel: ObservableObject {
         }
     }
 
-    private func runLoadingOperation(_ operation: () async throws -> Void) async {
+    private func runLoadingOperation(clearsErrorOnStart: Bool = true, _ operation: () async throws -> Void) async {
         guard !isLoading else { return }
         isLoading = true
-        errorMessage = nil
+        if clearsErrorOnStart { errorMessage = nil }
         defer {
             isLoading = false
             authorizationStatus = locationProvider.authorizationStatus

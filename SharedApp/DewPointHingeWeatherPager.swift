@@ -15,7 +15,6 @@ struct DewPointHingeAwarePager: View {
             }
         }
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
-        .allowsHitTesting(!viewModel.isLoading)
     }
 }
 
