@@ -484,8 +484,8 @@ private struct CombinedAccessoryRectangularContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top, spacing: 10) {
-                CombinedAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact)
-                CombinedAccessoryMetric(reading: reading, metric: .temperature, compact: compact)
+                LockScreenAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact)
+                LockScreenAccessoryMetric(reading: reading, metric: .temperature, compact: compact)
             }
         }
     }
@@ -515,7 +515,7 @@ private struct CombinedAccessoryValue: View {
     }
 }
 
-private struct CombinedAccessoryMetric: View {
+struct LockScreenAccessoryMetric: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
     let compact: Bool

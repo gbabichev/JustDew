@@ -56,6 +56,15 @@ enum WeatherWidgetFamilies {
         home + [.accessoryCircular, .accessoryRectangular, .accessoryInline]
         #endif
     }
+
+    // The rectangular Lock Screen size is reserved for the combined readings.
+    static var singleMetric: [WidgetFamily] {
+        #if os(macOS)
+        home
+        #else
+        all.filter { $0 != .accessoryRectangular }
+        #endif
+    }
 }
 
 struct SavedLocationWeatherWidget: Widget {
@@ -66,7 +75,7 @@ struct SavedLocationWeatherWidget: Widget {
         }
         .configurationDisplayName("Weather")
         .description("Weather for your current location.")
-        .supportedFamilies(WeatherWidgetFamilies.all)
+        .supportedFamilies(WeatherWidgetFamilies.singleMetric)
         .contentMarginsDisabled()
     }
 }

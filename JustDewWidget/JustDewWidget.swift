@@ -11,7 +11,7 @@ struct JustDewWidget: Widget {
         }
         .configurationDisplayName("Dew Point")
         .description("Dew point for your current location.")
-        .supportedFamilies(WeatherWidgetFamilies.all)
+        .supportedFamilies(WeatherWidgetFamilies.singleMetric)
         .contentMarginsDisabled()
     }
 }

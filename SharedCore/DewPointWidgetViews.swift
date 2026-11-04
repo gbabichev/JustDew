@@ -679,14 +679,16 @@ private struct DewPointAccessoryRectangularView: View {
     var metric: DayTimelineMetric = .dewPoint
 
     var body: some View {
+        #if os(iOS)
+        LockScreenAccessoryMetric(reading: reading, metric: metric, compact: false)
+        #else
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
-                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text("Dew Point"))
+            HStack(alignment: .center, spacing: 6) {
                 Text(metric.widgetTitle)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
+                Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text("Dew Point"))
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.headline.monospacedDigit())
             }
@@ -714,6 +716,7 @@ private struct DewPointAccessoryRectangularView: View {
             .foregroundStyle(.secondary)
             #endif
         }
+        #endif
     }
 }
 
