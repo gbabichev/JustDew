@@ -32,7 +32,7 @@ private struct DewPointExplanationView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     DewPointExplanationLegend()
                     DewPointHumidityExplanation()
-                    DewPointComfortLimitExplanation()
+                    DewPointComfortExplanation()
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -128,13 +128,12 @@ private struct DewPointHumidityExplanation: View {
     }
 }
 
-private struct DewPointComfortLimitExplanation: View {
+private struct DewPointComfortExplanation: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Your comfortable hours")
+            Text("How the air feels")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
-            Text("Choose your dew point limit in the Comfortable hours today menu. Changing that limit changes the hours shown, but keeps the color scale the same.")
             Text("These comfort descriptions refer to moisture, rather than temperature, rain, or wind.")
                 .foregroundStyle(.secondary)
         }

@@ -34,7 +34,7 @@ JustDew is a small weather utility built around one useful number: dew point. It
 
 - Dew point, temperature, conditions, feels-like, daily highs and lows, rain chance, and humidity
 - Up to 10 days of dew point and weather forecasts, including today and nine upcoming days
-- Plain-language comfort summaries and comfortable hours today, with a selectable dew point limit
+- Plain-language summaries that explain how the air feels
 - Hourly rain chance, wind, gusts, and UV details on iPhone, iPad, and Mac
 - Saved locations with swipeable pages on iPhone and iPad
 - Add, select, and remove cities through the Locations list
@@ -140,10 +140,16 @@ Locations are saved separately on each device.
 ## Changelog
 
 ### 2.1.0
-- Simplified the widget gallery to three editable widgets, each with location and Always Dark options.
-- Tweaked app UI to reduce scrolling.
-- Tweaked widgets for better spacing across all platforms.
-- Added additional colors for hourly weather & UV.
+• A simpler widget gallery: choose Dew Point, Weather, or both, then customize your location and appearance.
+• Refresh weather directly from your Home Screen or desktop widget.
+• New Extra Large widgets for iPad, with more room for forecasts.
+• Refined widget layouts, with daily highs and lows and clearer weather icons.
+• Cleaner Lock Screen widgets focused on conditions at your current location.
+• More compact app layouts, with side-by-side forecasts in landscape on iPhone and iPad.
+• Easier-to-read hourly forecasts with color-coded temperatures and UV levels.
+• See dew point and current temperature when choosing a location.
+• A simpler dew point card with a short summary of how the air feels.
+• Improved 10-day forecast availability and fixed the iPad sidebar reopening when rotating.
 
 ### 2.0.1
 - Improved app start on slow internet connection.

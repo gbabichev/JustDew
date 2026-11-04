@@ -153,9 +153,6 @@ private struct LandscapeCurrentCard: View {
             Spacer(minLength: 0)
             DewPointDayTimelineView(reading: reading, referenceDate: Date(),
                                    metric: metric == .dewPoint ? .dewPoint : .temperature)
-            if metric == .dewPoint {
-                DewPointComfortHours(reading: reading, compact: true)
-            }
         }
         .modifier(WeatherDetailsPresentation(reading: metric == .temperature ? reading : nil))
     }
@@ -257,7 +254,6 @@ private struct CurrentConditionsStrip: View {
                         Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
                             .foregroundStyle(.secondary)
                         DewPointComfortSummary(reading: reading, compact: true)
-                        DewPointComfortHours(reading: reading, compact: true, shortTitle: true)
                     } else {
                         HStack(spacing: 8) {
                             Label(reading.condition, systemImage: reading.symbolName)
@@ -658,7 +654,6 @@ private struct DewPointNowCard: View {
             if fillsHeight { Spacer(minLength: 0) }
             DewPointDayTimelineView(reading: reading, referenceDate: Date())
                 .accessibilityHint("Color shows dew point comfort through the day.")
-            DewPointComfortHours(reading: reading, compact: layout.usesCompactComfort(spacing: spacing))
         }
     }
 }
