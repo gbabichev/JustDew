@@ -448,22 +448,29 @@ private struct CombinedLockScreenSquareMetric: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Label(metric.widgetTitle,
-                  systemImage: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+            Label(metric.widgetTitle, systemImage: metric.widgetSymbol)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .center, spacing: 6) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.title2.weight(.semibold))
+                    .font(.largeTitle.weight(.semibold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Spacer(minLength: 0)
-                WidgetDayRangeText(reading: reading, metric: metric)
+                    .layoutPriority(1)
+                if metric == .temperature {
+                    Image(systemName: reading.symbolName)
+                        .font(.title3)
+                        .frame(width: 20)
+                        .accessibilityLabel(reading.condition)
+                }
+                WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .fixedSize()
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
