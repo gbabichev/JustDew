@@ -12,22 +12,31 @@ struct WeatherLocationProvider<Options: WeatherLocationWidgetOptions>: AppIntent
             return DewPointWidgetEntry(date: .now, reading: DewPointWidgetLoader.sampleReading,
                                        message: nil, alwaysDark: configuration.alwaysDark)
         }
-        return await entry(for: configuration)
+        return await entry(for: configuration, in: context)
     }
 
     func timeline(for configuration: Options, in context: Context) async -> Timeline<DewPointWidgetEntry> {
-        Timeline(entries: [await entry(for: configuration)],
+        Timeline(entries: [await entry(for: configuration, in: context)],
                  policy: .after(Date().addingTimeInterval(DewPointConfiguration.refreshInterval)))
     }
 
-    private func entry(for configuration: Options) async -> DewPointWidgetEntry {
-        let id = configuration.location?.id ?? "current"
+    private func entry(for configuration: Options, in context: Context) async -> DewPointWidgetEntry {
+        let usesCurrentLocation: Bool
+        switch context.family {
+        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
+            usesCurrentLocation = true
+        default:
+            usesCurrentLocation = false
+        }
+        // Accessory widgets follow the device, regardless of saved Home Screen settings.
+        let id = usesCurrentLocation ? "current" : (configuration.location?.id ?? "current")
+        let alwaysDark = !usesCurrentLocation && configuration.alwaysDark
         do {
             let reading = try await DewPointWidgetLoader.loadReading(locationID: id)
-            return DewPointWidgetEntry(date: .now, reading: reading, message: nil, alwaysDark: configuration.alwaysDark)
+            return DewPointWidgetEntry(date: .now, reading: reading, message: nil, alwaysDark: alwaysDark)
         } catch {
             return DewPointWidgetEntry(date: .now, reading: DewPointWidgetLoader.cachedReading(locationID: id),
-                                       message: error.dewPointDisplayMessage, alwaysDark: configuration.alwaysDark)
+                                       message: error.dewPointDisplayMessage, alwaysDark: alwaysDark)
         }
     }
 }
@@ -56,7 +65,7 @@ struct SavedLocationWeatherWidget: Widget {
             JustDewWidgetEntryView(entry: entry, metric: .temperature)
         }
         .configurationDisplayName("Weather")
-        .description("Choose Current Location or a saved city, and optionally use an always dark appearance.")
+        .description("Weather for your current location.")
         .supportedFamilies(WeatherWidgetFamilies.all)
         .contentMarginsDisabled()
     }
@@ -69,7 +78,7 @@ struct SavedLocationCombinedWeatherWidget: Widget {
             CombinedWeatherWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Dew Point + Weather")
-        .description("Choose Current Location or a saved city, and optionally use an always dark appearance.")
+        .description("Dew point and weather for your current location.")
         .supportedFamilies(WeatherWidgetFamilies.all)
         .contentMarginsDisabled()
     }

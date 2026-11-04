@@ -10,7 +10,7 @@ struct JustDewWidget: Widget {
             JustDewWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Dew Point")
-        .description("Choose Current Location or a saved city, and optionally use an always dark appearance.")
+        .description("Dew point for your current location.")
         .supportedFamilies(WeatherWidgetFamilies.all)
         .contentMarginsDisabled()
     }

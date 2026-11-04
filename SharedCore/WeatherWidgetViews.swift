@@ -201,6 +201,7 @@ struct CombinedWeatherWidgetEntryView: View {
     private var isAccessory: Bool {
         #if os(iOS)
         family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline
+            || (family == .systemSmall && renderingMode == .vibrant)
         #else
         false
         #endif
@@ -272,26 +273,23 @@ private struct CombinedStandardWidgetContent: View {
                 CombinedWidgetMetric(reading: reading, metric: .temperature,
                                      usesColor: usesColor, tightSpacing: tightSpacing)
             }
-            DewPointWidgetLocationText(location: reading.location)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            HStack {
+            HStack(spacing: 8) {
+                DewPointWidgetLocationText(location: reading.location)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 8)
                 Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
-                Spacer(minLength: 0)
-                if !showsForecast {
-                    WidgetTimestamp(reading: reading)
-                        .lineLimit(1)
-                }
+                    .fixedSize()
             }
-            .font(.caption2)
+            .font(.caption)
             .foregroundStyle(.secondary)
+            if !showsForecast {
+                WidgetTimestamp(reading: reading)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             if showsForecast {
                 Divider()
-                Text("Forecast")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
                 WidgetForecastRows(reading: reading, primaryColor: .primary,
                                           secondaryColor: .secondary, usesColor: usesColor, combined: true,
                                           rowSpacing: tightSpacing ? 2 : 4)
@@ -322,8 +320,6 @@ private struct CombinedPortraitWidgetContent: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             Divider()
-            Text("10-Day Forecast")
-                .font(.headline)
             WidgetForecastRows(reading: reading, primaryColor: .primary, secondaryColor: .secondary,
                                usesColor: usesColor, combined: true, rowSpacing: 10,
                                includesToday: true, dayLimit: 10, roomy: true)
@@ -410,11 +406,16 @@ private struct CombinedAccessoryWidgetContent: View {
         if let reading = entry.reading {
             switch family {
             case .accessoryInline:
-                Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) · Air \(DewPointFormatters.temperature(reading.temperature))")
+                Text("Dew \(DewPointFormatters.temperature(reading.dewPoint)) · \(Image(systemName: reading.symbolName)) \(DewPointFormatters.temperature(reading.temperature))")
             case .accessoryCircular:
                 VStack(spacing: 2) {
                     CombinedAccessoryValue(reading: reading, metric: .dewPoint)
                     CombinedAccessoryValue(reading: reading, metric: .temperature)
+                }
+            case .systemSmall:
+                VStack(alignment: .leading, spacing: 12) {
+                    CombinedLockScreenSquareMetric(reading: reading, metric: .dewPoint)
+                    CombinedLockScreenSquareMetric(reading: reading, metric: .temperature)
                 }
             default:
                 ViewThatFits(in: .vertical) {
@@ -440,6 +441,31 @@ private struct CombinedAccessoryWidgetContent: View {
     }
 }
 
+private struct CombinedLockScreenSquareMetric: View {
+    let reading: DewPointReading
+    let metric: DayTimelineMetric
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label(metric.widgetTitle,
+                  systemImage: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                    .font(.title2.weight(.semibold))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Spacer(minLength: 0)
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
 private struct CombinedAccessoryRectangularContent: View {
     let reading: DewPointReading
     let compact: Bool
@@ -450,16 +476,6 @@ private struct CombinedAccessoryRectangularContent: View {
                 CombinedAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact)
                 CombinedAccessoryMetric(reading: reading, metric: .temperature, compact: compact)
             }
-            HStack(spacing: 4) {
-                DewPointWidgetLocationText(location: reading.location)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                Image(systemName: reading.symbolName)
-                    .accessibilityLabel(reading.condition)
-            }
-            .font(.system(size: compact ? 8 : 9))
-            .foregroundStyle(.secondary)
         }
     }
 }
@@ -471,7 +487,7 @@ private struct CombinedAccessoryValue: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 3) {
-                Image(systemName: metric.widgetSymbol)
+                Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
                     .frame(width: 12)
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .monospacedDigit()
@@ -495,11 +511,17 @@ private struct CombinedAccessoryMetric: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(metric.widgetTitle)
-                .font(.system(size: compact ? 8 : 9))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            HStack(spacing: 3) {
+                if metric == .temperature {
+                    Image(systemName: reading.symbolName)
+                        .accessibilityLabel(reading.condition)
+                }
+                Text(metric.widgetTitle)
+            }
+            .font(.system(size: compact ? 8 : 9))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                 .font(.system(size: compact ? 16 : 18, weight: .semibold))
                 .monospacedDigit()
