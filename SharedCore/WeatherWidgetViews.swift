@@ -368,6 +368,7 @@ private struct CombinedSmallWidgetRow: View {
                 Text(metric.widgetTitle)
             } icon: {
                 Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                    .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
                     .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text(metric.widgetTitle))
             }
             .font(.caption2)
