@@ -48,28 +48,16 @@ enum LocationSearchService {
             return (shortName, shortName)
         }
 
-        let parts = [
-            mapItem.name,
-            mapItem.addressRepresentations?.regionName,
-            mapItem.address?.shortAddress,
-            mapItem.address?.fullAddress
-        ].compactMap { value in
-            let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return trimmed.isEmpty ? nil : trimmed
-        }.reduce(into: [String]()) { result, value in
-            if !result.contains(value) {
-                result.append(value)
-            }
-        }
-
-        return (parts.isEmpty ? fallback : parts.joined(separator: ", "), shortName)
+        // Reverse geocoding can return a street or landmark as the map item's name.
+        // Keep the supplied fallback rather than promoting that address to a city name.
+        return (fallback, nil)
     }
 
     private static func preferredShortName(for mapItem: MKMapItem) -> String? {
         firstNonEmpty([
-            cityState(from: mapItem.address?.shortAddress),
-            cityState(from: mapItem.address?.fullAddress),
-            cityState(from: mapItem.addressRepresentations?.regionName)
+            mapItem.addressRepresentations?.cityWithContext,
+            mapItem.addressRepresentations?.cityName,
+            mapItem.addressRepresentations?.regionName
         ])
     }
 
@@ -90,28 +78,6 @@ enum LocationSearchService {
         }
 
         return .locationSearchUnavailable
-    }
-
-    private static func cityState(from address: String?) -> String? {
-        guard let address else { return nil }
-        let components = address
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        guard let stateIndex = components.firstIndex(where: { component in
-            component.range(of: #"^[A-Z]{2}(?:\s+\d{5})?$"#, options: .regularExpression) != nil
-        }), stateIndex > components.startIndex else {
-            return nil
-        }
-
-        let city = components[components.index(before: stateIndex)]
-        let state = components[stateIndex]
-            .split(separator: " ")
-            .first
-            .map(String.init) ?? components[stateIndex]
-
-        return "\(city), \(state)"
     }
 
     private static func firstNonEmpty(_ values: [String?]) -> String? {
