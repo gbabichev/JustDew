@@ -894,7 +894,7 @@ private struct WeatherDashboardFooter: View {
 
     var body: some View {
         let footerLayout = layout.footerInline ? AnyLayout(HStackLayout(spacing: 12))
-            : AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(VStackLayout(alignment: .center, spacing: 8))
         footerLayout {
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle")
@@ -912,6 +912,8 @@ private struct WeatherDashboardFooter: View {
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("Weather data from \(DewPointConfiguration.appleWeatherTrademark). Opens legal attribution.")
         }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
     }
 }
 #endif
