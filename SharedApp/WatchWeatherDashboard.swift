@@ -94,7 +94,7 @@ private struct WatchCurrentWeather: View {
                     .symbolRenderingMode(.hierarchical)
                     .accessibilityHidden(true)
             }
-            Text(reading.condition)
+            Text(reading.localizedCondition)
                 .font(.subheadline)
             if let feelsLike = reading.apparentTemperatureCelsius {
                 Text("Feels like \(DewPointFormatters.temperature(Measurement(value: feelsLike, unit: .celsius)))")

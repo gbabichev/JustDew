@@ -122,10 +122,10 @@ private struct MacHourlyConditionsCell: View {
                     .monospacedDigit()
             }
             if let weather = point.weather {
-                Text(weather.condition)
+                Text(weather.localizedCondition)
                     .font(.caption2).foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .help(weather.condition)
+                    .help(weather.localizedCondition)
             }
         }
         .accessibilityElement(children: .combine)

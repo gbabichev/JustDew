@@ -12,7 +12,7 @@ struct DewPointLocationEntity: AppEntity {
         DisplayRepresentation(title: "\(name)")
     }
 
-    static let current = DewPointLocationEntity(id: "current", name: "Current Location")
+    static let current = DewPointLocationEntity(id: "current", name: String(localized: "Current Location"))
 }
 
 struct DewPointLocationQuery: EntityStringQuery {

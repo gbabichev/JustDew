@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import WeatherKit
 
 enum DewPointLocationMode: String, Codable, Sendable {
     case current
@@ -8,9 +9,9 @@ enum DewPointLocationMode: String, Codable, Sendable {
     var title: String {
         switch self {
         case .current:
-            "Current Location"
+            String(localized: "Current Location")
         case .manual:
-            "Manual Location"
+            String(localized: "Manual Location")
         }
     }
 }
@@ -34,6 +35,7 @@ struct DewPointLocation: Codable, Equatable, Sendable, Identifiable {
     }
 
     var compactDisplayName: String {
+        if name == "Current Location" && shortName == nil { return String(localized: "Current Location") }
         if let compactName = cityStateName(from: shortName) ?? cityStateName(from: name) {
             return compactName
         }
@@ -52,7 +54,7 @@ struct DewPointLocation: Codable, Equatable, Sendable, Identifiable {
     }
 
     var hasSpecificDisplayName: Bool {
-        compactDisplayName != "Current Location"
+        !(name == "Current Location" && shortName == nil)
     }
 
     private func cityStateName(from value: String?) -> String? {
@@ -91,6 +93,11 @@ struct DewPointReading: Codable, Equatable, Sendable {
     var dailyForecast: [DewPointForecastPoint]? = nil
     var apparentTemperatureCelsius: Double? = nil
     var dailyWeather: [WeatherForecastDay]? = nil
+    var conditionCode: String? = nil
+
+    var localizedCondition: String {
+        conditionCode.flatMap { WeatherCondition(rawValue: $0) }?.description ?? condition
+    }
 
     var forecastCalendar: Calendar {
         var calendar = Calendar.current
@@ -137,6 +144,11 @@ struct WeatherForecastDay: Codable, Equatable, Sendable, Identifiable {
     var condition: String
     var symbolName: String
     var precipitationChance: Double
+    var conditionCode: String? = nil
+
+    var localizedCondition: String {
+        conditionCode.flatMap { WeatherCondition(rawValue: $0) }?.description ?? condition
+    }
 
     var id: Date { date }
 }
@@ -175,23 +187,23 @@ enum DewPointError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .locationUnavailable:
-            "Location is unavailable."
+            String(localized: "Location is unavailable.")
         case .permissionDenied:
-            "Location permission is not enabled."
+            String(localized: "Location permission is not enabled.")
         case .widgetLocationUnavailable:
-            "Widget location is not enabled."
+            String(localized: "Widget location is not enabled.")
         case .geocodingNoResults:
-            "No matching location was found. Try a city and state."
+            String(localized: "No matching location was found. Try a city and state.")
         case .locationSearchUnavailable:
-            "Location search is temporarily unavailable. Check your connection and try again."
+            String(localized: "Location search is temporarily unavailable. Check your connection and try again.")
         case .missingConfiguredLocation:
-            "Choose a location."
+            String(localized: "Choose a location.")
         case .networkUnavailable:
-            "Network connection appears to be offline."
+            String(localized: "Network connection appears to be offline.")
         case .weatherUnavailable:
-            "Weather data is temporarily unavailable. Try again in a moment."
+            String(localized: "Weather data is temporarily unavailable. Try again in a moment.")
         case .weatherKitAuthentication:
-            "WeatherKit setup is incomplete for this bundle ID. In Apple Developer Identifiers, enable WeatherKit in App Services and App Capabilities, then clean and rebuild."
+            String(localized: "WeatherKit setup is incomplete for this bundle ID. In Apple Developer Identifiers, enable WeatherKit in App Services and App Capabilities, then clean and rebuild.")
         }
     }
 }
@@ -228,7 +240,7 @@ extension Error {
 
         let rawMessage = nsError.localizedDescription
         if rawMessage.hasPrefix("The operation couldn") {
-            return "Something went wrong. Try again."
+            return String(localized: "Something went wrong. Try again.")
         }
 
         return rawMessage

@@ -234,7 +234,7 @@ private struct MacSavedLocationRow: View {
                         .foregroundStyle(.cyan)
                         .frame(width: 22)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(location.mode == .current ? "Current Location" : location.compactDisplayName)
+                        Text(location.mode == .current ? String(localized: "Current Location") : location.compactDisplayName)
                             .fontWeight(.medium)
                             .foregroundStyle(.primary)
                         if location.mode == .current {

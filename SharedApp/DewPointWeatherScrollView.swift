@@ -129,7 +129,7 @@ private struct LandscapeCurrentCard: View {
                         .foregroundStyle(.secondary)
                 } else {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Label(reading.condition, systemImage: reading.symbolName)
+                        Label(reading.localizedCondition, systemImage: reading.symbolName)
                             .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         if let apparent = reading.apparentTemperatureCelsius {
                             Text("Feels like \(temperature(apparent))")
@@ -258,7 +258,7 @@ private struct CurrentConditionsStrip: View {
                         DewPointComfortSummary(reading: reading, compact: true)
                     } else {
                         HStack(spacing: 8) {
-                            Label(reading.condition, systemImage: reading.symbolName)
+                            Label(reading.localizedCondition, systemImage: reading.symbolName)
                                 .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                             if let apparent = reading.apparentTemperatureCelsius {
                                 Text("Feels like \(temperature(apparent))")
@@ -600,7 +600,7 @@ private struct WeatherNowCard: View {
                     .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                     .accessibilityHidden(true)
             }
-            Text(reading.condition)
+            Text(reading.localizedCondition)
                 .font(.subheadline.weight(.medium))
             if let apparent = reading.apparentTemperatureCelsius {
                 Text("Feels like \(DewPointFormatters.temperature(Measurement(value: apparent, unit: .celsius)))")
@@ -785,7 +785,7 @@ private struct WeatherForecastRow: View {
         let lowText = DewPointFormatters.temperature(Measurement(value: low, unit: .celsius))
         let highText = DewPointFormatters.temperature(Measurement(value: high, unit: .celsius))
         if metric == .temperature, let weather = day.weather {
-            return Text("\(weather.condition). Low \(lowText), high \(highText). \(DewPointFormatters.percent(weather.precipitationChance)) chance of precipitation.")
+            return Text("\(weather.localizedCondition). Low \(lowText), high \(highText). \(DewPointFormatters.percent(weather.precipitationChance)) chance of precipitation.")
         }
         if day.hasPartialDewPoint {
             return Text("Dew point low \(lowText), high \(highText). Available hours only.")
@@ -948,8 +948,8 @@ struct WeatherUpdateNotice: View {
                 if permissionDenied {
                     #if os(iOS)
                     Text(isSetup
-                         ? "Allow location access in Settings, or use Search for a City below."
-                         : "Allow location access in Settings, or search for a city in Locations.")
+                         ? LocalizedStringResource("Allow location access in Settings, or use Search for a City below.")
+                         : LocalizedStringResource("Allow location access in Settings, or search for a city in Locations."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Button("Open Settings") {
@@ -966,8 +966,8 @@ struct WeatherUpdateNotice: View {
                     #endif
                 } else if locationUnavailable {
                     Text(isSetup
-                         ? "Try Use Current Location again, or use Search for a City below."
-                         : "Try refreshing again, or search for a city in Locations.")
+                         ? LocalizedStringResource("Try Use Current Location again, or use Search for a City below.")
+                         : LocalizedStringResource("Try refreshing again, or search for a city in Locations."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

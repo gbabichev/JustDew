@@ -54,7 +54,7 @@ struct WidgetForecastRows: View {
                                 .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
                                 .foregroundStyle(secondaryColor)
                                 .frame(width: 16, height: 12)
-                                .accessibilityLabel(weather.condition)
+                                .accessibilityLabel(weather.localizedCondition)
                         }
                         if combined || metric == .dewPoint {
                             WidgetForecastRange(low: day.lowDewPointCelsius, high: day.highDewPointCelsius,
@@ -71,7 +71,7 @@ struct WidgetForecastRows: View {
                                         .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
                                         .frame(width: 12, height: 12)
                                         .foregroundStyle(secondaryColor)
-                                        .accessibilityLabel(weather.condition)
+                                        .accessibilityLabel(weather.localizedCondition)
                                 }
                                 WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
                                                     high: day.weather?.highTemperatureCelsius,
@@ -252,7 +252,7 @@ private struct CombinedHomeWidgetContent: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Dew Point + Weather", systemImage: "drop.degreesign.fill")
                         .font(.caption.weight(.semibold))
-                    Text(entry.message ?? "Choose Location")
+                    Text(entry.message ?? String(localized: "Choose Location"))
                         .font(.caption)
                         .lineLimit(3)
                 }
@@ -372,7 +372,7 @@ private struct CombinedSmallWidgetRow: View {
                 Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
                     .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName, usesColor: metric == .temperature && usesColor))
                     .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
-                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text(metric.widgetTitle))
+                    .accessibilityLabel(metric == .temperature ? Text(reading.localizedCondition) : Text(metric.widgetTitle))
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -431,11 +431,11 @@ private struct CombinedAccessoryWidgetContent: View {
             }
         } else {
             if family == .accessoryInline {
-                Text("Dew + Weather: \(entry.message ?? "Choose Location")")
+                Text("Dew + Weather: \(entry.message ?? String(localized: "Choose Location"))")
             } else {
                 VStack(spacing: 2) {
                     Text("Dew + Weather").font(.caption2.bold())
-                    Text(entry.message ?? "Choose Location").font(.caption2)
+                    Text(entry.message ?? String(localized: "Choose Location")).font(.caption2)
                 }
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -465,7 +465,7 @@ private struct CombinedLockScreenSquareMetric: View {
                     Image(systemName: reading.symbolName)
                         .font(.title3)
                         .frame(width: 20)
-                        .accessibilityLabel(reading.condition)
+                        .accessibilityLabel(reading.localizedCondition)
                 }
                 WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
                     .font(.caption2)
@@ -524,7 +524,7 @@ struct LockScreenAccessoryMetric: View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 3) {
                 Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
-                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text("Dew Point"))
+                    .accessibilityLabel(metric == .temperature ? Text(reading.localizedCondition) : Text("Dew Point"))
                 Text(metric.widgetTitle)
             }
             .font(.system(size: compact ? 8 : 9))
@@ -579,7 +579,7 @@ private struct CombinedWidgetMetric: View {
                     .minimumScaleFactor(0.8)
                 if metric == .temperature {
                     Spacer(minLength: 0)
-                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition,
                                           size: 14)
                 }
             }

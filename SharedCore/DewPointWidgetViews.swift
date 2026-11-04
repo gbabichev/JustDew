@@ -140,7 +140,7 @@ struct JustDewWidgetEntryView: View {
                     DewPointCircularWidgetIcon(size: metric.widgetDayRange(for: reading) == nil ? 24 : 20)
                 } else {
                     Image(systemName: reading.symbolName)
-                        .accessibilityLabel(reading.condition)
+                        .accessibilityLabel(reading.localizedCondition)
                 }
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.caption.bold())
@@ -207,7 +207,7 @@ struct JustDewWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: metric.widgetSymbol)
                 .font(.title3)
-            Text(entry.message ?? "Choose Location")
+            Text(entry.message ?? String(localized: "Choose Location"))
                 .font(.caption)
                 .lineLimit(3)
         }
@@ -300,7 +300,7 @@ private struct DewPointMediumWidgetContent: View {
                     Image(systemName: reading.symbolName)
                         .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         .foregroundStyle(secondaryTextColor)
-                        .accessibilityLabel(reading.condition)
+                        .accessibilityLabel(reading.localizedCondition)
                 }
             }
             .font(.caption)
@@ -311,7 +311,7 @@ private struct DewPointMediumWidgetContent: View {
                     .monospacedDigit()
                     .foregroundStyle(valueColor)
                 if metric == .temperature {
-                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition,
                                           size: 20)
                 }
             }
@@ -457,7 +457,7 @@ private struct DewPointSmallWidgetContent: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
                 if metric == .temperature {
-                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition,
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition,
                                           size: 20)
                 }
             }
@@ -517,7 +517,7 @@ private struct DewPointLockScreenSquareContent: View {
                 if metric == .temperature {
                     Image(systemName: reading.symbolName)
                         .font(.title2)
-                        .accessibilityLabel(reading.condition)
+                        .accessibilityLabel(reading.localizedCondition)
                 }
             }
             WidgetDayRangeText(reading: reading, metric: metric)
@@ -582,7 +582,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                     Image(systemName: reading.symbolName)
                         .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
                         .foregroundStyle(secondaryColor)
-                        .accessibilityLabel(reading.condition)
+                        .accessibilityLabel(reading.localizedCondition)
                 }
             }
             .font(.caption)
@@ -594,7 +594,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 if metric == .temperature {
-                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.condition, size: 22)
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition, size: 22)
                 }
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 4) {
@@ -688,7 +688,7 @@ private struct DewPointAccessoryRectangularView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
-                    .accessibilityLabel(metric == .temperature ? Text(reading.condition) : Text("Dew Point"))
+                    .accessibilityLabel(metric == .temperature ? Text(reading.localizedCondition) : Text("Dew Point"))
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                     .font(.headline.monospacedDigit())
             }
@@ -868,7 +868,7 @@ struct JustDewWatchEntryView: View {
     private var unavailableContent: some View {
         VStack(spacing: 3) {
             Image(systemName: metric.widgetSymbol)
-            Text(entry.message ?? "Choose Location")
+            Text(entry.message ?? String(localized: "Choose Location"))
                 .font(.caption2)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)

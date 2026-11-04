@@ -84,11 +84,11 @@ private struct AboutAppDetails: View {
 
     private var releaseChannel: String {
         #if DEBUG
-        "Development"
+        String(localized: "Development")
         #elseif WEB_RELEASE
-        "Web Release"
+        String(localized: "Web Release")
         #else
-        "App Store"
+        String(localized: "App Store")
         #endif
     }
 

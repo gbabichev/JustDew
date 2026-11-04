@@ -57,9 +57,11 @@ nonisolated enum DewPointWeatherClient {
                         highTemperatureCelsius: day.highTemperature.converted(to: .celsius).value,
                         condition: day.condition.description,
                         symbolName: day.symbolName,
-                        precipitationChance: day.precipitationChance
+                        precipitationChance: day.precipitationChance,
+                        conditionCode: day.condition.rawValue
                     )
-                }
+                },
+                conditionCode: current.condition.rawValue
             )
         } catch {
             if error.isWeatherKitAuthenticationFailure {
@@ -78,7 +80,8 @@ nonisolated enum DewPointWeatherClient {
             uvIndex: hour.uvIndex.value,
             uvCategory: hour.uvIndex.category.rawValue,
             condition: hour.condition.description,
-            symbolName: hour.symbolName
+            symbolName: hour.symbolName,
+            conditionCode: hour.condition.rawValue
         )
     }
 

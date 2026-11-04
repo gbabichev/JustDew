@@ -35,6 +35,7 @@ JustDew is a small weather utility built around one useful number: dew point. It
 - Dew point, temperature, conditions, feels-like, daily highs and lows, rain chance, and humidity
 - Up to 10 days of dew point and weather forecasts, including today and nine upcoming days
 - Plain-language summaries that explain how the air feels
+- Follows your device or per-app language: English, Spanish, Russian, Simplified Chinese, French, German, and Portuguese
 - Hourly rain chance, wind, gusts, and UV details on iPhone, iPad, and Mac
 - Saved locations with swipeable pages on iPhone and iPad
 - Add, select, and remove cities through the Locations list

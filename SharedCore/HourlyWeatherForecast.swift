@@ -1,4 +1,5 @@
 import Foundation
+import WeatherKit
 
 struct DewPointHourlyWeather: Codable, Equatable, Sendable {
     var precipitationChance: Double
@@ -9,6 +10,11 @@ struct DewPointHourlyWeather: Codable, Equatable, Sendable {
     var uvCategory: String
     var condition: String
     var symbolName: String
+    var conditionCode: String? = nil
+
+    var localizedCondition: String {
+        conditionCode.flatMap { WeatherCondition(rawValue: $0) }?.description ?? condition
+    }
 }
 
 struct HourlyWeatherForecast {

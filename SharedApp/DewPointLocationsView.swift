@@ -498,7 +498,7 @@ private struct SavedLocationRow: View {
                 .foregroundStyle(.cyan)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 4) {
-                Text(location.mode == .current ? "Current Location" : location.compactDisplayName)
+                Text(location.mode == .current ? String(localized: "Current Location") : location.compactDisplayName)
                     .font(.headline)
                     .foregroundStyle(.primary)
                 if location.mode == .current {
