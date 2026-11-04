@@ -94,10 +94,22 @@ private struct HourlyWeatherDetailsView: View {
                             description: Text("Hourly details will appear after the next weather update."))
                     }
                     Section {
-                        HourlyUVProtectionNote()
-                        Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone, includesDate: true))")
-                        Link("Data from \(DewPointConfiguration.appleWeatherTrademark)",
-                             destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HourlyUVProtectionNote()
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: 16) {
+                                    updateTime
+                                    Spacer(minLength: 0)
+                                    attribution
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    updateTime
+                                    attribution
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .listRowSeparator(.hidden)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -114,6 +126,17 @@ private struct HourlyWeatherDetailsView: View {
             }
         }
         .frame(idealWidth: 520, idealHeight: 650)
+    }
+
+    private var updateTime: some View {
+        Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone, includesDate: true))")
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var attribution: some View {
+        Link("Data from \(DewPointConfiguration.appleWeatherTrademark)",
+             destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
+            .fixedSize()
     }
 }
 
