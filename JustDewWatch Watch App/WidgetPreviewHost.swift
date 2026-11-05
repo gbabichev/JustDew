@@ -29,10 +29,6 @@ struct JustDewWatchWidgetPreviewHost: PreviewProvider {
             }
                 .previewDisplayName("Rectangular")
 
-            WatchWidgetPreviewTile(width: 190, height: 36) {
-                JustDewWatchEntryView(entry: .previewReading, family: .accessoryInline)
-            }
-                .previewDisplayName("Inline")
 
             WatchWidgetPreviewTile(width: 74, height: 74) {
                 JustDewWatchEntryView(entry: .previewReading, family: .accessoryCorner)
@@ -43,25 +39,6 @@ struct JustDewWatchWidgetPreviewHost: PreviewProvider {
                 JustDewWatchEntryView(entry: .previewNeedsLocation, family: .accessoryRectangular)
             }
                 .previewDisplayName("Needs Location")
-        }
-    }
-}
-
-struct WeatherWatchWidgetPreviewHost: PreviewProvider {
-    static var previews: some View {
-        Group {
-            WatchWidgetPreviewTile(width: 74, height: 74) {
-                JustDewWatchEntryView(entry: .previewReading, family: .accessoryCircular, metric: .temperature)
-            }.previewDisplayName("Weather Circular")
-            WatchWidgetPreviewTile(width: 172, height: 72) {
-                JustDewWatchEntryView(entry: .previewReading, family: .accessoryRectangular, metric: .temperature)
-            }.previewDisplayName("Weather Rectangular")
-            WatchWidgetPreviewTile(width: 190, height: 36) {
-                JustDewWatchEntryView(entry: .previewReading, family: .accessoryInline, metric: .temperature)
-            }.previewDisplayName("Weather Inline")
-            WatchWidgetPreviewTile(width: 74, height: 74) {
-                JustDewWatchEntryView(entry: .previewReading, family: .accessoryCorner, metric: .temperature)
-            }.previewDisplayName("Weather Corner")
         }
     }
 }

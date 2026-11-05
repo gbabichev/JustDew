@@ -12,8 +12,7 @@ import SwiftUI
 struct JustDewWatchBundle: WidgetBundle {
     var body: some Widget {
         JustDewWatch()
-        LocationDewPointWatchWidget()
         WeatherWatchWidget()
-        LocationWeatherWatchWidget()
+        CombinedWeatherWatchWidget()
     }
 }

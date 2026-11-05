@@ -55,17 +55,6 @@ struct DewPointWidgetIntent: WeatherLocationWidgetOptions {
     }
 }
 
-#if os(watchOS)
-struct WatchLocationDewPointIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Dew Point Location"
-    // Used by App Intents metadata extraction.
-    // periphery:ignore
-    static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
-
-    @Parameter(title: "Location")
-    var location: DewPointLocationEntity?
-}
-#endif
 
 // The three editable widgets share the same location and appearance options.
 protocol WeatherLocationWidgetOptions: WidgetConfigurationIntent {
@@ -112,15 +101,3 @@ struct CombinedWeatherWidgetIntent: WeatherLocationWidgetOptions {
         }
     }
 }
-
-#if os(watchOS)
-struct WatchLocationWeatherIntent: WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Weather Location"
-    // Used by App Intents metadata extraction.
-    // periphery:ignore
-    static let description = IntentDescription("Choose Current Location or a city saved in JustDew on your Watch.")
-
-    @Parameter(title: "Location")
-    var location: DewPointLocationEntity?
-}
-#endif
