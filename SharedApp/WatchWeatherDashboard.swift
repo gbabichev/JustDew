@@ -22,6 +22,11 @@ struct WatchWeatherDashboard: View {
                 Section("Weather Now") {
                     WatchCurrentWeather(reading: reading, today: forecast.days.first?.weather)
                     NavigationLink {
+                        WatchHourlyWeatherForecast(reading: reading)
+                    } label: {
+                        Label("Hourly Weather", systemImage: "clock")
+                    }
+                    NavigationLink {
                         WatchDailyForecast(reading: reading, metric: .temperature)
                     } label: {
                         Label("10-Day Weather", systemImage: "calendar")
@@ -35,6 +40,8 @@ struct WatchWeatherDashboard: View {
                          destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
                         .font(.caption2)
                 }
+            } else if isLoading {
+                ProgressView("Loading weather…")
             } else {
                 Text("No Weather Data")
                     .foregroundStyle(.secondary)
@@ -45,9 +52,9 @@ struct WatchWeatherDashboard: View {
                     .foregroundStyle(.orange)
             }
             Section {
-                if isLoading {
+                if isLoading && reading != nil {
                     ProgressView("Refreshing")
-                } else {
+                } else if !isLoading {
                     Button("Refresh", systemImage: "arrow.clockwise") {
                         Task { await refresh() }
                     }

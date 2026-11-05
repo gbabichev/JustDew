@@ -16,19 +16,23 @@ struct DewPointAppView: View {
             #else
             NavigationStack {
                 Group {
-                    if viewModel.savedLocations.isEmpty {
-                        DewPointLocationsList(viewModel: viewModel)
-                    } else if let location = viewModel.configuredLocation {
+                    if let location = viewModel.configuredLocation {
                         DewPointLocationPage(viewModel: viewModel, location: location)
+                    } else {
+                        DewPointWatchWelcomeView(viewModel: viewModel) {
+                            showsLocations = true
+                        }
                     }
                 }
                 .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
                 .toolbar {
                     ToolbarItem {
-                        Button {
-                            showsLocations = true
-                        } label: {
-                            Label("Locations", systemImage: "list.bullet")
+                        if viewModel.configuredLocation != nil {
+                            Button {
+                                showsLocations = true
+                            } label: {
+                                Label("Locations", systemImage: "list.bullet")
+                            }
                         }
                     }
                 }
@@ -36,6 +40,9 @@ struct DewPointAppView: View {
                 .navigationDestination(isPresented: $showsLocations) {
                     DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
                         .navigationTitle("Locations")
+                }
+                .onChange(of: viewModel.configuredLocation?.id) { _, id in
+                    if id != nil { showsLocations = false }
                 }
             }
             .task { viewModel.refreshSavedLocationsIfNeeded() }

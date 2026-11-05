@@ -192,25 +192,34 @@ struct DewPointForecastView: View {
             }
 
             let points = reading.dailyForecastPoints
-                .filter { $0.date >= dayStart && $0.date < dayEnd }
+                .filter { $0.date >= dayStart && $0.date < dayEnd && metric.forecastValue(in: $0).value.isFinite }
                 .sorted { $0.date < $1.date }
 
-            guard !points.isEmpty else { return nil }
+            let weather = reading.dailyWeather?.first { calendar.isDate($0.date, inSameDayAs: dayStart) }
+            if metric == .temperature {
+                guard let weather, weather.lowTemperatureCelsius.isFinite,
+                      weather.highTemperatureCelsius.isFinite,
+                      weather.lowTemperatureCelsius <= weather.highTemperatureCelsius else { return nil }
+            } else {
+                guard !points.isEmpty else { return nil }
+            }
 
             return DewPointForecastDay(
                 dayStart: dayStart,
                 dayEnd: dayEnd,
                 points: points,
-                weather: reading.dailyWeather?.first { calendar.isDate($0.date, inSameDayAs: dayStart) }
+                weather: weather
             )
         }
     }
 
     var body: some View {
-        if !forecastDays.isEmpty {
+        let days = forecastDays
+        let scale = WeatherRangeScale(values: days.flatMap { [$0.lowCelsius(for: metric), $0.highCelsius(for: metric)] })
+        if !days.isEmpty {
             VStack(alignment: .leading, spacing: rowSpacing) {
-                ForEach(forecastDays) { day in
-                    dayRow(for: day)
+                ForEach(days) { day in
+                    dayRow(for: day, scale: scale)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -218,11 +227,11 @@ struct DewPointForecastView: View {
     }
 
     @ViewBuilder
-    private func dayRow(for day: DewPointForecastDay) -> some View {
+    private func dayRow(for day: DewPointForecastDay, scale: WeatherRangeScale) -> some View {
         #if os(watchOS)
         VStack(alignment: .leading, spacing: 4) {
             forecastDayHeader(for: day)
-            forecastTrack(for: day)
+            forecastTrack(for: day, scale: scale)
         }
         #else
         HStack(spacing: 10) {
@@ -233,7 +242,7 @@ struct DewPointForecastView: View {
                 .minimumScaleFactor(0.75)
                 .frame(width: 72, alignment: .leading)
 
-            forecastTrack(for: day)
+            forecastTrack(for: day, scale: scale)
 
             rangeText(for: day)
                 .frame(width: 66, alignment: .trailing)
@@ -267,30 +276,42 @@ struct DewPointForecastView: View {
         .minimumScaleFactor(0.75)
     }
 
-    private func forecastTrack(for day: DewPointForecastDay) -> some View {
-        GeometryReader { proxy in
+    private func forecastTrack(for day: DewPointForecastDay, scale: WeatherRangeScale) -> some View {
+        let low = day.lowCelsius(for: metric)
+        let high = day.highCelsius(for: metric)
+        let isObservedDay = reading.forecastCalendar.isDate(day.dayStart, inSameDayAs: reading.observedAt)
+        let current = metric.currentValue(in: reading).value
+        let showsMarker = isObservedDay && current.isFinite && current >= low && current <= high
+        return GeometryReader { proxy in
             let width = max(proxy.size.width, 1)
             let centerY = proxy.size.height / 2
+            let start = scale.fraction(for: low) * width
+            let end = scale.fraction(for: high) * width
+            let rangeWidth = min(width, max(end - start, 4))
+            let colors = usesComfortColor
+                ? [metric.color(forCelsius: low), metric.color(forCelsius: high)]
+                : [monochromeColor.opacity(0.7)]
 
             ZStack(alignment: .leading) {
-                Capsule(style: .continuous)
-                    .fill(LinearGradient(
-                        stops: timelineGradientStops(
-                            for: day.points,
-                            start: day.dayStart,
-                            end: day.dayEnd,
-                            usesComfortColor: usesComfortColor,
-                            monochromeColor: monochromeColor,
-                            metric: metric
-                        ),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
+                Capsule()
+                    .fill(monochromeColor.opacity(0.2))
                     .frame(height: trackHeight)
                     .position(x: width / 2, y: centerY)
+                Capsule()
+                    .fill(LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing))
+                    .frame(width: rangeWidth, height: trackHeight)
+                    .position(x: min(start, width - rangeWidth) + rangeWidth / 2, y: centerY)
+                if showsMarker {
+                    Circle()
+                        .fill(.primary)
+                        .overlay { Circle().stroke(.background, lineWidth: 1.5) }
+                        .frame(width: 8, height: 8)
+                        .position(x: min(max(scale.fraction(for: current) * width, 4), max(width - 4, 4)), y: centerY)
+                }
             }
         }
-        .frame(height: trackHeight)
+        .frame(height: max(trackHeight, 8))
+        .accessibilityHidden(true)
     }
 }
 
