@@ -9,6 +9,13 @@ struct WeatherLayoutPolicyTests {
         precondition(Policy.navigationMode(for: 760) == .splitCollapsed)
         precondition(Policy.navigationMode(for: 1_049) == .splitCollapsed)
         precondition(Policy.navigationMode(for: 1_050) == .splitExpanded)
+        for width: CGFloat in [390, 760, 1_050, 1_366] {
+            precondition(Policy.navigationMode(for: width, isPartiallyFolded: true) == .compact,
+                         "Partially folded displays need the Locations sheet instead of a sidebar")
+            precondition(Policy.navigationMode(for: width, isPartiallyFolded: false)
+                         == Policy.navigationMode(for: width),
+                         "Unfolding must restore the normal width-based navigation")
+        }
 
         let phone = Policy(platform: .mobile, viewport: CGSize(width: 390, height: 844))
         precondition(phone.forecastArrangement == .stacked)

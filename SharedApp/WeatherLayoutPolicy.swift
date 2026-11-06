@@ -66,7 +66,10 @@ struct WeatherLayoutPolicy: Equatable, Sendable {
     static let sidebarWidth: ClosedRange<CGFloat> = 230...320
     static let idealSidebarWidth: CGFloat = 270
 
-    static func navigationMode(for width: CGFloat) -> NavigationMode {
+    static func navigationMode(for width: CGFloat, isPartiallyFolded: Bool = false) -> NavigationMode {
+        // A sidebar would consume the usable region on one side of the hinge.
+        // Use the native location sheet until the display is fully open again.
+        if isPartiallyFolded { return .compact }
         if width >= 1_050 { return .splitExpanded }
         if width >= 760 { return .splitCollapsed }
         return .compact

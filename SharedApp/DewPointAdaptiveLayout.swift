@@ -7,11 +7,17 @@ struct DewPointAdaptiveAppView: View {
     #if os(iOS)
     // Keep the user's choice when rotation replaces the compact/split subtree.
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var isPartiallyFolded = false
     #endif
 
     var body: some View {
         GeometryReader { geometry in
+            #if os(iOS)
+            let navigation = WeatherLayoutPolicy.navigationMode(for: geometry.size.width,
+                                                               isPartiallyFolded: isPartiallyFolded)
+            #else
             let navigation = WeatherLayoutPolicy.navigationMode(for: geometry.size.width)
+            #endif
             if navigation != .compact {
                 #if os(iOS)
                 DewPointSplitView(viewModel: viewModel, columnVisibility: $columnVisibility)
@@ -26,9 +32,29 @@ struct DewPointAdaptiveAppView: View {
                 #endif
             }
         }
+        #if os(iOS)
+        .modifier(DewPointHingeNavigationObserver(isPartiallyFolded: $isPartiallyFolded))
+        #endif
         .task { viewModel.refreshSavedLocationsIfNeeded() }
     }
 }
+
+#if os(iOS)
+private struct DewPointHingeNavigationObserver: ViewModifier {
+    @Binding var isPartiallyFolded: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 27.1, *) {
+            content.onHingeChange { _, context in
+                isPartiallyFolded = context.hinge?.status == .partiallyOpen
+            }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 private struct DewPointSplitView: View {
     @ObservedObject var viewModel: DewPointViewModel
