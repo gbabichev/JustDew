@@ -9,7 +9,8 @@ struct DewPointCurrentDayTimelineView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
-            DewPointDayTimelineView(reading: reading, trackHeight: trackHeight, markerSize: markerSize,
+            DewPointDayTimelineView(reading: reading, emphasizesForecastValues: true,
+                                   trackHeight: trackHeight, markerSize: markerSize,
                                    referenceDate: context.date, metric: metric)
         }
     }

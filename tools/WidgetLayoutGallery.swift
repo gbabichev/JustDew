@@ -63,7 +63,7 @@ private struct WidgetLayoutGallery {
         <p><strong>Visual stress checks, not native device screenshots.</strong> Standalone renders emulate 16-point margins;
         WidgetKit also applies device-specific margins, font traits, and scaling. Confirm release layouts in the native
         <code>WidgetLayoutPreviews.swift</code> canvas using the desired destination.</p>
-        <p>Check: single-line temperatures, visible headers and timestamps, readable ranges, and content inside the blue border.</p>
+        <p>Check: single-line temperatures, visible headers and timeline labels, readable ranges, and content inside the blue border.</p>
         """
         for (fixtureIndex, fixture) in fixtures.enumerated() {
             var reading = DewPointWidgetLoader.sampleReading

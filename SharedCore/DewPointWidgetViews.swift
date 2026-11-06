@@ -44,9 +44,10 @@ struct JustDewWidgetEntryView: View {
                 unavailableContent
             }
         }
+        .padding(.bottom, showsRefresh ? 24 : 0)
         .padding(widgetPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
-        .modifier(WidgetRefreshPlacement(reading: entry.reading, enabled: showsRefresh, margins: widgetPadding))
+        .modifier(WidgetFooterPlacement(reading: entry.reading, enabled: showsRefresh, margins: widgetPadding))
         .containerBackground(for: .widget) {
             if entry.alwaysDark {
                 Color(red: 0.07, green: 0.08, blue: 0.10)
@@ -155,15 +156,28 @@ struct JustDewWidgetEntryView: View {
             DewPointAccessoryRectangularView(reading: reading, metric: metric)
         #endif
         case .systemLarge, .systemExtraLarge:
-            DewPointLargeWidgetContent(
-                reading: reading,
-                primaryColor: primaryTextColor,
-                secondaryColor: secondaryTextColor,
-                valueColor: dewPointValueColor(for: reading),
-                accentColor: comfortAccentColor(for: reading),
-                usesComfortColor: showsComfortColor,
-                metric: metric
-            )
+            ViewThatFits(in: .vertical) {
+                DewPointLargeWidgetContent(
+                    reading: reading,
+                    primaryColor: primaryTextColor,
+                    secondaryColor: secondaryTextColor,
+                    valueColor: dewPointValueColor(for: reading),
+                    accentColor: comfortAccentColor(for: reading),
+                    usesComfortColor: showsComfortColor,
+                    metric: metric
+                )
+                .fixedSize(horizontal: false, vertical: true)
+                DewPointLargeWidgetContent(
+                    reading: reading,
+                    primaryColor: primaryTextColor,
+                    secondaryColor: secondaryTextColor,
+                    valueColor: dewPointValueColor(for: reading),
+                    accentColor: comfortAccentColor(for: reading),
+                    usesComfortColor: showsComfortColor,
+                    metric: metric, compact: true
+                )
+                .fixedSize(horizontal: false, vertical: true)
+            }
         case .systemMedium:
             ViewThatFits(in: .vertical) {
                 DewPointMediumWidgetContent(
@@ -187,7 +201,7 @@ struct JustDewWidgetEntryView: View {
                     reading: reading, metric: metric, tightSpacing: false,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
-                    secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
                     usesComfortColor: showsComfortColor
                 )
                 .fixedSize(horizontal: false, vertical: true)
@@ -195,7 +209,7 @@ struct JustDewWidgetEntryView: View {
                     reading: reading, metric: metric, tightSpacing: true,
                     accentColor: comfortAccentColor(for: reading),
                     valueColor: dewPointValueColor(for: reading),
-                    secondaryTextColor: secondaryTextColor, tertiaryTextColor: tertiaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
                     usesComfortColor: showsComfortColor
                 )
                 .fixedSize(horizontal: false, vertical: true)
@@ -225,14 +239,6 @@ struct JustDewWidgetEntryView: View {
     private var secondaryTextColor: Color {
         #if os(macOS)
         macTextColor(opacity: renderingMode == .vibrant ? 0.78 : 0.62)
-        #else
-        Color.secondary
-        #endif
-    }
-
-    private var tertiaryTextColor: Color {
-        #if os(macOS)
-        macTextColor(opacity: renderingMode == .vibrant ? 0.68 : 0.44)
         #else
         Color.secondary
         #endif
@@ -288,65 +294,67 @@ private struct DewPointMediumWidgetContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: tightSpacing ? 2 : 5) {
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: metric.widgetSymbol)
-                        .foregroundStyle(accentColor)
-                    Text(metric.widgetTitle)
-                        .foregroundStyle(secondaryTextColor)
+            if tightSpacing {
+                HStack {
+                    Label {
+                        Text(metric.widgetTitle).foregroundStyle(secondaryTextColor)
+                    } icon: {
+                        Image(systemName: metric.widgetSymbol).foregroundStyle(accentColor)
+                    }
+                    Spacer()
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition, size: 14)
                 }
-                Spacer()
-                if metric == .dewPoint {
-                    Image(systemName: reading.symbolName)
-                        .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName))
-                        .foregroundStyle(secondaryTextColor)
-                        .accessibilityLabel(reading.localizedCondition)
+                .font(.caption)
+                HStack(spacing: 8) {
+                    Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                        .font(.system(.title, design: .rounded).weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(valueColor)
+                    Spacer(minLength: 0)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        WidgetDayRangeText(reading: reading, metric: metric)
+                        Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(secondaryTextColor)
                 }
-            }
-            .font(.caption)
-
-            HStack(spacing: 8) {
-                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(valueColor)
-                if metric == .temperature {
-                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition,
-                                          size: 20)
+            } else {
+                HStack {
+                    Label {
+                        Text(metric.widgetTitle).foregroundStyle(secondaryTextColor)
+                    } icon: {
+                        Image(systemName: metric.widgetSymbol).foregroundStyle(accentColor)
+                    }
+                    Spacer()
+                    WidgetConditionSymbol(symbolName: reading.symbolName, condition: reading.localizedCondition, size: 14)
+                }
+                .font(.caption)
+                HStack(spacing: 8) {
+                    Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                        .font(.system(.largeTitle, design: .rounded).weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(valueColor)
+                    Spacer(minLength: 0)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        WidgetDayRangeText(reading: reading, metric: metric)
+                        Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(secondaryTextColor)
                 }
             }
 
             DewPointDayTimelineView(
                 reading: reading,
-                showsLabels: false,
-                trackHeight: 7,
-                markerSize: 14,
+                showsTitle: false,
+                showsForecastValues: false,
+                trackHeight: tightSpacing ? 5 : 7,
+                markerSize: tightSpacing ? 10 : 14,
                 usesComfortColor: usesComfortColor,
                 monochromeColor: secondaryTextColor,
                 metric: metric
             )
 
-            HStack(spacing: 8) {
-                DewPointWidgetLocationText(location: reading.location)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                WidgetDayRangeText(reading: reading, metric: metric)
-                    .fixedSize()
-            }
-            .font(.caption)
-            .foregroundStyle(secondaryTextColor)
-
-            HStack {
-                if metric == .dewPoint {
-                    Text("Air \(DewPointFormatters.temperature(reading.temperature))")
-                }
-                Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
-                Spacer()
-                WidgetTimestamp(reading: reading)
-            }
-            .font(.caption2)
-            .foregroundStyle(secondaryTextColor)
         }
     }
 }
@@ -378,33 +386,24 @@ struct WidgetRefreshButton: View {
     }
 }
 
-struct WidgetTimestamp: View {
-    let reading: DewPointReading
-
-    var body: some View {
-        Text(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))
-            .lineLimit(1)
-            .invalidatableContent()
-            .accessibilityLabel(Text("Updated \(DewPointFormatters.updatedTime(reading.fetchedAt, timeZone: reading.forecastCalendar.timeZone))"))
-            // Leave room if this text shares the bottom row with the refresh control.
-            .padding(.trailing, WidgetRefreshPlacement.reservedWidth)
-    }
-}
-
-/// Anchor to the WidgetKit container, independent of each family's content height.
-struct WidgetRefreshPlacement: ViewModifier {
+/// Keep location and refresh anchored to the same container edge for every home widget.
+struct WidgetFooterPlacement: ViewModifier {
     let reading: DewPointReading?
     let enabled: Bool
     let margins: EdgeInsets
-    static let reservedWidth: CGFloat = 24
 
     func body(content: Content) -> some View {
-        content.overlay(alignment: .bottomTrailing) {
+        content.overlay(alignment: .bottomLeading) {
             if enabled, let reading {
-                WidgetRefreshButton(locationID: reading.location.id)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(margins)
+                HStack(spacing: 8) {
+                    DewPointWidgetLocationText(location: reading.location)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    WidgetRefreshButton(locationID: reading.location.id)
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(margins)
             }
         }
     }
@@ -417,7 +416,6 @@ private struct DewPointSmallWidgetContent: View {
     let accentColor: Color
     let valueColor: Color
     let secondaryTextColor: Color
-    let tertiaryTextColor: Color
     let usesComfortColor: Bool
 
     var body: some View {
@@ -466,14 +464,6 @@ private struct DewPointSmallWidgetContent: View {
                 monochromeColor: secondaryTextColor,
                 metric: metric
             )
-            DewPointWidgetLocationText(location: reading.location)
-                .font(.caption2)
-                .foregroundStyle(secondaryTextColor)
-                .lineLimit(1)
-            WidgetTimestamp(reading: reading)
-                .font(.caption2)
-                .foregroundStyle(tertiaryTextColor)
-                .lineLimit(1)
         }
     }
 }
@@ -517,22 +507,21 @@ private struct DewPointLargeWidgetContent: View {
     let usesComfortColor: Bool
 
     var metric: DayTimelineMetric = .dewPoint
+    var compact = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: compact ? 2 : 6) {
             DewPointLargeWidgetCurrentConditions(
                 reading: reading, secondaryColor: secondaryColor,
                 valueColor: valueColor, accentColor: accentColor,
-                usesComfortColor: usesComfortColor, metric: metric
+                usesComfortColor: usesComfortColor, metric: metric,
+                showsTimelineValues: !compact
             )
             Divider().overlay(secondaryColor.opacity(0.2))
             DewPointLargeWidgetForecast(reading: reading, textColor: primaryColor,
-                                       secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric)
+                                       secondaryColor: secondaryColor, usesComfortColor: usesComfortColor, metric: metric,
+                                       rowSpacing: compact ? 2 : 4)
             Spacer(minLength: 0)
-            WidgetTimestamp(reading: reading)
-                .font(.caption2)
-                .foregroundStyle(secondaryColor)
-                .lineLimit(1)
         }
     }
 }
@@ -545,7 +534,8 @@ private struct DewPointLargeWidgetCurrentConditions: View {
     let usesComfortColor: Bool
 
     var metric: DayTimelineMetric = .dewPoint
-    var showsTimelineLabels = false
+    var showsTimelineLabels = true
+    var showsTimelineValues = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -580,6 +570,8 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     if metric == .dewPoint {
                         Text("Air \(DewPointFormatters.temperature(reading.temperature))")
+                    } else {
+                        Text("Dew Point \(DewPointFormatters.temperature(reading.dewPoint))")
                     }
                     Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 }
@@ -589,16 +581,14 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                 .minimumScaleFactor(0.8)
             }
             HStack(spacing: 8) {
-                DewPointWidgetLocationText(location: reading.location)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
                 WidgetDayRangeText(reading: reading, metric: metric)
                     .fixedSize()
             }
             .font(.caption)
             .foregroundStyle(secondaryColor)
-            DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels,
+            DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels, showsTitle: false,
+                                   showsForecastValues: showsTimelineValues, emphasizesForecastValues: true,
                                    trackHeight: 5, markerSize: 10,
                                    usesComfortColor: usesComfortColor, monochromeColor: secondaryColor, metric: metric)
         }
@@ -619,15 +609,12 @@ private struct DewPointPortraitWidgetContent: View {
             DewPointLargeWidgetCurrentConditions(reading: reading, secondaryColor: secondaryColor,
                                                  valueColor: valueColor, accentColor: accentColor,
                                                  usesComfortColor: usesComfortColor, metric: metric,
-                                                 showsTimelineLabels: false)
+                                                 showsTimelineLabels: true)
             Divider()
             WidgetForecastRows(reading: reading, primaryColor: primaryColor,
                                secondaryColor: secondaryColor, usesColor: usesComfortColor,
                                metric: metric, rowSpacing: 10, includesToday: true, dayLimit: 10, roomy: true)
             Spacer(minLength: 0)
-            WidgetTimestamp(reading: reading)
-                .font(.caption2)
-                .foregroundStyle(secondaryColor)
         }
     }
 }
@@ -639,12 +626,13 @@ private struct DewPointLargeWidgetForecast: View {
     let usesComfortColor: Bool
 
     var metric: DayTimelineMetric = .dewPoint
+    var rowSpacing: CGFloat = 4
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             WidgetForecastRows(reading: reading, primaryColor: textColor,
                                secondaryColor: secondaryColor, usesColor: usesComfortColor,
-                               metric: metric)
+                               metric: metric, rowSpacing: rowSpacing)
         }
     }
 }

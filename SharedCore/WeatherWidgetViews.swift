@@ -31,7 +31,7 @@ struct WidgetForecastRows: View {
         VStack(alignment: .leading, spacing: rowSpacing) {
             if combined && !days.isEmpty {
                 HStack(spacing: 6) {
-                    Text("Day").frame(width: roomy ? roomyDayWidth : 36, alignment: .leading)
+                    Text("Day").frame(width: (roomy ? roomyDayWidth : 36) + 22, alignment: .leading)
                     Text("Dew Point").frame(maxWidth: .infinity)
                     Text("Weather").frame(maxWidth: .infinity)
                 }
@@ -47,6 +47,19 @@ struct WidgetForecastRows: View {
                             .foregroundStyle(primaryColor)
                             .lineLimit(1)
                             .frame(width: roomy ? roomyDayWidth : (combined ? 36 : 46), alignment: .leading)
+                        if combined {
+                            if let weather = day.weather {
+                                Image(systemName: weather.symbolName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
+                                    .foregroundStyle(secondaryColor)
+                                    .frame(width: 16, height: 12)
+                                    .accessibilityLabel(weather.localizedCondition)
+                            } else {
+                                Color.clear.frame(width: 16, height: 12)
+                            }
+                        }
                         if !combined && metric == .temperature, let weather = day.weather {
                             Image(systemName: weather.symbolName)
                                 .resizable()
@@ -64,15 +77,6 @@ struct WidgetForecastRows: View {
                         }
                         if combined || metric == .temperature {
                             HStack(spacing: 3) {
-                                if combined, let weather = day.weather {
-                                    Image(systemName: weather.symbolName)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .modifier(WeatherConditionSymbolStyle(symbolName: weather.symbolName, usesColor: usesColor))
-                                        .frame(width: 12, height: 12)
-                                        .foregroundStyle(secondaryColor)
-                                        .accessibilityLabel(weather.localizedCondition)
-                                }
                                 WidgetForecastRange(low: day.weather?.lowTemperatureCelsius,
                                                     high: day.weather?.highTemperatureCelsius,
                                                     scale: temperatureScale, metric: .temperature,
@@ -187,9 +191,10 @@ struct CombinedWeatherWidgetEntryView: View {
             CombinedHomeWidgetContent(entry: entry, family: family, usesColor: usesColor)
             #endif
         }
+        .padding(.bottom, isAccessory ? 0 : 24)
         .padding(isAccessory ? EdgeInsets() : contentMargins)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isAccessory ? .center : .topLeading)
-        .modifier(WidgetRefreshPlacement(reading: entry.reading, enabled: !isAccessory, margins: contentMargins))
+        .modifier(WidgetFooterPlacement(reading: entry.reading, enabled: !isAccessory, margins: contentMargins))
         .containerBackground(for: .widget) {
             if entry.alwaysDark {
                 Color(red: 0.07, green: 0.08, blue: 0.10)
@@ -222,30 +227,36 @@ private struct CombinedHomeWidgetContent: View {
         Group {
             if let reading = entry.reading {
                 if #available(iOS 27.0, macOS 27.0, *), family == .systemExtraLargePortrait {
-                    CombinedPortraitWidgetContent(reading: reading, usesColor: usesColor)
+                    CombinedStackedWidgetContent(reading: reading, usesColor: usesColor, compact: false,
+                                                 dayLimit: 10, includesToday: true, roomy: true)
                 } else if isSmall {
                     ViewThatFits(in: .vertical) {
                         CombinedSmallWidgetContent(reading: reading, usesColor: usesColor, tightSpacing: false)
                             .fixedSize(horizontal: false, vertical: true)
                         CombinedSmallWidgetContent(reading: reading, usesColor: usesColor, tightSpacing: true)
                             .fixedSize(horizontal: false, vertical: true)
+                        CombinedSmallWidgetContent(reading: reading, usesColor: usesColor, tightSpacing: true, minimal: true)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else if isLarge {
+                    ViewThatFits(in: .vertical) {
+                        CombinedStackedWidgetContent(reading: reading, usesColor: usesColor, compact: false)
+                            .fixedSize(horizontal: false, vertical: true)
+                        CombinedStackedWidgetContent(reading: reading, usesColor: usesColor, compact: true)
+                            .fixedSize(horizontal: false, vertical: true)
+                        CombinedStackedWidgetContent(reading: reading, usesColor: usesColor, compact: true,
+                                                     showsTimelineValues: false)
+                            .fixedSize(horizontal: false, vertical: true)
+                        CombinedStackedWidgetContent(reading: reading, usesColor: usesColor, compact: true,
+                                                     showsTimelineValues: false, dayLimit: 5)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ViewThatFits(in: .vertical) {
-                            CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
-                                                          showsForecast: isLarge, tightSpacing: false)
-                                .fixedSize(horizontal: false, vertical: true)
-                            CombinedStandardWidgetContent(reading: reading, usesColor: usesColor,
-                                                          showsForecast: isLarge, tightSpacing: true)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        if isLarge {
-                            Spacer(minLength: 0)
-                            WidgetTimestamp(reading: reading)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                    ViewThatFits(in: .vertical) {
+                        CombinedStandardWidgetContent(reading: reading, usesColor: usesColor, tightSpacing: false)
+                            .fixedSize(horizontal: false, vertical: true)
+                        CombinedStandardWidgetContent(reading: reading, usesColor: usesColor, tightSpacing: true)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             } else {
@@ -261,74 +272,92 @@ private struct CombinedHomeWidgetContent: View {
     }
 }
 
-private struct CombinedStandardWidgetContent: View {
+/// Full-width current readings give the large widget's timelines a readable axis.
+private struct CombinedStackedWidgetContent: View {
     let reading: DewPointReading
     let usesColor: Bool
-    let showsForecast: Bool
-    let tightSpacing: Bool
+    let compact: Bool
+    var showsTimelineValues = false
+    var dayLimit = 7
+    var includesToday = false
+    var roomy = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: tightSpacing ? 2 : (showsForecast ? 6 : 5)) {
-            HStack(alignment: .top, spacing: 18) {
-                CombinedWidgetMetric(reading: reading, metric: .dewPoint,
-                                     usesColor: usesColor, tightSpacing: tightSpacing)
-                CombinedWidgetMetric(reading: reading, metric: .temperature,
-                                     usesColor: usesColor, tightSpacing: tightSpacing)
-            }
-            HStack(spacing: 8) {
-                DewPointWidgetLocationText(location: reading.location)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 8)
-                Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
-                    .fixedSize()
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            if !showsForecast {
-                WidgetTimestamp(reading: reading)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            if showsForecast {
-                Divider()
-                WidgetForecastRows(reading: reading, primaryColor: .primary,
-                                          secondaryColor: .secondary, usesColor: usesColor, combined: true,
-                                          rowSpacing: tightSpacing ? 2 : 4)
-            }
-            Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: compact ? 2 : 6) {
+            CombinedStackedWidgetMetric(reading: reading, metric: .dewPoint,
+                                        usesColor: usesColor, showsTimelineValues: showsTimelineValues, compact: compact)
+            CombinedStackedWidgetMetric(reading: reading, metric: .temperature,
+                                        usesColor: usesColor, showsTimelineValues: showsTimelineValues, compact: compact)
+            Divider()
+            WidgetForecastRows(reading: reading, primaryColor: .primary,
+                               secondaryColor: .secondary, usesColor: usesColor, combined: true,
+                               rowSpacing: roomy ? 10 : (compact ? 2 : 4),
+                               includesToday: includesToday, dayLimit: dayLimit, roomy: roomy)
         }
     }
 }
 
-private struct CombinedPortraitWidgetContent: View {
+private struct CombinedStackedWidgetMetric: View {
     let reading: DewPointReading
+    let metric: DayTimelineMetric
     let usesColor: Bool
+    let showsTimelineValues: Bool
+    let compact: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 18) {
-                CombinedWidgetMetric(reading: reading, metric: .dewPoint, usesColor: usesColor,
-                                     showsTimelineLabels: false)
-                CombinedWidgetMetric(reading: reading, metric: .temperature, usesColor: usesColor,
-                                     showsTimelineLabels: false)
-            }
-            HStack {
-                DewPointWidgetLocationText(location: reading.location)
+        VStack(alignment: .leading, spacing: compact ? 2 : 3) {
+            HStack(spacing: 6) {
+                Label {
+                    Text(metric.widgetTitle)
+                        .foregroundStyle(.secondary)
+                } icon: {
+                    Image(systemName: metric.widgetSymbol)
+                        .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
+                }
+                .font(.caption)
+                Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
+                    .font(.system(compact ? .headline : .title2, design: .rounded).weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .primary)
                     .lineLimit(1)
-                Spacer(minLength: 8)
-                Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                Spacer(minLength: 0)
+                WidgetDayRangeText(reading: reading, metric: metric)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                if metric == .temperature {
+                    WidgetConditionSymbol(symbolName: reading.symbolName,
+                                          condition: reading.localizedCondition, size: 16)
+                }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            Divider()
-            WidgetForecastRows(reading: reading, primaryColor: .primary, secondaryColor: .secondary,
-                               usesColor: usesColor, combined: true, rowSpacing: 10,
-                               includesToday: true, dayLimit: 10, roomy: true)
+            DewPointDayTimelineView(reading: reading, showsTitle: false,
+                                   showsForecastValues: showsTimelineValues, emphasizesForecastValues: true,
+                                   compactLabels: compact,
+                                   trackHeight: 5, markerSize: 10,
+                                   usesComfortColor: usesColor, metric: metric)
+        }
+    }
+}
+
+private struct CombinedStandardWidgetContent: View {
+    let reading: DewPointReading
+    let usesColor: Bool
+    let tightSpacing: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: tightSpacing ? 2 : 5) {
+            HStack(alignment: .top, spacing: 18) {
+                CombinedWidgetMetric(reading: reading, metric: .dewPoint,
+                                     usesColor: usesColor, showsTimelineValues: false, tightSpacing: tightSpacing)
+                CombinedWidgetMetric(reading: reading, metric: .temperature,
+                                     usesColor: usesColor, showsTimelineValues: false, tightSpacing: tightSpacing)
+            }
+            if !tightSpacing {
+                Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             Spacer(minLength: 0)
-            WidgetTimestamp(reading: reading)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
         }
     }
 }
@@ -337,23 +366,15 @@ private struct CombinedSmallWidgetContent: View {
     let reading: DewPointReading
     let usesColor: Bool
     let tightSpacing: Bool
+    var minimal = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: tightSpacing ? 2 : 4) {
+        VStack(alignment: .leading, spacing: tightSpacing ? 6 : 8) {
             CombinedSmallWidgetRow(reading: reading, metric: .dewPoint,
-                                   usesColor: usesColor)
+                                   usesColor: usesColor, compact: tightSpacing, minimal: minimal)
             CombinedSmallWidgetRow(reading: reading, metric: .temperature,
-                                   usesColor: usesColor)
-            HStack(spacing: 4) {
-                DewPointWidgetLocationText(location: reading.location)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 0)
-                Color.clear.frame(width: WidgetRefreshPlacement.reservedWidth, height: 1)
-                    .accessibilityHidden(true)
-            }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+                                   usesColor: usesColor, compact: tightSpacing, minimal: minimal)
+
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -363,33 +384,46 @@ private struct CombinedSmallWidgetRow: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
     let usesColor: Bool
+    let compact: Bool
+    let minimal: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Label {
-                Text(metric.widgetTitle)
-            } icon: {
-                Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
-                    .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName, usesColor: metric == .temperature && usesColor))
-                    .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
-                    .accessibilityLabel(metric == .temperature ? Text(reading.localizedCondition) : Text(metric.widgetTitle))
+            if !minimal {
+                Label {
+                    Text(metric.widgetTitle)
+                } icon: {
+                    Image(systemName: metric == .temperature ? reading.symbolName : metric.widgetSymbol)
+                        .modifier(WeatherConditionSymbolStyle(symbolName: reading.symbolName, usesColor: metric == .temperature && usesColor))
+                        .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
+                        .accessibilityLabel(metric == .temperature ? Text(reading.localizedCondition) : Text(metric.widgetTitle))
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            HStack(spacing: 6) {
+            HStack(spacing: compact ? 3 : 6) {
+                if minimal {
+                    Text(metric.widgetTitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(.title2, design: .rounded).weight(.semibold))
+                    .font(.system(compact ? .headline : .title2, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .layoutPriority(1)
                 Spacer(minLength: 0)
-                WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+                if !minimal {
+                    WidgetDayRangeText(reading: reading, metric: metric, stacked: !compact)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize()
+                }
             }
             DewPointDayTimelineView(
                 reading: reading, showsLabels: false,
@@ -565,11 +599,12 @@ private struct CombinedWidgetMetric: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
     let usesColor: Bool
-    var showsTimelineLabels = false
+    var showsTimelineLabels = true
+    var showsTimelineValues = true
     var tightSpacing = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: tightSpacing ? 3 : 5) {
+        VStack(alignment: .leading, spacing: tightSpacing ? 1 : 5) {
             HStack(spacing: 6) {
                 Image(systemName: metric.widgetSymbol)
                     .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .secondary)
@@ -586,7 +621,7 @@ private struct CombinedWidgetMetric: View {
             .font(.caption)
             HStack(alignment: .center, spacing: 4) {
                 Text(DewPointFormatters.temperature(metric.currentValue(in: reading)))
-                    .font(.system(.largeTitle, design: .rounded).weight(.semibold))
+                    .font(.system(tightSpacing ? .title2 : .largeTitle, design: .rounded).weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(usesColor ? metric.color(forCelsius: metric.currentValue(in: reading).value) : .primary)
                     .lineLimit(1)
@@ -599,8 +634,9 @@ private struct CombinedWidgetMetric: View {
                     .foregroundStyle(.secondary)
                     .fixedSize()
             }
-            DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels,
-                                   trackHeight: 7, markerSize: 14,
+            DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels, showsTitle: false,
+                                   showsForecastValues: showsTimelineValues, emphasizesForecastValues: true,
+                                   trackHeight: tightSpacing ? 5 : 7, markerSize: tightSpacing ? 10 : 14,
                                    usesComfortColor: usesColor, monochromeColor: .secondary, metric: metric)
         }
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)

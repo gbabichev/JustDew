@@ -3,6 +3,10 @@ import SwiftUI
 struct DewPointDayTimelineView: View {
     var reading: DewPointReading
     var showsLabels = true
+    var showsTitle = true
+    var showsForecastValues = true
+    var emphasizesForecastValues = false
+    var compactLabels = false
     var trackHeight: CGFloat = 7
     var markerSize: CGFloat = 14
     var usesComfortColor = true
@@ -21,7 +25,7 @@ struct DewPointDayTimelineView: View {
     var body: some View {
         if !forecastPoints.isEmpty {
             VStack(alignment: .leading, spacing: showsLabels ? 4 : 0) {
-                if showsLabels {
+                if showsLabels && showsTitle {
                     Text("Today")
                     .font(.caption2)
                     .foregroundStyle(monochromeColor)
@@ -44,9 +48,12 @@ struct DewPointDayTimelineView: View {
                                           y: geometry.size.height / 2)
                         }
                     }
-                    .frame(height: axisLabelsHeight)
+                    .frame(height: showsForecastValues
+                           ? axisLabelsHeight + (emphasizesForecastValues && !compactLabels ? 4 : 0)
+                           : axisLabelsHeight / 2)
                     .font(.caption2)
                     .foregroundStyle(monochromeColor.opacity(0.75))
+                    .padding(.bottom, emphasizesForecastValues && showsForecastValues && !compactLabels ? 4 : 0)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -96,15 +103,19 @@ struct DewPointDayTimelineView: View {
     }
 
     private func axisLabel(for date: Date, alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: 1) {
+        VStack(alignment: alignment, spacing: emphasizesForecastValues ? 3 : 1) {
             Text(DewPointFormatters.hourLabel(date, timeZone: reading.forecastCalendar.timeZone))
+                .foregroundStyle(monochromeColor.opacity(emphasizesForecastValues ? 0.65 : 0.75))
 
-            if let forecastPoint = forecastPoint(nearest: date) {
-                Text(DewPointFormatters.temperature(metric.forecastValue(in: forecastPoint)))
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-            } else {
-                Text("—")
+            if showsForecastValues {
+                if let forecastPoint = forecastPoint(nearest: date) {
+                    Text(DewPointFormatters.temperature(metric.forecastValue(in: forecastPoint)))
+                        .font(emphasizesForecastValues ? .caption.weight(.semibold) : .caption2.weight(.semibold))
+                        .foregroundStyle(emphasizesForecastValues ? Color.primary : monochromeColor.opacity(0.75))
+                        .monospacedDigit()
+                } else {
+                    Text("—")
+                }
             }
         }
         .accessibilityElement(children: .combine)
