@@ -95,6 +95,7 @@ struct DewPointIOSPagesView: View {
                         showsLocations = true
                     }
                     .navigationBarTitleDisplayMode(.inline)
+                    .modifier(DewPointHorizontalBars())
                 }
                 .id("location-setup")
             } else {
@@ -102,9 +103,10 @@ struct DewPointIOSPagesView: View {
                 // toolbar can adapt independently of the sliding weather pages.
                 NavigationStack {
                     DewPointHingeAwarePager(viewModel: viewModel, locations: pageLocations, selectedID: $selectedID)
+                    .modifier(DewPointHorizontalBars())
                     .navigationTitle(displayedLocation?.compactDisplayName ?? "JustDew")
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
-                    .navigationBarTitleDisplayMode(!usesSidebar ? .inline : .large)
+                    .toolbarTitleDisplayMode(usesSidebar ? .inlineLarge : .inline)
                     .toolbar {
                         if !usesSidebar {
                             ToolbarItem(placement: .topBarTrailing) {
@@ -127,6 +129,7 @@ struct DewPointIOSPagesView: View {
         }) {
             NavigationStack {
                 DewPointLocationsList(viewModel: viewModel, onSelection: { showsLocations = false })
+                    .modifier(DewPointHorizontalBars())
                     .navigationTitle("Locations")
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
