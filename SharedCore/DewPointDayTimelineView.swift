@@ -59,7 +59,8 @@ struct DewPointDayTimelineView: View {
         GeometryReader { proxy in
             let width = max(proxy.size.width, 1)
             let centerY = proxy.size.height / 2
-            let markerX = xPosition(for: reading.observedAt, width: width)
+            let markerDate = referenceDate ?? reading.observedAt
+            let markerX = xPosition(for: markerDate, width: width)
 
             ZStack(alignment: .leading) {
                 Capsule(style: .continuous)
@@ -78,7 +79,7 @@ struct DewPointDayTimelineView: View {
                     .frame(height: trackHeight)
                     .position(x: width / 2, y: centerY)
 
-                if reading.observedAt >= dayStart && reading.observedAt < dayEnd {
+                if markerDate >= dayStart && markerDate < dayEnd {
                     Circle()
                         .fill(markerColor)
                         .frame(width: markerSize, height: markerSize)

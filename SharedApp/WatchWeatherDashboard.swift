@@ -78,7 +78,7 @@ private struct WatchCurrentDewPoint: View {
             Label("Humidity \(DewPointFormatters.percent(reading.humidity))", systemImage: "humidity")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            DewPointDayTimelineView(reading: reading, showsLabels: false, trackHeight: 5, markerSize: 11)
+            DewPointCurrentDayTimelineView(reading: reading, trackHeight: 5, markerSize: 11)
         }
         .padding(.vertical, 4)
     }
@@ -114,7 +114,7 @@ private struct WatchCurrentWeather: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            DewPointDayTimelineView(reading: reading, showsLabels: false, trackHeight: 5,
+            DewPointCurrentDayTimelineView(reading: reading, trackHeight: 5,
                                     markerSize: 11, metric: .temperature)
         }
         .padding(.vertical, 4)

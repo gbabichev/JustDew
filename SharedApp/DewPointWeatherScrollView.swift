@@ -153,7 +153,7 @@ private struct LandscapeCurrentCard: View {
                 DewPointComfortSummary(reading: reading, compact: true)
             }
             Spacer(minLength: 0)
-            DewPointDayTimelineView(reading: reading, referenceDate: Date(),
+            DewPointCurrentDayTimelineView(reading: reading,
                                    metric: metric == .dewPoint ? .dewPoint : .temperature)
         }
         .modifier(WeatherDetailsPresentation(reading: metric == .temperature ? reading : nil))
@@ -282,8 +282,8 @@ private struct CurrentConditionsStrip: View {
             .font(.system(.largeTitle, design: .rounded).weight(.semibold))
             .monospacedDigit()
             if fillsHeight { Spacer(minLength: 0) }
-            DewPointDayTimelineView(reading: reading, showsLabels: false, trackHeight: 5, markerSize: 10,
-                                   referenceDate: Date(), metric: metric == .dewPoint ? .dewPoint : .temperature)
+            DewPointCurrentDayTimelineView(reading: reading, trackHeight: 5, markerSize: 10,
+                                   metric: metric == .dewPoint ? .dewPoint : .temperature)
         }
         .modifier(WeatherDetailsPresentation(reading: metric == .temperature ? reading : nil))
     }
@@ -577,7 +577,7 @@ private struct WeatherNowCard: View {
                     .foregroundStyle(.secondary)
             }
             if fillsHeight { Spacer(minLength: 0) }
-            DewPointDayTimelineView(reading: reading, referenceDate: Date(), metric: .temperature)
+            DewPointCurrentDayTimelineView(reading: reading, metric: .temperature)
                 .accessibilityHint("Color shows temperature through the day.")
         }
         .modifier(WeatherDetailsPresentation(reading: reading))
@@ -611,7 +611,7 @@ private struct DewPointNowCard: View {
                 .foregroundStyle(.secondary)
             DewPointComfortSummary(reading: reading, compact: layout.usesCompactComfort(spacing: spacing))
             if fillsHeight { Spacer(minLength: 0) }
-            DewPointDayTimelineView(reading: reading, referenceDate: Date())
+            DewPointCurrentDayTimelineView(reading: reading)
                 .accessibilityHint("Color shows dew point comfort through the day.")
         }
     }
