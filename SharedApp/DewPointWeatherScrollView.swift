@@ -304,9 +304,8 @@ struct DewPointFoldedWeatherDashboard: View {
     @Binding var selectedID: String?
     let refresh: @MainActor @Sendable () async -> Void
 
-    // Shared with the folded panes through $linkedScroll bindings.
-    // periphery:ignore
-    @State private var linkedScroll = FoldedLinkedScroll()
+    // Align the current cards initially without linking either pane's scrolling.
+    @State private var currentCardHeights: [WeatherForecastMetric: CGFloat] = [:]
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -320,7 +319,7 @@ struct DewPointFoldedWeatherDashboard: View {
         // its side of the fold, including asymmetric toolbar and sidebar insets.
         ArrangementView {
             FoldedWeatherPane(reading: reading, metric: .dewPoint,
-                              scrollOverflowEdges: axis == .horizontal ? .vertical : .top, linkedScroll: $linkedScroll,
+                              scrollOverflowEdges: axis == .horizontal ? .vertical : .top, currentCardHeights: $currentCardHeights,
                               isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     DewPointPageControl(locationIDs: locations.map(\.id), selectedID: $selectedID)
@@ -329,7 +328,7 @@ struct DewPointFoldedWeatherDashboard: View {
                 .splitArrangementLayoutRatio(0.5)
         } secondary: {
             FoldedWeatherPane(reading: reading, metric: .temperature,
-                              scrollOverflowEdges: axis == .horizontal ? .vertical : .bottom, linkedScroll: $linkedScroll,
+                              scrollOverflowEdges: axis == .horizontal ? .vertical : .bottom, currentCardHeights: $currentCardHeights,
                               isLoading: isLoading, errorMessage: errorMessage, refresh: { await refresh() })
         }
         .environment(\.weatherDashboardLayout, layout)
@@ -348,7 +347,7 @@ private struct FoldedWeatherPane: View {
     let reading: DewPointReading?
     let metric: WeatherForecastMetric
     let scrollOverflowEdges: Edge.Set
-    @Binding var linkedScroll: FoldedLinkedScroll
+    @Binding var currentCardHeights: [WeatherForecastMetric: CGFloat]
     let isLoading: Bool
     let errorMessage: String?
     let refresh: @MainActor @Sendable () async -> Void
@@ -365,7 +364,7 @@ private struct FoldedWeatherPane: View {
                 if let reading {
                     let forecast = WeatherDashboardForecast(reading: reading)
                     FoldedMetricCards(reading: reading, forecast: forecast, metric: metric,
-                                      linkedScroll: $linkedScroll)
+                                      currentCardHeights: $currentCardHeights)
                     WeatherDashboardFooter(reading: reading, isLoading: isLoading)
                 } else if isLoading {
                     ProgressView("Loading weather…")
@@ -376,34 +375,10 @@ private struct FoldedWeatherPane: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .padding(layout.foldedContentPadding)
             .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
-                linkedScroll.contentHeights[metric] = height
-            }
-            .frame(minHeight: linkedScroll.minimumContentHeight(for: metric), alignment: .top)
         }
         .scrollPosition($position)
-        .onScrollPhaseChange { _, phase in
-            if phase == .tracking || phase == .interacting { linkedScroll.driver = metric }
-        }
-        .onScrollGeometryChange(for: FoldedScrollGeometry.self, of: { geometry in
-            FoldedScrollGeometry(offset: max(0, geometry.contentOffset.y + geometry.contentInsets.top),
-                                 visibleHeight: max(0, geometry.containerSize.height
-                                     - geometry.contentInsets.top - geometry.contentInsets.bottom))
-        }) { _, geometry in
-            linkedScroll.visibleHeights[metric] = geometry.visibleHeight
-            if linkedScroll.driver == metric, abs(linkedScroll.offset - geometry.offset) > 0.5 {
-                linkedScroll.offset = geometry.offset
-            }
-        }
-        .onChange(of: linkedScroll.offset) { _, offset in
-            guard linkedScroll.driver != metric else { return }
-            if offset == 0 { position.scrollTo(edge: .top) }
-            else { position.scrollTo(y: offset) }
-        }
         .onChange(of: reading?.location.id) { _, _ in
             position.scrollTo(edge: .top)
-            linkedScroll.offset = 0
-            linkedScroll.driver = nil
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
         .refreshable { await refresh() }
@@ -420,7 +395,7 @@ private struct FoldedMetricCards: View {
     let reading: DewPointReading
     let forecast: WeatherDashboardForecast
     let metric: WeatherForecastMetric
-    @Binding var linkedScroll: FoldedLinkedScroll
+    @Binding var currentCardHeights: [WeatherForecastMetric: CGFloat]
     @Environment(\.weatherDashboardLayout) private var layout
 
     var body: some View {
@@ -437,7 +412,7 @@ private struct FoldedMetricCards: View {
         case .matchedStack:
             VStack(spacing: layout.foldedCardGap) {
                 FoldedAlignedCurrentCard(reading: reading, today: forecast.days.first?.weather,
-                                         metric: metric, heights: $linkedScroll.currentCardHeights)
+                                         metric: metric, heights: $currentCardHeights)
                 WeatherForecastCard(reading: reading, forecast: forecast, metric: metric)
             }
         case .accessibleStack:
@@ -484,28 +459,6 @@ private struct FoldedCurrentMetricCard: View {
         } else {
             WeatherNowCard(reading: reading, today: today, spacing: spacing)
         }
-    }
-}
-
-private struct FoldedScrollGeometry: Equatable {
-    let offset: CGFloat
-    let visibleHeight: CGFloat
-}
-
-private struct FoldedLinkedScroll {
-    var driver: WeatherForecastMetric?
-    var offset: CGFloat = 0
-    var contentHeights: [WeatherForecastMetric: CGFloat] = [:]
-    var visibleHeights: [WeatherForecastMetric: CGFloat] = [:]
-    var currentCardHeights: [WeatherForecastMetric: CGFloat] = [:]
-
-    // Give both panes the same travel distance, even when one has less content
-    // or less visible space because of its page controls or the device's pose.
-    func minimumContentHeight(for metric: WeatherForecastMetric) -> CGFloat {
-        let travel = contentHeights.map { key, height in
-            max(0, height - (visibleHeights[key] ?? height))
-        }.max() ?? 0
-        return travel + (visibleHeights[metric] ?? 0)
     }
 }
 
