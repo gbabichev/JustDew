@@ -122,6 +122,13 @@ struct DewPointIOSPagesView: View {
                 }
             }
         }
+        .environment(\.weatherLocationPickerRequested, Binding(
+            get: { showsLocations },
+            set: { requested in
+                if requested { isLocationSheetActive = true }
+                showsLocations = requested
+            }
+        ))
         .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .sheet(isPresented: $showsLocations, onDismiss: {
             isLocationSheetActive = false

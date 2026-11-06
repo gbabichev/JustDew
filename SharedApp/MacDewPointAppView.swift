@@ -22,6 +22,7 @@ struct MacDewPointAppView: View {
                 }
             }
             .background(Color(nsColor: .windowBackgroundColor))
+            .environment(\.weatherLocationPickerRequested, $showsLocations)
             .navigationTitle(viewModel.configuredLocation?.compactDisplayName ?? "JustDew")
             .navigationSubtitle(viewModel.configuredLocation?.mode == .current ? Text("Current Location") : Text(""))
             .toolbar {

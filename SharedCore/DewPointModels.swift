@@ -175,6 +175,7 @@ struct DewPointForecastPoint: Codable, Equatable, Sendable, Identifiable {
 
 enum DewPointError: LocalizedError {
     case locationUnavailable
+    case usingLastKnownLocation
     case permissionDenied
     case widgetLocationUnavailable
     case geocodingNoResults
@@ -188,6 +189,8 @@ enum DewPointError: LocalizedError {
         switch self {
         case .locationUnavailable:
             String(localized: "Location is unavailable.")
+        case .usingLastKnownLocation:
+            String(localized: "Using your last known location")
         case .permissionDenied:
             String(localized: "Location permission is not enabled.")
         case .widgetLocationUnavailable:

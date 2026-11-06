@@ -18,19 +18,25 @@ final class DewPointViewModel: ObservableObject {
     private let fetchWeather: @Sendable (DewPointLocation) async throws -> DewPointReading
     private var savedLocationsRefreshTask: Task<Void, Never>?
     private var hasRefreshedOnLaunch = false
-    private var weatherRequests: [String: Task<DewPointReading, Error>] = [:]
+    private struct WeatherRefreshResult: Sendable {
+        let reading: DewPointReading
+        let usedLastKnownLocation: Bool
+    }
+    private var weatherRequests: [String: Task<WeatherRefreshResult, Error>] = [:]
     @Published private var refreshingLocationIDs: Set<String> = []
-    private let locationProvider = OneShotLocationProvider()
+    private let locationProvider: OneShotLocationProvider
     private var isRequestingCurrentLocation = false
 
     init(
         store: DewPointStore? = nil,
+        locationProvider: OneShotLocationProvider? = nil,
         fetchWeather: @escaping @Sendable (DewPointLocation) async throws -> DewPointReading = {
             try await DewPointWeatherClient.reading(for: $0)
         }
     ) {
         let store = store ?? DewPointStore()
         self.store = store
+        self.locationProvider = locationProvider ?? OneShotLocationProvider()
         self.fetchWeather = fetchWeather
         let locations = store.loadLocations()
         savedLocations = locations
@@ -42,7 +48,7 @@ final class DewPointViewModel: ObservableObject {
             reading = store.loadReading(for: savedLocation)
         }
         configuredLocation = savedLocation
-        authorizationStatus = locationProvider.authorizationStatus
+        authorizationStatus = self.locationProvider.authorizationStatus
     }
 
     func selectLocation(_ location: DewPointLocation) {
@@ -151,7 +157,8 @@ final class DewPointViewModel: ObservableObject {
     private func refreshSilently(for location: DewPointLocation) async {
         do {
             let result = try await weatherReading(for: location, resolveCurrentLocation: true)
-            applyReading(result, requestedLocationID: location.id)
+            applyReading(result.reading, requestedLocationID: location.id,
+                         usedLastKnownLocation: result.usedLastKnownLocation)
         } catch {
             // Existing readings and timestamps stay visible on transient refresh failures.
             if configuredLocation?.id == location.id, reading == nil {
@@ -164,12 +171,26 @@ final class DewPointViewModel: ObservableObject {
     private func weatherReading(
         for location: DewPointLocation,
         resolveCurrentLocation: Bool = false
-    ) async throws -> DewPointReading {
+    ) async throws -> WeatherRefreshResult {
         if let request = weatherRequests[location.id] { return try await request.value }
         let request = Task {
-            let resolved = resolveCurrentLocation && location.mode == .current
-                ? try await resolvedCurrentLocation() : location
-            return try await fetchWeather(resolved)
+            var resolved = location
+            var usedLastKnownLocation = false
+            if resolveCurrentLocation && location.mode == .current {
+                do {
+                    resolved = try await resolvedCurrentLocation()
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    // Only fall back to a real saved location, never placeholder coordinates.
+                    guard savedLocations.contains(where: { $0.id == location.id }),
+                          CLLocationCoordinate2DIsValid(location.clLocation.coordinate) else { throw error }
+                    usedLastKnownLocation = true
+                }
+            }
+            try Task.checkCancellation()
+            return WeatherRefreshResult(reading: try await fetchWeather(resolved),
+                                        usedLastKnownLocation: usedLastKnownLocation)
         }
         weatherRequests[location.id] = request
         refreshingLocationIDs.insert(location.id)
@@ -272,7 +293,7 @@ final class DewPointViewModel: ObservableObject {
 
     private func fetchReading(for location: DewPointLocation) async {
         // Keep the existing notice in place while pull-to-refresh is active.
-        // applyReading clears it when fresh data is successfully applied.
+        // applyReading updates it once weather and location resolution have completed.
         await runLoadingOperation(clearsErrorOnStart: false) {
             try await fetchReadingValue(for: location, resolveCurrentLocation: true)
             reloadWidgets()
@@ -281,10 +302,12 @@ final class DewPointViewModel: ObservableObject {
 
     private func fetchReadingValue(for location: DewPointLocation, resolveCurrentLocation: Bool = false) async throws {
         let result = try await weatherReading(for: location, resolveCurrentLocation: resolveCurrentLocation)
-        applyReading(result, requestedLocationID: location.id)
+        applyReading(result.reading, requestedLocationID: location.id,
+                     usedLastKnownLocation: result.usedLastKnownLocation)
     }
 
-    private func applyReading(_ result: DewPointReading, requestedLocationID: String) {
+    private func applyReading(_ result: DewPointReading, requestedLocationID: String,
+                              usedLastKnownLocation: Bool = false) {
         // Background work must not re-add deleted cities or change the user's selection.
         guard result.location.id == requestedLocationID,
               savedLocations.contains(where: { $0.id == requestedLocationID }) else { return }
@@ -300,7 +323,7 @@ final class DewPointViewModel: ObservableObject {
         if configuredLocation?.id == requestedLocationID {
             reading = storedReading
             configuredLocation = storedReading.location
-            errorMessage = nil
+            errorMessage = usedLastKnownLocation ? DewPointError.usingLastKnownLocation.localizedDescription : nil
             store.saveReading(storedReading)
         }
     }

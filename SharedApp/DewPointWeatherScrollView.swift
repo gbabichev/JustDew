@@ -7,6 +7,7 @@ import UIKit
 extension EnvironmentValues {
     @Entry var weatherDashboardViewport: CGSize? = nil
     @Entry var weatherDashboardLayout = WeatherLayoutPolicy()
+    @Entry var weatherLocationPickerRequested: Binding<Bool>? = nil
 }
 
 struct DewPointWeatherScrollView: View {
@@ -890,6 +891,9 @@ struct WeatherUpdateNotice: View {
     let showsCachedForecast: Bool
     var isSetup = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.refresh) private var refresh
+    @Environment(\.weatherLocationPickerRequested) private var locationPickerRequested
+    @State private var isRetrying = false
 
     private var permissionDenied: Bool {
         message == DewPointError.permissionDenied.localizedDescription
@@ -899,16 +903,20 @@ struct WeatherUpdateNotice: View {
         message == DewPointError.locationUnavailable.localizedDescription
     }
 
+    private var usingLastKnownLocation: Bool {
+        message == DewPointError.usingLastKnownLocation.localizedDescription
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: permissionDenied || locationUnavailable ? "location.slash" : "exclamationmark.triangle")
+            Image(systemName: permissionDenied || locationUnavailable || usingLastKnownLocation ? "location.slash" : "exclamationmark.triangle")
                 .foregroundStyle(.orange)
                 .font(.subheadline)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                if showsCachedForecast {
+                if showsCachedForecast && !usingLastKnownLocation {
                     Text("Showing your last saved forecast.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -932,12 +940,23 @@ struct WeatherUpdateNotice: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     #endif
-                } else if locationUnavailable {
-                    Text(isSetup
-                         ? LocalizedStringResource("Try Use Current Location again, or use Search for a City below.")
-                         : LocalizedStringResource("Try refreshing again, or search for a city in Locations."))
+                } else if locationUnavailable || usingLastKnownLocation {
+                    Text(usingLastKnownLocation
+                         ? LocalizedStringResource("Location lookup failed. Weather was updated for your last known location.")
+                         : (isSetup
+                            ? LocalizedStringResource("Try Use Current Location again, or use Search for a City below.")
+                            : LocalizedStringResource("Try refreshing again, or search for a city in Locations.")))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if !isSetup {
+                        ViewThatFits(in: .horizontal) {
+                            HStack { recoveryButtons }
+                            VStack(alignment: .leading) { recoveryButtons }
+                        }
+                        .font(.caption.weight(.semibold))
+                        .buttonStyle(.bordered)
+                        .disabled(isRetrying)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -951,6 +970,22 @@ struct WeatherUpdateNotice: View {
         if permissionDenied { return String(localized: "Location access is off") }
         if locationUnavailable { return String(localized: "Unable to update your location") }
         return message
+    }
+
+    @ViewBuilder
+    private var recoveryButtons: some View {
+        if let refresh {
+            Button("Retry") {
+                Task {
+                    isRetrying = true
+                    await refresh()
+                    isRetrying = false
+                }
+            }
+        }
+        if let locationPickerRequested {
+            Button("Choose a City") { locationPickerRequested.wrappedValue = true }
+        }
     }
 }
 

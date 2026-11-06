@@ -111,6 +111,12 @@ private struct DewPointSplitView: View {
                     }
                 }
             }
+            .environment(\.weatherLocationPickerRequested, Binding(
+                get: { columnVisibility != .detailOnly },
+                set: { requested in
+                    if requested { columnVisibility = .all }
+                }
+            ))
             #endif
         }
         #if os(iOS)
