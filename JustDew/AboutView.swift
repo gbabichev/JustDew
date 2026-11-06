@@ -1,22 +1,29 @@
+#if os(macOS) || os(iOS)
+import SwiftUI
 #if os(macOS)
 import AppKit
-import SwiftUI
+#else
+import UIKit
+#endif
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        #if os(iOS)
+        NavigationStack {
+            IOSAboutContent()
+                .navigationTitle("About JustDew")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+        }
+        #else
         VStack(spacing: 20) {
-            AboutAppHeader()
-            AboutAppDetails()
-            AboutDeveloperProfile()
-            Divider()
-            Text("JustDew keeps dew point, comfort ranges, and forecasts close at hand, with saved locations and widgets for Mac, iPhone, and Apple Watch.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: 330)
+            AboutContent()
             HStack {
                 Spacer()
                 Button("Done") { dismiss() }
@@ -27,6 +34,65 @@ struct AboutView: View {
         .padding(.vertical, 24)
         .frame(width: 410)
         .onExitCommand { dismiss() }
+        #endif
+    }
+}
+
+#if os(iOS)
+private struct IOSAboutContent: View {
+    var body: some View {
+        Form {
+            Section {
+                IOSAboutAppHeader()
+                    .listRowBackground(Color.clear)
+            }
+            Section {
+                AboutDeveloperProfile()
+                    .padding(.vertical, 4)
+            }
+            Section {
+                AboutLinks()
+            } footer: {
+                Text(verbatim: "© \(Calendar.current.component(.year, from: Date())) George Babichev")
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 12)
+            }
+        }
+    }
+}
+
+private struct IOSAboutAppHeader: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            LiveAppIconView()
+            VStack(alignment: .leading, spacing: 4) {
+                Text("JustDew")
+                    .font(.title2.weight(.semibold))
+                AboutAppDetails()
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+#endif
+
+private struct AboutContent: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            AboutAppHeader()
+            AboutAppDetails()
+            VStack(alignment: .leading, spacing: 16) {
+                AboutDeveloperProfile()
+                Divider()
+                AboutLinks()
+            }
+            .padding(16)
+            .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 16))
+        }
     }
 }
 
@@ -50,8 +116,19 @@ private struct LiveAppIconView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var refreshID = UUID()
 
+    #if os(iOS)
+    private var appIcon: UIImage? {
+        guard let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+              let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
+              let files = primaryIcon["CFBundleIconFiles"] as? [String],
+              let name = files.last else { return nil }
+        return UIImage(named: name)
+    }
+    #endif
+
     var body: some View {
         Group {
+            #if os(macOS)
             if let icon = NSApp?.applicationIconImage {
                 Image(nsImage: icon)
                     .resizable()
@@ -62,9 +139,24 @@ private struct LiveAppIconView: View {
                     .scaledToFit()
                     .foregroundStyle(.cyan)
             }
+            #else
+            if let icon = appIcon {
+                Image(uiImage: icon)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Image(systemName: "drop.degreesign.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.cyan)
+            }
+            #endif
         }
             .id(refreshID)
             .frame(width: 72, height: 72)
+            #if os(iOS)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            #endif
             .accessibilityHidden(true)
             .onChange(of: colorScheme) { _, _ in
                 // Let AppKit update the icon's appearance before reading it again.
@@ -93,6 +185,10 @@ private struct AboutAppDetails: View {
     }
 
     var body: some View {
+        #if os(iOS)
+        LabeledContent("Version", value: appVersion)
+        LabeledContent("Build", value: appBuild)
+        #else
         VStack(alignment: .leading, spacing: 6) {
             AboutRow(label: "Version", value: appVersion)
             AboutRow(label: "Build", value: appBuild)
@@ -106,6 +202,7 @@ private struct AboutAppDetails: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.primary.opacity(0.045))
         }
+        #endif
     }
 }
 
@@ -130,24 +227,48 @@ private struct AboutRow: View {
     }
 }
 
-private struct AboutDeveloperProfile: View {
+private struct AboutLinks: View {
     var body: some View {
-        HStack(spacing: 12) {
-            AboutDeveloperPhoto()
-            VStack(alignment: .leading, spacing: 4) {
-                Text("George Babichev").font(.headline)
-                Link(destination: URL(string: "https://georgebabichev.com")!) {
-                    HStack(spacing: 4) {
-                        Text("georgebabichev.com")
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption2.weight(.semibold))
-                    }
-                    .font(.subheadline)
+        VStack(spacing: 14) {
+            Link(destination: URL(string: "https://gbabichev.github.io/JustDew/")!) {
+                HStack {
+                    Text("Learn more about JustDew")
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.up.right")
+                        .accessibilityHidden(true)
                 }
             }
-            Spacer(minLength: 0)
+            Link(destination: URL(string: "https://georgebabichev.com/#projects")!) {
+                HStack {
+                    Text("Explore my apps")
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.up.right")
+                        .accessibilityHidden(true)
+                }
+            }
         }
-        .padding(.horizontal, 4)
+        .font(.callout)
+    }
+}
+
+private struct AboutDeveloperProfile: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                AboutDeveloperPhoto()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("George Babichev")
+                        .font(.headline)
+                    Text("Meet the developer")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text("I build focused, native apps for Mac, iPhone, and iPad.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -155,11 +276,16 @@ private struct AboutDeveloperProfile: View {
 private struct AboutDeveloperPhoto: View {
     var body: some View {
         Group {
-            // Add the supplied portrait as an image asset named "gbabichev".
-            if let photo = NSImage(named: "gbabichev") {
-                Image(nsImage: photo)
+            #if os(macOS)
+            let photo = NSImage(named: "gbabichev").map { Image(nsImage: $0) }
+            #else
+            let photo = UIImage(named: "gbabichev").map { Image(uiImage: $0) }
+            #endif
+            if let photo {
+                photo
                     .resizable()
                     .scaledToFill()
+                    .offset(y: 4)
             } else {
                 Image(systemName: "person.crop.circle.fill")
                     .resizable()
@@ -174,6 +300,7 @@ private struct AboutDeveloperPhoto: View {
     }
 }
 
+#if os(macOS)
 private struct AboutPresentationKey: FocusedValueKey {
     typealias Value = Binding<Bool>
 }
@@ -209,4 +336,6 @@ struct JustDewAboutCommands: Commands {
         }
     }
 }
+#endif
+
 #endif

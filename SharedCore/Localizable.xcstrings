@@ -8319,6 +8319,335 @@
           }
         }
       }
+    },
+    "Meet the developer" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meet the developer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conoce al desarrollador"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Знакомьтесь с разработчиком"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "认识开发者"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rencontrez le développeur"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lerne den Entwickler kennen"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conheça o desenvolvedor"
+          }
+        }
+      }
+    },
+    "Hi, I’m George Babichev." : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hi, I’m George Babichev."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hola, soy George Babichev."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Привет, я George Babichev."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你好，我是 George Babichev。"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonjour, je suis George Babichev."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallo, ich bin George Babichev."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olá, sou George Babichev."
+          }
+        }
+      }
+    },
+    "Explore my apps" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explore my apps"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explora mis apps"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Другие мои приложения"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "探索我的其他 App"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrez mes apps"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entdecke meine Apps"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explore meus apps"
+          }
+        }
+      }
+    },
+    "JustDew website" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JustDew website"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitio web de JustDew"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сайт JustDew"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JustDew 网站"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Site web de JustDew"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JustDew-Website"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Site do JustDew"
+          }
+        }
+      }
+    },
+    "I build focused, native apps for Mac, iPhone, and iPad. If you like JustDew, take a look at my other apps for everyday tasks, creative work, and a little less friction." : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I build focused, native apps for Mac, iPhone, and iPad. If you like JustDew, take a look at my other apps for everyday tasks, creative work, and a little less friction."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creo apps nativas y especializadas para Mac, iPhone y iPad. Si te gusta JustDew, descubre mis otras apps para las tareas cotidianas, el trabajo creativo y una vida un poco más sencilla."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я создаю простые нативные приложения для Mac, iPhone и iPad. Если вам нравится JustDew, посмотрите мои другие приложения для повседневных задач, творчества и более удобной работы."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我为 Mac、iPhone 和 iPad 开发专注实用的原生 App。如果你喜欢 JustDew，欢迎看看我的其他 App，让日常任务和创作更加轻松顺畅。"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je crée des apps natives et ciblées pour Mac, iPhone et iPad. Si vous aimez JustDew, découvrez mes autres apps pour les tâches du quotidien, le travail créatif et un peu plus de simplicité."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich entwickle native Apps für Mac, iPhone und iPad, die sich auf das Wesentliche konzentrieren. Wenn dir JustDew gefällt, entdecke meine anderen Apps für alltägliche Aufgaben, kreatives Arbeiten und etwas mehr Leichtigkeit."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crio apps nativos e focados para Mac, iPhone e iPad. Se você gosta do JustDew, conheça meus outros apps para tarefas do dia a dia, trabalho criativo e um pouco mais de praticidade."
+          }
+        }
+      }
+    },
+    "Learn more about JustDew" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn more about JustDew"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más información sobre JustDew"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробнее о JustDew"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "进一步了解 JustDew"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En savoir plus sur JustDew"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr über JustDew erfahren"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saiba mais sobre o JustDew"
+          }
+        }
+      }
+    },
+    "I build focused, native apps for Mac, iPhone, and iPad." : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I build focused, native apps for Mac, iPhone, and iPad."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creo apps nativas y especializadas para Mac, iPhone y iPad."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я создаю простые нативные приложения для Mac, iPhone и iPad."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我为 Mac、iPhone 和 iPad 开发专注实用的原生 App。"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je crée des apps natives et ciblées pour Mac, iPhone et iPad."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich entwickle native Apps für Mac, iPhone und iPad, die sich auf das Wesentliche konzentrieren."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crio apps nativos e focados para Mac, iPhone e iPad."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

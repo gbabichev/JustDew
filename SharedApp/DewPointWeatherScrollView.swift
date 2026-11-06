@@ -866,6 +866,10 @@ private struct WeatherDashboardFooter: View {
     let isLoading: Bool
     @Environment(\.weatherDashboardLayout) private var layout
 
+    #if os(iOS)
+    @State private var showsAbout = false
+    #endif
+
     var body: some View {
         let footerLayout = layout.footerInline ? AnyLayout(HStackLayout(spacing: 12))
             : AnyLayout(VStackLayout(alignment: .center, spacing: 8))
@@ -876,13 +880,30 @@ private struct WeatherDashboardFooter: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Link("Data from \(DewPointConfiguration.appleWeatherTrademark)", destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
-                .font(.caption)
+            HStack(spacing: 8) {
+                Link("Data from \(DewPointConfiguration.appleWeatherTrademark)", destination: DewPointConfiguration.appleWeatherLegalAttributionURL)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Weather data from \(DewPointConfiguration.appleWeatherTrademark). Opens legal attribution.")
+                #if os(iOS)
+                Button("About JustDew", systemImage: "questionmark.circle") {
+                    showsAbout = true
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel("Weather data from \(DewPointConfiguration.appleWeatherTrademark). Opens legal attribution.")
+                .padding(.vertical, 8)
+                #endif
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .multilineTextAlignment(.center)
+        #if os(iOS)
+        .sheet(isPresented: $showsAbout) {
+            AboutView()
+                .presentationSizing(.form)
+        }
+        #endif
     }
 }
 
