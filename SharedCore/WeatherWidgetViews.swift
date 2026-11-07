@@ -330,6 +330,11 @@ private struct CombinedStackedWidgetMetric: View {
                                           condition: reading.localizedCondition, size: 16)
                 }
             }
+            if metric == .temperature {
+                WidgetFeelsLikeText(reading: reading)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             DewPointDayTimelineView(reading: reading, showsTitle: false,
                                    showsForecastValues: showsTimelineValues, emphasizesForecastValues: true,
                                    compactLabels: compact,
@@ -419,10 +424,13 @@ private struct CombinedSmallWidgetRow: View {
                     .layoutPriority(1)
                 Spacer(minLength: 0)
                 if !minimal {
-                    WidgetDayRangeText(reading: reading, metric: metric, stacked: !compact)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .fixedSize()
+                    VStack(alignment: .trailing, spacing: 1) {
+                        WidgetDayRangeText(reading: reading, metric: metric, stacked: !compact)
+                        if metric == .temperature && !compact { WidgetFeelsLikeText(reading: reading) }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
                 }
             }
             DewPointDayTimelineView(
@@ -460,6 +468,8 @@ private struct CombinedAccessoryWidgetContent: View {
                     CombinedAccessoryRectangularContent(reading: reading, compact: false)
                         .fixedSize(horizontal: false, vertical: true)
                     CombinedAccessoryRectangularContent(reading: reading, compact: true)
+                        .fixedSize(horizontal: false, vertical: true)
+                    CombinedAccessoryRectangularContent(reading: reading, compact: true, showsFeelsLike: false)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -501,10 +511,17 @@ private struct CombinedLockScreenSquareMetric: View {
                         .frame(width: 20)
                         .accessibilityLabel(reading.localizedCondition)
                 }
-                WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
+                VStack(alignment: .trailing, spacing: 2) {
+                    WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize()
+            }
+            if metric == .temperature {
+                WidgetFeelsLikeText(reading: reading)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .fixedSize()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -514,12 +531,15 @@ private struct CombinedLockScreenSquareMetric: View {
 private struct CombinedAccessoryRectangularContent: View {
     let reading: DewPointReading
     let compact: Bool
+    var showsFeelsLike = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .top, spacing: 10) {
-                LockScreenAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact)
-                LockScreenAccessoryMetric(reading: reading, metric: .temperature, compact: compact)
+                LockScreenAccessoryMetric(reading: reading, metric: .dewPoint, compact: compact,
+                                          showsFeelsLike: showsFeelsLike)
+                LockScreenAccessoryMetric(reading: reading, metric: .temperature, compact: compact,
+                                          showsFeelsLike: showsFeelsLike)
             }
         }
     }
@@ -553,6 +573,7 @@ struct LockScreenAccessoryMetric: View {
     let reading: DewPointReading
     let metric: DayTimelineMetric
     let compact: Bool
+    var showsFeelsLike = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
@@ -576,6 +597,11 @@ struct LockScreenAccessoryMetric: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
+            }
+            if metric == .temperature && showsFeelsLike {
+                WidgetFeelsLikeText(reading: reading)
+                    .font(.system(size: compact ? 7 : 8))
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -629,10 +655,16 @@ private struct CombinedWidgetMetric: View {
                     .accessibilityLabel(Text(metric.widgetTitle))
                     .accessibilityValue(DewPointFormatters.temperature(metric.currentValue(in: reading)))
                 Spacer(minLength: 0)
-                WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+                VStack(alignment: .trailing, spacing: 2) {
+                    WidgetDayRangeText(reading: reading, metric: metric, stacked: true)
+                    // Dew Point reserves the same line (hidden) so both timelines align.
+                    WidgetFeelsLikeText(reading: reading)
+                        .opacity(metric == .temperature ? 1 : 0)
+                        .accessibilityHidden(metric != .temperature)
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize()
             }
             DewPointDayTimelineView(reading: reading, showsLabels: showsTimelineLabels, showsTitle: false,
                                    showsForecastValues: showsTimelineValues, emphasizesForecastValues: true,

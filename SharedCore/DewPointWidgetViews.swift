@@ -313,6 +313,7 @@ private struct DewPointMediumWidgetContent: View {
                     Spacer(minLength: 0)
                     VStack(alignment: .trailing, spacing: 2) {
                         WidgetDayRangeText(reading: reading, metric: metric)
+                        if metric == .temperature { WidgetFeelsLikeText(reading: reading) }
                         Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                     }
                     .font(.caption2)
@@ -337,6 +338,7 @@ private struct DewPointMediumWidgetContent: View {
                     Spacer(minLength: 0)
                     VStack(alignment: .trailing, spacing: 2) {
                         WidgetDayRangeText(reading: reading, metric: metric)
+                        if metric == .temperature { WidgetFeelsLikeText(reading: reading) }
                         Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                     }
                     .font(.caption2)
@@ -455,6 +457,11 @@ private struct DewPointSmallWidgetContent: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             }
+            if metric == .temperature {
+                WidgetFeelsLikeText(reading: reading)
+                    .font(.caption2)
+                    .foregroundStyle(secondaryTextColor)
+            }
             DewPointDayTimelineView(
                 reading: reading,
                 showsLabels: false,
@@ -493,6 +500,11 @@ private struct DewPointLockScreenSquareContent: View {
             WidgetDayRangeText(reading: reading, metric: metric)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if metric == .temperature {
+                WidgetFeelsLikeText(reading: reading)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Spacer(minLength: 0)
         }
     }
@@ -573,6 +585,7 @@ private struct DewPointLargeWidgetCurrentConditions: View {
                     } else {
                         Text("Dew Point \(DewPointFormatters.temperature(reading.dewPoint))")
                     }
+                    if metric == .temperature { WidgetFeelsLikeText(reading: reading) }
                     Text("Humidity \(DewPointFormatters.percent(reading.humidity))")
                 }
                 .font(.caption2)
@@ -805,6 +818,18 @@ private struct DewPointInlineWidgetText: View {
             Label(DewPointFormatters.temperature(reading.dewPoint), systemImage: "drop.degreesign")
                 .accessibilityLabel("Dew Point")
                 .accessibilityValue(DewPointFormatters.temperature(reading.dewPoint))
+        }
+    }
+}
+
+struct WidgetFeelsLikeText: View {
+    let reading: DewPointReading
+
+    var body: some View {
+        if let apparent = reading.apparentTemperatureCelsius {
+            Text("Feels like \(DewPointFormatters.temperature(Measurement(value: apparent, unit: .celsius)))")
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
     }
 }
