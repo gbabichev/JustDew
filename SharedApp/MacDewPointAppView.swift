@@ -29,6 +29,13 @@ struct MacDewPointAppView: View {
                 if !viewModel.savedLocations.isEmpty {
                     ToolbarSpacer(.flexible, placement: .automatic)
                     ToolbarItemGroup(placement: .automatic) {
+                        Button {
+                                viewModel.toggleCurrentLocationPin()
+                            } label: {
+                                Label(viewModel.isCurrentLocationPinned ? "Unpin Location" : "Pin Location",
+                                      systemImage: viewModel.isCurrentLocationPinned ? "pin.fill" : "pin")
+                            }
+                            .disabled(viewModel.configuredLocation?.mode != .current)
                         if viewModel.isLoading {
                             ProgressView()
                                 .controlSize(.small)

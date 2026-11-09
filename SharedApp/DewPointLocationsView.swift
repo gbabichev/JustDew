@@ -108,6 +108,16 @@ struct DewPointIOSPagesView: View {
                     .navigationSubtitle(displayedLocation?.mode == .current ? Text("Current Location") : Text(""))
                     .toolbarTitleDisplayMode(usesSidebar ? .inlineLarge : .inline)
                     .toolbar {
+                        if displayedLocation?.mode == .current {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    viewModel.toggleCurrentLocationPin()
+                                } label: {
+                                    Label(viewModel.isCurrentLocationPinned ? "Unpin Location" : "Pin Location",
+                                          systemImage: viewModel.isCurrentLocationPinned ? "pin.fill" : "pin")
+                                }
+                            }
+                        }
                         if !usesSidebar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button {

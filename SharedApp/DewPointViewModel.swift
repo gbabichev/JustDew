@@ -11,6 +11,7 @@ final class DewPointViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var authorizationStatus: CLAuthorizationStatus
+    @Published private(set) var isCurrentLocationPinned = false
 
     @Published private(set) var cachedReadings: [String: DewPointReading] = [:]
 
@@ -49,6 +50,51 @@ final class DewPointViewModel: ObservableObject {
         }
         configuredLocation = savedLocation
         authorizationStatus = self.locationProvider.authorizationStatus
+        isCurrentLocationPinned = store.pinsCurrentLocation
+    }
+
+    /// Back in a pinned city: Current Location takes over, so drop the card and keep the pin on.
+    private func absorbPinnedLocation(matching current: DewPointLocation) {
+        guard current.mode == .current, current.hasSpecificDisplayName else { return }
+        let pinnedIDs = store.pinnedLocationIDs
+        let matches = savedLocations.filter {
+            $0.mode == .manual && pinnedIDs.contains($0.id) && $0.cityKey == current.cityKey
+                && $0.id != configuredLocation?.id
+        }
+        guard !matches.isEmpty else { return }
+        let ids = Set(matches.map(\.id))
+        savedLocations.removeAll { ids.contains($0.id) }
+        store.saveLocations(savedLocations)
+        store.pinnedLocationIDs = pinnedIDs.filter { !ids.contains($0) }
+        for id in ids { cachedReadings[id] = nil }
+        isCurrentLocationPinned = true
+        store.pinsCurrentLocation = true
+    }
+
+    func toggleCurrentLocationPin() {
+        isCurrentLocationPinned.toggle()
+        store.pinsCurrentLocation = isCurrentLocationPinned
+    }
+
+    /// A pinned Current Location leaves its place behind as a saved card when the device moves elsewhere.
+    private func preservePinnedLocation(replacing old: DewPointLocation?, with new: DewPointLocation) {
+        guard isCurrentLocationPinned, let old, old.mode == .current, new.mode == .current,
+              old.hasSpecificDisplayName, new.hasSpecificDisplayName,
+              CLLocationCoordinate2DIsValid(old.clLocation.coordinate),
+              old.cityKey != new.cityKey else { return }
+        let pinned = DewPointLocation(mode: .manual, name: old.name, shortName: old.shortName,
+                                      latitude: old.latitude, longitude: old.longitude,
+                                      savedAt: Date(), timeZoneIdentifier: old.timeZoneIdentifier)
+        isCurrentLocationPinned = false
+        store.pinsCurrentLocation = false
+        guard !savedLocations.contains(where: { $0.cityKey == pinned.cityKey && $0.mode == .manual }) else { return }
+        store.pinnedLocationIDs += [pinned.id]
+        if var cached = cachedReadings[old.id] ?? store.loadReading(for: old) {
+            cached.location = pinned
+            store.saveCachedReading(cached)
+            cachedReadings[pinned.id] = cached
+        }
+        remember(pinned)
     }
 
     func selectLocation(_ location: DewPointLocation) {
@@ -236,8 +282,10 @@ final class DewPointViewModel: ObservableObject {
         await runLoadingOperation {
             let configuredLocation = try await resolvedCurrentLocation(requestPermission: true)
 
+            preservePinnedLocation(replacing: savedLocations.first { $0.mode == .current }, with: configuredLocation)
             store.saveLocation(configuredLocation)
             remember(configuredLocation)
+            absorbPinnedLocation(matching: configuredLocation)
             reading = store.loadReading(for: configuredLocation)
             self.configuredLocation = configuredLocation
             try await fetchReadingValue(for: configuredLocation)
@@ -312,6 +360,7 @@ final class DewPointViewModel: ObservableObject {
         guard result.location.id == requestedLocationID,
               savedLocations.contains(where: { $0.id == requestedLocationID }) else { return }
         if let cached = cachedReadings[requestedLocationID], cached.fetchedAt > result.fetchedAt { return }
+        preservePinnedLocation(replacing: savedLocations.first { $0.id == requestedLocationID }, with: result.location)
         store.saveCachedReading(result)
         let storedReading = store.loadReading(for: result.location) ?? result
         cachedReadings[requestedLocationID] = storedReading
@@ -320,6 +369,7 @@ final class DewPointViewModel: ObservableObject {
             savedLocations[index] = storedReading.location
             store.saveLocations(savedLocations)
         }
+        absorbPinnedLocation(matching: storedReading.location)
         if configuredLocation?.id == requestedLocationID {
             reading = storedReading
             configuredLocation = storedReading.location

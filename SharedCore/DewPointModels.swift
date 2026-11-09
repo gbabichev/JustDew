@@ -53,6 +53,11 @@ struct DewPointLocation: Codable, Equatable, Sendable, Identifiable {
         compactDisplayName
     }
 
+    /// A city is the same city wherever in it the device is, so pinning compares names, not coordinates.
+    var cityKey: String {
+        compactDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
     var hasSpecificDisplayName: Bool {
         !(name == "Current Location" && shortName == nil)
     }

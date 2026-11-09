@@ -5,6 +5,8 @@ struct DewPointStore {
         static let location = "dewPoint.location"
         static let reading = "dewPoint.reading"
         static let locations = "dewPoint.locations"
+        static let pinsCurrentLocation = "dewPoint.pinsCurrentLocation"
+        static let pinnedLocationIDs = "dewPoint.pinnedLocationIDs"
     }
 
     private let defaults: UserDefaults
@@ -13,6 +15,18 @@ struct DewPointStore {
 
     init(defaults: UserDefaults = UserDefaults(suiteName: DewPointConfiguration.appGroupIdentifier) ?? .standard) {
         self.defaults = defaults
+    }
+
+    /// When set, the place Current Location resolves to is kept as its own card once the device moves away.
+    var pinsCurrentLocation: Bool {
+        get { defaults.bool(forKey: Key.pinsCurrentLocation) }
+        nonmutating set { defaults.set(newValue, forKey: Key.pinsCurrentLocation) }
+    }
+
+    /// Saved cards that were created by pinning, so returning to that city can merge them back.
+    var pinnedLocationIDs: [String] {
+        get { defaults.stringArray(forKey: Key.pinnedLocationIDs) ?? [] }
+        nonmutating set { defaults.set(newValue, forKey: Key.pinnedLocationIDs) }
     }
 
     func loadLocations() -> [DewPointLocation] {
@@ -79,6 +93,8 @@ struct DewPointStore {
         defaults.removeObject(forKey: Key.locations)
         defaults.removeObject(forKey: Key.location)
         defaults.removeObject(forKey: Key.reading)
+        defaults.removeObject(forKey: Key.pinsCurrentLocation)
+        defaults.removeObject(forKey: Key.pinnedLocationIDs)
     }
 
     private func decode<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {

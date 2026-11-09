@@ -102,6 +102,15 @@ private struct DewPointSplitView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button {
+                            viewModel.toggleCurrentLocationPin()
+                        } label: {
+                            Label(viewModel.isCurrentLocationPinned ? "Unpin Location" : "Pin Location",
+                                  systemImage: viewModel.isCurrentLocationPinned ? "pin.fill" : "pin")
+                        }
+                        .disabled(viewModel.configuredLocation?.mode != .current)
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
                             viewModel.refresh()
                         } label: {
                             Label("Refresh", systemImage: "arrow.clockwise")
