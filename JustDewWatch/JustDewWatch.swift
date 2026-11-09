@@ -37,6 +37,9 @@ struct WatchDewPointProvider: TimelineProvider {
             let reading = try await DewPointWidgetLoader.loadReading()
             return WatchDewPointEntry(date: Date(), reading: reading, message: nil)
         } catch {
+            if let error = error as? DewPointError, error.isLocationPermissionProblem {
+                return WatchDewPointEntry(date: Date(), reading: nil, message: error.dewPointDisplayMessage)
+            }
             let cachedReading = DewPointWidgetLoader.cachedReading(locationID: "current")
             return WatchDewPointEntry(date: Date(), reading: cachedReading, message: error.dewPointDisplayMessage)
         }

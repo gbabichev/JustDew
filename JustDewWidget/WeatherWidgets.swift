@@ -35,6 +35,11 @@ struct WeatherLocationProvider<Options: WeatherLocationWidgetOptions>: AppIntent
             let reading = try await DewPointWidgetLoader.loadReading(locationID: id)
             return DewPointWidgetEntry(date: .now, reading: reading, message: nil, alwaysDark: alwaysDark)
         } catch {
+            // Without location permission, show the alert instead of a reading for a place that may be wrong.
+            if id == "current", let error = error as? DewPointError, error.isLocationPermissionProblem {
+                return DewPointWidgetEntry(date: .now, reading: nil, message: error.dewPointDisplayMessage,
+                                           alwaysDark: alwaysDark)
+            }
             return DewPointWidgetEntry(date: .now, reading: DewPointWidgetLoader.cachedReading(locationID: id),
                                        message: error.dewPointDisplayMessage, alwaysDark: alwaysDark)
         }

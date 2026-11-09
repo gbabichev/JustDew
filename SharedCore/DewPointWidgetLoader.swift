@@ -94,11 +94,21 @@ enum DewPointWidgetLoader {
         let store = DewPointStore()
         let location: DewPointLocation
         if locationID == "current" {
-            let current = try await currentWidgetLocation()
-            let names = await LocationSearchService.currentLocationNames(for: current)
-            location = DewPointLocation(mode: .current, name: names.name, shortName: names.shortName,
-                                        latitude: current.coordinate.latitude, longitude: current.coordinate.longitude,
-                                        savedAt: Date(), timeZoneIdentifier: names.timeZoneIdentifier)
+            do {
+                let current = try await currentWidgetLocation()
+                let names = await LocationSearchService.currentLocationNames(for: current)
+                location = DewPointLocation(mode: .current, name: names.name, shortName: names.shortName,
+                                            latitude: current.coordinate.latitude, longitude: current.coordinate.longitude,
+                                            savedAt: Date(), timeZoneIdentifier: names.timeZoneIdentifier)
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                // Missing permission needs the user's attention, so surface it instead of a stale place.
+                if let error = error as? DewPointError, error.isLocationPermissionProblem { throw error }
+                // Like the app, keep the weather fresh for the last known place when a lookup fails.
+                guard let lastKnown = lastKnownCurrentLocation(store: store) else { throw error }
+                location = lastKnown
+            }
         } else {
             guard let saved = store.loadLocations().first(where: { $0.id == locationID }) else {
                 throw DewPointError.missingConfiguredLocation
@@ -110,6 +120,15 @@ enum DewPointWidgetLoader {
         let reading = try await DewPointWeatherClient.reading(for: location)
         store.saveCachedReading(reading)
         return store.loadReading(for: location) ?? reading
+    }
+
+    /// The last place Current Location resolved to; never a placeholder without real coordinates.
+    static func lastKnownCurrentLocation(store: DewPointStore) -> DewPointLocation? {
+        store.loadLocations().first {
+            $0.mode == .current && $0.hasSpecificDisplayName
+                && CLLocationCoordinate2DIsValid($0.clLocation.coordinate)
+                && !($0.latitude == 0 && $0.longitude == 0)
+        }
     }
 
     static func cachedReading(locationID: String, store: DewPointStore = DewPointStore()) -> DewPointReading? {

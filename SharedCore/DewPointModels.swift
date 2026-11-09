@@ -190,6 +190,11 @@ enum DewPointError: LocalizedError {
     case weatherUnavailable
     case weatherKitAuthentication
 
+    /// The user must change a setting; a stale reading would hide that.
+    var isLocationPermissionProblem: Bool {
+        self == .permissionDenied || self == .widgetLocationUnavailable
+    }
+
     var errorDescription: String? {
         switch self {
         case .locationUnavailable:

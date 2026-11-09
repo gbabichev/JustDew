@@ -33,6 +33,14 @@ struct DewPointWidgetCacheTests {
         store.saveLocations([])
         precondition(DewPointWidgetLoader.cachedReading(locationID: city.id, store: store) == nil)
         precondition(DewPointWidgetLoader.cachedReading(locationID: "current", store: store)?.location == current)
+        // A failed location lookup falls back to the last real Current Location, never a placeholder.
+        store.saveLocations([DewPointLocation(mode: .current, name: "Current Location", latitude: 0, longitude: 0, savedAt: .now)])
+        precondition(DewPointWidgetLoader.lastKnownCurrentLocation(store: store) == nil)
+        store.saveLocations([city, current])
+        precondition(DewPointWidgetLoader.lastKnownCurrentLocation(store: store) == current)
+        store.saveLocations([city])
+        precondition(DewPointWidgetLoader.lastKnownCurrentLocation(store: store) == nil)
+        store.saveLocations([])
         // App and widgets may reuse a recent, complete snapshot for the same place.
         let now = Date()
         var snapshot = reading(current, dew: 18)
