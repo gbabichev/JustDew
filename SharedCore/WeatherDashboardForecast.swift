@@ -43,7 +43,9 @@ struct WeatherDashboardForecast {
                 // Full hourly coverage includes the first and last hour, also on DST days.
                 let expectedHours = calendar.dateComponents([.hour], from: date, to: end).hour ?? 24
                 let sampledHours = Set(points.compactMap { calendar.dateInterval(of: .hour, for: $0.date)?.start }).count
-                partial = first.date.timeIntervalSince(date) > 60
+                // Hourly samples sit on UTC hours, so half-hour zones (Mumbai, Adelaide) start at :30.
+                // Only a whole missing hour at either edge counts as partial.
+                partial = first.date.timeIntervalSince(date) >= 3_600
                     || end.timeIntervalSince(last.date) > 3_600 || sampledHours < expectedHours
             } else {
                 partial = false

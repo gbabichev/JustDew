@@ -78,6 +78,21 @@ struct WeatherDashboardForecastTests {
         var missingHour = fall
         missingHour.dailyForecast?.remove(at: 12)
         precondition(WeatherDashboardForecast(reading: missingHour, referenceDate: fallStart).days[0].hasPartialDewPoint)
+        // Half-hour zones such as Mumbai sample on UTC hours, which are :30 locally; that is still full coverage.
+        var mumbai = reading
+        mumbai.location.timeZoneIdentifier = "Asia/Kolkata"
+        var kolkata = Calendar(identifier: .gregorian)
+        kolkata.timeZone = TimeZone(identifier: "Asia/Kolkata")!
+        let mumbaiStart = kolkata.date(from: DateComponents(year: 2026, month: 11, day: 3))!
+        mumbai.observedAt = mumbaiStart
+        mumbai.dailyForecast = (0..<24).map { hour in
+            DewPointForecastPoint(date: mumbaiStart.addingTimeInterval(Double(hour) * 3_600 + 1_800),
+                                  dewPointCelsius: Double(hour), temperatureCelsius: 20, humidity: 0.5)
+        }
+        precondition(!WeatherDashboardForecast(reading: mumbai, referenceDate: mumbaiStart).days[0].hasPartialDewPoint,
+                     "Half-hour time zones must not be flagged as partial")
+        mumbai.dailyForecast?.remove(at: 0)
+        precondition(WeatherDashboardForecast(reading: mumbai, referenceDate: mumbaiStart).days[0].hasPartialDewPoint)
         let nextDay = calendar.date(byAdding: .day, value: 1, to: observed)!
         precondition(WeatherDashboardForecast(reading: reading, referenceDate: nextDay).days[0].date == tomorrow,
                      "A stale reading must not label yesterday as Today")
