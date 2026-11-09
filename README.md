@@ -151,6 +151,9 @@ Locations are saved separately on each device.
 • See dew point and current temperature when choosing a location.
 • A simpler dew point card with a short summary of how the air feels.
 • Improved 10-day forecast availability and fixed the iPad sidebar reopening when rotating.
+• Added "Feels Like" temperature to widgets.
+• Added Current Location pinning, so you can easily pin your location without having to add it via search.
+• Improved dew point lookups in timezones with non 00:00 offsets.
 
 ### 2.0.1
 - Improved app start on slow internet connection.
