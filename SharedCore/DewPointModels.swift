@@ -191,8 +191,10 @@ enum DewPointError: LocalizedError {
     case weatherKitAuthentication
 
     /// The user must change a setting; a stale reading would hide that.
+    /// `widgetLocationUnavailable` is deliberately excluded: iOS grants widgets location access only
+    /// while it considers the app recently used, so it comes and goes without any user action.
     var isLocationPermissionProblem: Bool {
-        self == .permissionDenied || self == .widgetLocationUnavailable
+        self == .permissionDenied
     }
 
     var errorDescription: String? {

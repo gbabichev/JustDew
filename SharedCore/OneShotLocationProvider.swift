@@ -109,8 +109,11 @@ final class OneShotLocationProvider: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             if let locationError = error as? CLError {
-                finish(with: .failure(locationError.code == .denied
-                    ? DewPointError.permissionDenied : DewPointError.locationUnavailable))
+                // A widget that iOS has not currently cleared for location also gets `.denied`;
+                // only report missing permission when the authorization itself says so.
+                let status = manager.authorizationStatus
+                let isDenied = locationError.code == .denied && (status == .denied || status == .restricted)
+                finish(with: .failure(isDenied ? DewPointError.permissionDenied : DewPointError.locationUnavailable))
             } else {
                 finish(with: .failure(error))
             }

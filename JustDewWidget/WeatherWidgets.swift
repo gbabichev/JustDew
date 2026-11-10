@@ -16,8 +16,10 @@ struct WeatherLocationProvider<Options: WeatherLocationWidgetOptions>: AppIntent
     }
 
     func timeline(for configuration: Options, in context: Context) async -> Timeline<DewPointWidgetEntry> {
-        Timeline(entries: [await entry(for: configuration, in: context)],
-                 policy: .after(Date().addingTimeInterval(DewPointConfiguration.refreshInterval)))
+        let entry = await entry(for: configuration, in: context)
+        // A failed refresh (often a brief location hiccup) retries sooner than a healthy one.
+        let delay = entry.message == nil ? DewPointConfiguration.refreshInterval : 5 * 60
+        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(delay)))
     }
 
     private func entry(for configuration: Options, in context: Context) async -> DewPointWidgetEntry {
