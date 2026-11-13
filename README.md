@@ -140,6 +140,9 @@ Locations are saved separately on each device.
 
 ## Changelog
 
+### 2.1.1.
+- Fixed widgets timing out and showing an incorrect location permission warning.
+
 ### 2.1.0
 • A simpler widget gallery: choose Dew Point, Weather, or both, then customize your location and appearance.
 • Refresh weather directly from your Home Screen or desktop widget.
